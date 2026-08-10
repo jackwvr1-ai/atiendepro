@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1, user-scalable=no">
+<title>Kiosco de Autopedido</title>
+<meta name="theme-color" content="#0F1115">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#0F1115; --panel:#171A21; --panel-2:#1E222B; --card:#FFFFFF; --card-ink:#1A1D24;
+    --line:#2A2F3A; --line-soft:#22262F;
+    --naranja:#FF6A00; --naranja-2:#FF8534; --naranja-deep:#E85D00; --naranja-soft:rgba(255,106,0,.12);
+    --ink:#F5F7FA; --muted:#9BA4B3; --faint:#6B7383;
+    --verde:#2ED47A; --rojo:#F8604A; --amber:#FFB020;
+    --sombra:0 8px 30px rgba(0,0,0,.35); --sombra-card:0 4px 18px rgba(0,0,0,.10);
+    --radio:20px; --radio-sm:14px;
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; -webkit-user-select:none; user-select:none;}
+  html,body{height:100%; background:var(--bg);}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Display','Inter',system-ui,sans-serif;
+    color:var(--ink); overflow:hidden; letter-spacing:-.01em;
+  }
+  button{font-family:inherit; cursor:pointer; border:none; background:none; color:inherit;}
+  img{display:block;}
+
+  /* ===================== PANTALLA DE CARGA / ERROR ===================== */
+  .full-center{position:fixed; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px; background:var(--bg); z-index:100;}
+  .spinner{width:52px; height:52px; border:4px solid var(--line); border-top-color:var(--naranja); border-radius:50%; animation:spin 1s linear infinite; margin-bottom:22px;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .full-center h2{font-size:22px; font-weight:700; margin-bottom:10px;}
+  .full-center p{font-size:15px; color:var(--muted); max-width:420px; line-height:1.5;}
+  .full-center .ico{font-size:52px; margin-bottom:18px;}
+
+  /* ===================== LAYOUT PRINCIPAL ===================== */
+  .app{display:none; height:100vh; grid-template-columns:1fr 400px; overflow:hidden;}
+  .app.on{display:grid;}
+
+  /* ----- Columna izquierda (menú) ----- */
+  .left{display:flex; flex-direction:column; min-width:0; height:100vh; position:relative;}
+
+  .topbar{display:flex; align-items:center; justify-content:space-between; padding:22px 28px 18px; flex-shrink:0;}
+  .brand{display:flex; align-items:center; gap:14px; min-width:0;}
+  .brand .logo{width:52px; height:52px; border-radius:15px; background:linear-gradient(135deg,var(--naranja),var(--naranja-2)); display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 6px 18px rgba(255,106,0,.32);}
+  .brand .logo svg{width:28px; height:28px; color:#fff;}
+  .brand .logo img{width:100%; height:100%; object-fit:cover; border-radius:15px;}
+  .brand .txt{min-width:0;}
+  .brand .n{font-size:20px; font-weight:800; line-height:1.1; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  .brand .s{font-size:12.5px; color:var(--muted); margin-top:3px;}
+  .saludo{text-align:right;}
+  .saludo .h{font-size:15px; font-weight:600;}
+  .saludo .p{font-size:12.5px; color:var(--muted); margin-top:2px;}
+
+  /* Buscador */
+  .buscar{margin:0 28px 16px; flex-shrink:0; position:relative;}
+  .buscar svg{position:absolute; left:16px; top:50%; transform:translateY(-50%); width:19px; height:19px; color:var(--faint);}
+  .buscar input{width:100%; background:var(--panel); border:1px solid var(--line); color:var(--ink); font-size:15px; padding:14px 16px 14px 44px; border-radius:14px; outline:none; font-family:inherit;}
+  .buscar input::placeholder{color:var(--faint);}
+  .buscar input:focus{border-color:var(--naranja);}
+
+  /* Cuerpo: categorías + productos */
+  .cuerpo{flex:1; display:grid; grid-template-columns:132px 1fr; gap:0; min-height:0; overflow:hidden;}
+
+  /* Categorías laterales */
+  .cats{overflow-y:auto; padding:4px 12px 20px 28px; display:flex; flex-direction:column; gap:6px; scrollbar-width:none;}
+  .cats::-webkit-scrollbar{display:none;}
+  .cat{display:flex; flex-direction:column; align-items:center; gap:6px; padding:14px 6px; border-radius:16px; color:var(--muted); transition:all .15s; text-align:center; flex-shrink:0;}
+  .cat svg,.cat .emoji{width:24px; height:24px; font-size:22px; line-height:1;}
+  .cat .lbl{font-size:11px; font-weight:600; line-height:1.2;}
+  .cat.on{background:var(--naranja); color:#fff; box-shadow:0 6px 16px rgba(255,106,0,.3);}
+  .cat:active{transform:scale(.96);}
+
+  /* Grid de productos */
+  .prods{overflow-y:auto; padding:4px 28px 120px 16px; scrollbar-width:thin;}
+  .prods::-webkit-scrollbar{width:6px;} .prods::-webkit-scrollbar-thumb{background:var(--line); border-radius:99px;}
+  .cat-titulo{font-size:13px; font-weight:700; color:var(--muted); text-transform:uppercase; letter-spacing:.08em; margin:12px 4px 14px;}
+  .grid{display:grid; grid-template-columns:1fr 1fr; gap:16px;}
+  .pcard{background:var(--card); border-radius:var(--radio); overflow:hidden; box-shadow:var(--sombra-card); color:var(--card-ink); display:flex; flex-direction:column; transition:transform .12s;}
+  .pcard:active{transform:scale(.98);}
+  .pcard .foto{width:100%; height:150px; background:linear-gradient(135deg,#F0F1F4,#E4E6EB); position:relative; overflow:hidden; flex-shrink:0;}
+  .pcard .foto img{width:100%; height:100%; object-fit:cover;}
+  .pcard .foto .ph{position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:44px; opacity:.5;}
+  .pcard .info{padding:14px 15px 15px; display:flex; flex-direction:column; flex:1;}
+  .pcard .nom{font-size:15.5px; font-weight:700; line-height:1.25; margin-bottom:5px;}
+  .pcard .desc{font-size:12px; color:#7A828F; line-height:1.4; margin-bottom:12px; flex:1; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden;}
+  .pcard .fila{display:flex; align-items:center; justify-content:space-between; gap:8px;}
+  .pcard .precio{font-size:18px; font-weight:800; color:var(--card-ink);}
+  .pcard .add{width:40px; height:40px; border-radius:12px; background:var(--naranja); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0; box-shadow:0 4px 12px rgba(255,106,0,.3); transition:transform .1s;}
+  .pcard .add:active{transform:scale(.9);}
+  .pcard .add svg{width:22px; height:22px;}
+  .pcard.agotado{opacity:.5;}
+  .pcard.agotado .add{background:#B8BEC9; box-shadow:none;}
+
+  /* Barra flotante inferior (resumen carrito, solo visible en móvil/compacto) */
+  .barra-flotante{display:none;}
+
+  /* ----- Columna derecha (pedido + upsell) ----- */
+  .right{background:var(--panel); border-left:1px solid var(--line); display:flex; flex-direction:column; height:100vh; overflow:hidden;}
+
+  /* Upsell */
+  .upsell{padding:22px 22px 0; flex-shrink:0;}
+  .upsell-box{background:var(--panel-2); border:1px solid var(--line); border-radius:var(--radio); padding:16px; margin-bottom:18px;}
+  .up-cab{display:flex; align-items:center; justify-content:space-between; gap:10px; margin-bottom:14px;}
+  .up-cab .pregunta{font-size:15px; font-weight:700;}
+  .up-filtro{background:var(--panel); border:1px solid var(--line); color:var(--ink); font-size:12.5px; font-weight:600; padding:7px 10px; border-radius:10px; outline:none; font-family:inherit; cursor:pointer; max-width:140px;}
+  .up-scroll{position:relative; display:flex; align-items:center;}
+  .up-flecha{position:absolute; z-index:3; width:32px; height:32px; border-radius:50%; background:var(--naranja); color:#fff; display:flex; align-items:center; justify-content:center; box-shadow:0 3px 10px rgba(0,0,0,.3); flex-shrink:0;}
+  .up-flecha svg{width:18px; height:18px;}
+  .up-flecha.izq{left:-6px;} .up-flecha.der{right:-6px;}
+  .up-flecha:active{transform:scale(.9);}
+  .up-flecha.oculto{display:none;}
+  .upsell-items{display:flex; gap:10px; overflow-x:auto; scrollbar-width:none; padding:2px 4px; scroll-behavior:smooth;}
+  .upsell-items::-webkit-scrollbar{display:none;}
+  .up-item{flex:0 0 108px; text-align:center;}
+  .up-item .f{width:108px; height:80px; border-radius:12px; background:linear-gradient(135deg,#22262F,#2A2F3A); margin-bottom:8px; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:30px;}
+  .up-item .f img{width:100%; height:100%; object-fit:cover;}
+  .up-item .n{font-size:12px; font-weight:600; line-height:1.25; margin-bottom:5px; height:30px; overflow:hidden;}
+  .up-item .fila{display:flex; align-items:center; justify-content:space-between; gap:6px;}
+  .up-item .p{font-size:13px; font-weight:800;}
+  .up-item .b{width:30px; height:30px; border-radius:9px; background:var(--naranja); color:#fff; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .up-item .b svg{width:17px; height:17px;}
+  .up-item .b:active{transform:scale(.9);}
+
+  /* Tu pedido */
+  .pedido{flex:1; display:flex; flex-direction:column; min-height:0; padding:0 22px;}
+  .pedido-titulo{font-size:19px; font-weight:800; padding:6px 2px 14px; flex-shrink:0; border-bottom:1px solid var(--line-soft);}
+  .pedido-lista{flex:1; overflow-y:auto; padding:8px 0; scrollbar-width:thin;}
+  .pedido-lista::-webkit-scrollbar{width:5px;} .pedido-lista::-webkit-scrollbar-thumb{background:var(--line); border-radius:99px;}
+  .pedido-vacio{display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; color:var(--faint); text-align:center; padding:30px;}
+  .pedido-vacio svg{width:48px; height:48px; margin-bottom:14px; opacity:.4;}
+  .pedido-vacio p{font-size:14px; line-height:1.5;}
+  .linea{display:flex; align-items:flex-start; gap:12px; padding:12px 0; border-bottom:1px solid var(--line-soft);}
+  .linea .q{background:var(--naranja-soft); color:var(--naranja); font-weight:800; font-size:14px; min-width:30px; height:30px; border-radius:9px; display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+  .linea .med{flex:1; min-width:0;}
+  .linea .med .n{font-size:14.5px; font-weight:600; line-height:1.3;}
+  .linea .med .op{font-size:11.5px; color:var(--amber); margin-top:3px;}
+  .linea .med .ctrl{display:flex; align-items:center; gap:10px; margin-top:8px;}
+  .linea .med .ctrl button{width:26px; height:26px; border-radius:8px; background:var(--panel-2); border:1px solid var(--line); color:var(--ink); display:flex; align-items:center; justify-content:center; font-size:16px; font-weight:700;}
+  .linea .med .ctrl button:active{transform:scale(.9);}
+  .linea .med .ctrl .qq{font-size:14px; font-weight:700; min-width:20px; text-align:center;}
+  .linea .der{text-align:right; flex-shrink:0;}
+  .linea .der .p{font-size:15px; font-weight:800;}
+  .linea .der .del{margin-top:8px; color:var(--faint);}
+  .linea .der .del svg{width:17px; height:17px;}
+  .linea .der .del:active{color:var(--rojo);}
+
+  /* Totales + botón */
+  .cierre{flex-shrink:0; padding:16px 0 22px; border-top:1px solid var(--line);}
+  .tot-fila{display:flex; justify-content:space-between; font-size:13.5px; color:var(--muted); margin-bottom:7px;}
+  .tot-total{display:flex; justify-content:space-between; align-items:baseline; margin:12px 0 16px;}
+  .tot-total .l{font-size:16px; font-weight:700;}
+  .tot-total .v{font-size:30px; font-weight:800; color:var(--naranja);}
+  .btn-pagar{width:100%; background:var(--naranja); color:#fff; font-size:17px; font-weight:800; padding:18px; border-radius:16px; box-shadow:0 8px 22px rgba(255,106,0,.35); transition:transform .1s; margin-bottom:10px;}
+  .btn-pagar:active{transform:scale(.98);}
+  .btn-pagar:disabled{background:#3A3F4A; color:var(--faint); box-shadow:none;}
+  .btn-seguir{width:100%; background:transparent; border:1px solid var(--line); color:var(--muted); font-size:14.5px; font-weight:600; padding:14px; border-radius:14px;}
+  .btn-seguir:active{border-color:var(--naranja);}
+
+  /* ===================== MODO REPOSO (protector de pantalla) ===================== */
+  .reposo{position:fixed; inset:0; z-index:95; background:var(--bg); display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; cursor:pointer; overflow:hidden;}
+  .reposo.on{display:flex; animation:aparecer .5s ease;}
+  .reposo .fondo{position:absolute; inset:0; background-size:cover; background-position:center;}
+  .reposo .velo{position:absolute; inset:0; background:linear-gradient(180deg, rgba(9,11,18,.05) 0%, rgba(9,11,18,.15) 70%, rgba(9,11,18,.55) 100%);}
+  .reposo .contenido{position:relative; z-index:2; display:flex; flex-direction:column; align-items:center; justify-content:flex-end; height:100%; padding:0 40px 12vh;}
+  .reposo .logo-r{width:96px; height:96px; border-radius:26px; overflow:hidden; margin-bottom:26px; box-shadow:0 10px 40px rgba(0,0,0,.5); background:linear-gradient(135deg,var(--naranja),var(--naranja-2)); display:flex; align-items:center; justify-content:center;}
+  .reposo .logo-r img{width:100%; height:100%; object-fit:cover;}
+  .reposo .logo-r svg{width:52px; height:52px; color:#fff;}
+  .reposo h1{font-size:38px; font-weight:800; margin-bottom:12px; text-shadow:0 2px 20px rgba(0,0,0,.5);}
+  .reposo p{font-size:17px; color:rgba(255,255,255,.85); margin-bottom:40px; text-shadow:0 1px 10px rgba(0,0,0,.5);}
+  .reposo .ordenar{background:var(--naranja); color:#fff; font-size:22px; font-weight:800; padding:22px 60px; border-radius:20px; box-shadow:0 10px 40px rgba(255,106,0,.5); animation:latido 2.2s ease-in-out infinite; display:flex; align-items:center; gap:12px;}
+  .reposo .ordenar svg{width:26px; height:26px;}
+  @keyframes latido{0%,100%{transform:scale(1);}50%{transform:scale(1.05);}}
+  .reposo .toque{margin-top:26px; font-size:14px; color:rgba(255,255,255,.6);}
+
+  /* ===================== MODAL PRODUCTO ===================== */
+  .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.6); backdrop-filter:blur(6px); z-index:50; display:none; align-items:flex-end; justify-content:center;}
+  .modal-bg.on{display:flex;}
+  .modal{background:var(--panel); width:100%; max-width:560px; max-height:88vh; border-radius:26px 26px 0 0; overflow:hidden; display:flex; flex-direction:column; animation:subir .28s cubic-bezier(.2,.8,.2,1);}
+  @keyframes subir{from{transform:translateY(100%);}to{transform:translateY(0);}}
+  .modal .m-foto{width:100%; height:200px; background:linear-gradient(135deg,#22262F,#2A2F3A); position:relative; flex-shrink:0; overflow:hidden; display:flex; align-items:center; justify-content:center; font-size:60px;}
+  .modal .m-foto img{width:100%; height:100%; object-fit:cover;}
+  .modal .m-cerrar{position:absolute; top:14px; right:14px; width:38px; height:38px; border-radius:50%; background:rgba(0,0,0,.5); color:#fff; display:flex; align-items:center; justify-content:center; backdrop-filter:blur(4px);}
+  .modal .m-cerrar svg{width:22px; height:22px;}
+  .modal .m-body{padding:22px; overflow-y:auto; flex:1;}
+  .modal .m-nom{font-size:23px; font-weight:800; margin-bottom:8px;}
+  .modal .m-desc{font-size:14px; color:var(--muted); line-height:1.5; margin-bottom:20px;}
+  .modal .m-precio{font-size:24px; font-weight:800; color:var(--naranja); margin-bottom:20px;}
+  .m-seccion{margin-bottom:20px;}
+  .m-seccion h4{font-size:13px; font-weight:700; text-transform:uppercase; letter-spacing:.06em; color:var(--muted); margin-bottom:12px;}
+  .m-ops{display:flex; flex-wrap:wrap; gap:9px;}
+  .m-op{padding:11px 16px; border-radius:12px; background:var(--panel-2); border:1.5px solid var(--line); font-size:13.5px; font-weight:600; color:var(--ink); transition:all .12s;}
+  .m-op.on{background:var(--naranja-soft); border-color:var(--naranja); color:var(--naranja);}
+  .m-op:active{transform:scale(.96);}
+  .m-nota{width:100%; background:var(--panel-2); border:1.5px solid var(--line); color:var(--ink); font-size:14px; padding:13px; border-radius:12px; outline:none; font-family:inherit; resize:none;}
+  .m-nota:focus{border-color:var(--naranja);}
+  .m-footer{padding:16px 22px 22px; border-top:1px solid var(--line); flex-shrink:0; display:flex; gap:12px; align-items:center;}
+  .m-cant{display:flex; align-items:center; gap:14px; background:var(--panel-2); border:1px solid var(--line); border-radius:14px; padding:8px 12px;}
+  .m-cant button{width:32px; height:32px; border-radius:10px; background:var(--panel); color:var(--ink); font-size:20px; font-weight:700; display:flex; align-items:center; justify-content:center;}
+  .m-cant button:active{transform:scale(.9);}
+  .m-cant .n{font-size:17px; font-weight:800; min-width:24px; text-align:center;}
+  .m-add{flex:1; background:var(--naranja); color:#fff; font-size:16px; font-weight:800; padding:16px; border-radius:14px; display:flex; align-items:center; justify-content:center; gap:8px; box-shadow:0 6px 18px rgba(255,106,0,.32);}
+  .m-add:active{transform:scale(.98);}
+
+  /* ===================== PANTALLA DATOS DEL PEDIDO ===================== */
+  .datos-bg{position:fixed; inset:0; background:rgba(0,0,0,.65); backdrop-filter:blur(6px); z-index:70; display:none; align-items:center; justify-content:center; padding:20px;}
+  .datos-bg.on{display:flex;}
+  .datos{background:var(--panel); width:100%; max-width:480px; border-radius:26px; overflow:hidden; max-height:92vh; display:flex; flex-direction:column; animation:subir .3s cubic-bezier(.2,.8,.2,1);}
+  .datos-head{padding:24px 24px 8px; text-align:center; flex-shrink:0;}
+  .datos-head h2{font-size:23px; font-weight:800; margin-bottom:6px;}
+  .datos-head p{font-size:13.5px; color:var(--muted);}
+  .datos-body{padding:14px 24px 4px; overflow-y:auto; flex:1;}
+  .tipo-sel{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:22px;}
+  .tipo-op{padding:22px 14px; border-radius:16px; background:var(--panel-2); border:2px solid var(--line); text-align:center; transition:all .12s;}
+  .tipo-op .ic{font-size:34px; margin-bottom:8px;}
+  .tipo-op .t{font-size:15px; font-weight:700;}
+  .tipo-op.on{background:var(--naranja-soft); border-color:var(--naranja);}
+  .tipo-op.on .t{color:var(--naranja);}
+  .tipo-op:active{transform:scale(.97);}
+  .datos-campo{margin-bottom:16px;}
+  .datos-campo label{display:block; font-size:12.5px; font-weight:600; color:var(--muted); margin-bottom:8px;}
+  .datos-campo label .opc{color:var(--faint); font-weight:400;}
+  .datos-campo input{width:100%; background:var(--panel-2); border:1.5px solid var(--line); color:var(--ink); font-size:16px; padding:14px; border-radius:13px; outline:none; font-family:inherit;}
+  .datos-campo input:focus{border-color:var(--naranja);}
+  .mesa-grid{display:grid; grid-template-columns:repeat(5,1fr); gap:8px; margin-top:4px;}
+  .mesa-n{aspect-ratio:1; border-radius:12px; background:var(--panel-2); border:1.5px solid var(--line); font-size:17px; font-weight:800; color:var(--ink); display:flex; align-items:center; justify-content:center;}
+  .mesa-n.on{background:var(--naranja); border-color:var(--naranja); color:#fff;}
+  .mesa-n:active{transform:scale(.94);}
+  .datos-oculto{display:none;}
+  .datos-foot{padding:16px 24px 24px; flex-shrink:0; border-top:1px solid var(--line); display:flex; gap:12px;}
+  .datos-foot .volver-d{flex:0 0 auto; background:transparent; border:1px solid var(--line); color:var(--muted); font-size:14.5px; font-weight:600; padding:16px 22px; border-radius:14px;}
+  .datos-foot .confirmar{flex:1; background:var(--naranja); color:#fff; font-size:16px; font-weight:800; padding:16px; border-radius:14px; box-shadow:0 6px 18px rgba(255,106,0,.32); display:flex; align-items:center; justify-content:center; gap:8px;}
+  .datos-foot .confirmar:disabled{background:#3A3F4A; color:var(--faint); box-shadow:none;}
+  .datos-foot .confirmar:active:not(:disabled){transform:scale(.98);}
+
+  /* ===================== PANTALLA ÉXITO ===================== */
+  .exito{position:fixed; inset:0; background:var(--bg); z-index:80; display:none; flex-direction:column; align-items:center; justify-content:center; text-align:center; padding:40px; animation:aparecer .4s ease;}
+  .exito.on{display:flex;}
+  @keyframes aparecer{from{opacity:0;}to{opacity:1;}}
+  .exito .check{width:100px; height:100px; border-radius:50%; background:var(--verde); display:flex; align-items:center; justify-content:center; margin-bottom:26px; animation:pop .5s cubic-bezier(.2,1.4,.4,1);}
+  @keyframes pop{0%{transform:scale(0);}100%{transform:scale(1);}}
+  .exito .check svg{width:54px; height:54px; color:#fff;}
+  .exito h1{font-size:32px; font-weight:800; margin-bottom:10px;}
+  .exito .num{font-size:20px; color:var(--naranja); font-weight:800; margin-bottom:26px;}
+  .exito .info-box{background:var(--panel); border:1px solid var(--line); border-radius:var(--radio); padding:22px 34px; margin-bottom:30px;}
+  .exito .info-box .l{font-size:13px; color:var(--muted); text-transform:uppercase; letter-spacing:.06em; margin-bottom:6px;}
+  .exito .info-box .v{font-size:26px; font-weight:800;}
+  .exito .volver{background:var(--naranja); color:#fff; font-size:17px; font-weight:800; padding:17px 50px; border-radius:16px; box-shadow:0 8px 22px rgba(255,106,0,.35);}
+  .exito .volver:active{transform:scale(.97);}
+  .exito .auto{font-size:13px; color:var(--faint); margin-top:20px;}
+
+  /* Toast */
+  .toast{position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(100px); background:var(--card-ink); color:#fff; padding:14px 22px; border-radius:14px; font-size:14.5px; font-weight:600; box-shadow:var(--sombra); z-index:90; opacity:0; transition:all .3s; display:flex; align-items:center; gap:10px; border:1px solid rgba(255,255,255,.1);}
+  .toast.on{transform:translateX(-50%) translateY(0); opacity:1;}
+  .toast svg{width:18px; height:18px; color:var(--verde);}
+
+  /* Responsive: pantallas más angostas (tablets verticales / móvil) */
+  @media (max-width:900px){
+    .app.on{grid-template-columns:1fr;}
+    .right{display:none; position:fixed; inset:0; z-index:60; border-left:none;}
+    .right.abierto{display:flex;}
+    .barra-flotante{display:flex; position:fixed; bottom:0; left:0; right:0; background:var(--panel); border-top:1px solid var(--line); padding:14px 20px calc(14px + env(safe-area-inset-bottom)); align-items:center; gap:14px; z-index:40;}
+    .barra-flotante .bf-cart{position:relative; width:46px; height:46px; border-radius:13px; background:var(--naranja-soft); display:flex; align-items:center; justify-content:center; flex-shrink:0;}
+    .barra-flotante .bf-cart svg{width:24px; height:24px; color:var(--naranja);}
+    .barra-flotante .bf-cart .cont{position:absolute; top:-6px; right:-6px; background:var(--naranja); color:#fff; font-size:11px; font-weight:800; min-width:20px; height:20px; border-radius:99px; display:flex; align-items:center; justify-content:center; padding:0 5px;}
+    .barra-flotante .bf-info{flex:1;}
+    .barra-flotante .bf-info .l{font-size:12px; color:var(--muted);}
+    .barra-flotante .bf-info .t{font-size:19px; font-weight:800;}
+    .barra-flotante .bf-btn{background:var(--naranja); color:#fff; font-weight:800; font-size:15px; padding:14px 22px; border-radius:14px;}
+    .prods{padding-bottom:100px;}
+    .grid{grid-template-columns:1fr 1fr;}
+    .right .cerrar-movil{display:flex;}
+  }
+  .cerrar-movil{display:none; align-items:center; gap:8px; padding:16px 22px 0; color:var(--muted); font-size:14px; font-weight:600;}
+  .cerrar-movil svg{width:20px; height:20px;}
+
+  @media (max-width:560px){
+    .grid{grid-template-columns:1fr;}
+    .cuerpo{grid-template-columns:96px 1fr;}
+    .cats{padding-left:14px;}
+    .prods{padding-right:16px; padding-left:12px;}
+    .topbar{padding:18px 18px 14px;}
+    .buscar{margin:0 18px 14px;}
+  }
+</style>
+</head>
+<body>
+
+<!-- Carga -->
+<div class="full-center" id="pantallaCarga">
+  <div class="spinner"></div>
+  <h2>Cargando menú…</h2>
+  <p>Un momento, por favor.</p>
+</div>
+
+<!-- Error -->
+<div class="full-center" id="pantallaError" style="display:none;">
+  <div class="ico">🍽️</div>
+  <h2 id="errorTitulo">Kiosco no disponible</h2>
+  <p id="errorTexto">No se pudo cargar el kiosco.</p>
+</div>
+
+<!-- APP -->
+<div class="app" id="app">
+  <!-- IZQUIERDA: menú -->
+  <div class="left">
+    <div class="topbar">
+      <div class="brand">
+        <div class="logo" id="logoNeg">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11h18M5 11V7a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v4M4 11v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-6"/></svg>
+        </div>
+        <div class="txt">
+          <div class="n" id="nombreNeg">Restaurante</div>
+          <div class="s">Autopedido</div>
+        </div>
+      </div>
+      <div class="saludo">
+        <div class="h" id="saludoHora">¡Bienvenido! 👋</div>
+        <div class="p">¿Qué deseas ordenar hoy?</div>
+      </div>
+    </div>
+
+    <div class="buscar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+      <input type="text" id="inputBuscar" placeholder="Buscar en el menú…" autocomplete="off">
+    </div>
+
+    <div class="cuerpo">
+      <div class="cats" id="listaCats"></div>
+      <div class="prods" id="listaProds"></div>
+    </div>
+
+    <!-- Barra flotante (solo móvil/tablet) -->
+    <div class="barra-flotante" id="barraFlotante">
+      <div class="bf-cart" id="bfAbrir">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+        <span class="cont" id="bfCont">0</span>
+      </div>
+      <div class="bf-info"><div class="l">Total</div><div class="t" id="bfTotal">$0.00</div></div>
+      <button class="bf-btn" id="bfFinalizar">Ver pedido</button>
+    </div>
+  </div>
+
+  <!-- DERECHA: upsell + pedido -->
+  <div class="right" id="panelDer">
+    <div class="cerrar-movil" id="cerrarMovil">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/></svg>
+      Seguir ordenando
+    </div>
+
+    <div class="upsell" id="zonaUpsell" style="display:none;">
+      <div class="upsell-box">
+        <div class="up-cab">
+          <div class="pregunta">¿Deseas agregar algo más?</div>
+          <select id="upFiltro" class="up-filtro"></select>
+        </div>
+        <div class="up-scroll">
+          <button class="up-flecha izq" id="upIzq" aria-label="Anterior"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="15 18 9 12 15 6"/></svg></button>
+          <div class="upsell-items" id="listaUpsell"></div>
+          <button class="up-flecha der" id="upDer" aria-label="Siguiente"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="9 18 15 12 9 6"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <div class="pedido">
+      <div class="pedido-titulo">Tu pedido</div>
+      <div class="pedido-lista" id="listaPedido"></div>
+      <div class="cierre" id="zonaCierre" style="display:none;">
+        <div class="tot-fila"><span>Subtotal</span><span id="subtotal">$0.00</span></div>
+        <div class="tot-total"><span class="l">Total a pagar</span><span class="v" id="totalPagar">$0.00</span></div>
+        <button class="btn-pagar" id="btnFinalizar">Finalizar pedido</button>
+        <button class="btn-seguir" id="btnSeguir">Seguir ordenando</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRODUCTO -->
+<div class="modal-bg" id="modalBg">
+  <div class="modal" id="modal"></div>
+</div>
+
+<!-- PANTALLA DATOS DEL PEDIDO -->
+<div class="datos-bg" id="datosBg">
+  <div class="datos">
+    <div class="datos-head">
+      <h2>Un último paso</h2>
+      <p>Cuéntanos cómo servir tu pedido</p>
+    </div>
+    <div class="datos-body">
+      <div class="tipo-sel">
+        <button class="tipo-op on" id="tipoAqui" data-tipo="aqui">
+          <div class="ic">🍽️</div><div class="t">Comer aquí</div>
+        </button>
+        <button class="tipo-op" id="tipoLlevar" data-tipo="llevar">
+          <div class="ic">🥡</div><div class="t">Para llevar</div>
+        </button>
+      </div>
+
+      <div class="datos-campo" id="campoMesa">
+        <label>Número de mesa</label>
+        <div class="mesa-grid" id="mesaGrid"></div>
+      </div>
+
+      <div class="datos-campo">
+        <label>Tu nombre <span class="opc">(opcional)</span></label>
+        <input type="text" id="datoNombre" placeholder="Ej. Carlos" autocomplete="off">
+      </div>
+
+      <div class="datos-campo">
+        <label>Teléfono <span class="opc">(opcional)</span></label>
+        <input type="tel" id="datoTelefono" inputmode="tel" placeholder="Ej. 602 555 1234" autocomplete="off">
+      </div>
+    </div>
+    <div class="datos-foot">
+      <button class="volver-d" id="datosVolver">Atrás</button>
+      <button class="confirmar" id="datosConfirmar">Enviar a cocina · <span id="datosTotal">$0.00</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ÉXITO -->
+<div class="exito" id="pantallaExito">
+  <div class="check"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg></div>
+  <h1>¡Pedido realizado!</h1>
+  <div class="num" id="exitoNum">Pedido #—</div>
+  <div class="info-box">
+    <div class="l">Tiempo estimado</div>
+    <div class="v" id="exitoTiempo">15 minutos</div>
+  </div>
+  <button class="volver" id="btnNuevoPedido">Hacer otro pedido</button>
+  <div class="auto" id="exitoAuto">Esta pantalla se reiniciará sola…</div>
+</div>
+
+<!-- MODO REPOSO (protector de pantalla) -->
+<div class="reposo" id="reposo">
+  <div class="fondo" id="reposoFondo"></div>
+  <div class="velo"></div>
+  <div class="contenido">
+    <button class="ordenar" id="btnOrdenar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      Ordenar ahora
+    </button>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><polyline points="20 6 9 17 4 12"/></svg><span id="toastTxt"></span></div>
+
+<script>
+const SB_URL = 'https://wetpjfpefypgzmcfoxui.supabase.co';
+const SB_KEY = 'sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn';
+const sb = window.supabase.createClient(SB_URL, SB_KEY, { auth:{ persistSession:false } });
+
+const $ = id => document.getElementById(id);
+const money = n => '$' + (Number(n)||0).toFixed(2);
+const esc = s => String(s==null?'':s).replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+let NEGOCIO = null;
+let PRODUCTOS = [];
+let CATEGORIAS = [];
+let catActual = '';
+let carrito = [];        // {pid, nombre, precio, q, opciones:[], nota:''}
+let busqueda = '';
+
+/* Emojis por categoría (fallback visual mientras no hay fotos) */
+const EMOJI_CAT = {
+  'combo':'🍔','combos':'🍔','arepa':'🫓','arepas':'🫓','parrilla':'🥩','parrillas':'🥩',
+  'pollo':'🍗','acompa':'🍟','bebida':'🥤','bebidas':'🥤','postre':'🍰','postres':'🍰',
+  'promo':'🎉','promocion':'🎉','oferta':'🎉','plato':'🍽️','platos':'🍽️','entrada':'🥗',
+  'sopa':'🍲','taco':'🌮','tacos':'🌮','empanada':'🥟','dulce':'🍬','cafe':'☕','desayuno':'🍳'
+};
+function emojiDe(cat){
+  const c = (cat||'').toLowerCase();
+  for(const k in EMOJI_CAT){ if(c.includes(k)) return EMOJI_CAT[k]; }
+  return '🍽️';
+}
+
+/* ============ ARRANQUE ============ */
+(async function init(){
+  // Identificar el negocio por la clave pública en la URL: ?k=USER0004
+  const params = new URLSearchParams(location.search);
+  const clave = (params.get('k') || params.get('negocio') || '').trim();
+
+  if(!clave){
+    mostrarError('Falta la clave del negocio', 'Este kiosco necesita una dirección con la clave del restaurante. Ejemplo: kiosko.html?k=TU_CLAVE');
+    return;
+  }
+
+  try {
+    const { data: negs, error } = await sb.from('negocios').select('id, nombre, tiempo_estimado, foto_url, user_id, kiosko_reposo_url').eq('user_id', clave).limit(1);
+    if(error) throw error;
+    if(!negs || !negs.length){ mostrarError('Restaurante no encontrado', 'La clave del kiosco no corresponde a ningún restaurante. Verifica la dirección.'); return; }
+    NEGOCIO = negs[0];
+
+    const { data: prods, error: e2 } = await sb.from('productos').select('id, nombre, categoria, precio, disponible, descripcion, imagen_url').eq('negocio_id', NEGOCIO.id).eq('disponible', true).order('categoria').order('nombre');
+    if(e2) throw e2;
+    PRODUCTOS = prods || [];
+
+    if(!PRODUCTOS.length){ mostrarError('Menú vacío', 'Este restaurante aún no tiene productos disponibles en su menú.'); return; }
+
+    armarCategorias();
+    pintarBrand();
+    pintarCategorias();
+    pintarProductos();
+    pintarPedido();
+    saludoSegunHora();
+    prepararReposo();
+    reiniciarTimerReposo();
+
+    $('pantallaCarga').style.display = 'none';
+    $('app').classList.add('on');
+  } catch(e){
+    mostrarError('No se pudo cargar', 'Revisa tu conexión a internet e intenta de nuevo.');
+    console.log(e);
+  }
+})();
+
+function mostrarError(titulo, texto){
+  $('pantallaCarga').style.display = 'none';
+  $('errorTitulo').textContent = titulo;
+  $('errorTexto').textContent = texto;
+  $('pantallaError').style.display = 'flex';
+}
+
+function saludoSegunHora(){
+  const h = new Date().getHours();
+  let s = '¡Buenas noches! 🌙';
+  if(h>=5 && h<12) s = '¡Buenos días! 👋';
+  else if(h>=12 && h<19) s = '¡Buenas tardes! 👋';
+  $('saludoHora').textContent = s;
+}
+
+/* ============ CATEGORÍAS ============ */
+function armarCategorias(){
+  const set = [];
+  PRODUCTOS.forEach(p=>{ const c = (p.categoria||'General').trim(); if(!set.includes(c)) set.push(c); });
+  CATEGORIAS = set;
+  catActual = set[0] || '';
+}
+
+function pintarBrand(){
+  $('nombreNeg').textContent = NEGOCIO.nombre || 'Restaurante';
+  if(NEGOCIO.foto_url){
+    $('logoNeg').innerHTML = `<img src="${esc(NEGOCIO.foto_url)}" alt="">`;
+  }
+}
+
+function pintarCategorias(){
+  $('listaCats').innerHTML = CATEGORIAS.map(c=>`
+    <button class="cat ${c===catActual && !busqueda?'on':''}" data-cat="${esc(c)}">
+      <span class="emoji">${emojiDe(c)}</span>
+      <span class="lbl">${esc(c)}</span>
+    </button>`).join('');
+  $('listaCats').querySelectorAll('.cat').forEach(b=>{
+    b.onclick = ()=>{ catActual = b.dataset.cat; busqueda=''; $('inputBuscar').value=''; pintarCategorias(); pintarProductos(); };
+  });
+}
+
+/* ============ PRODUCTOS ============ */
+function pintarProductos(){
+  let lista;
+  if(busqueda){
+    const q = busqueda.toLowerCase();
+    lista = PRODUCTOS.filter(p=> (p.nombre||'').toLowerCase().includes(q) || (p.categoria||'').toLowerCase().includes(q));
+  } else {
+    lista = PRODUCTOS.filter(p=> (p.categoria||'General').trim() === catActual);
+  }
+
+  const titulo = busqueda ? `Resultados para "${esc(busqueda)}"` : esc(catActual);
+
+  if(!lista.length){
+    $('listaProds').innerHTML = `<div class="cat-titulo">${titulo}</div><div style="color:var(--faint); padding:20px 4px; font-size:14px;">No hay productos aquí.</div>`;
+    return;
+  }
+
+  $('listaProds').innerHTML = `<div class="cat-titulo">${titulo}</div><div class="grid">` + lista.map(p=>`
+    <div class="pcard" data-prod="${p.id}">
+      <div class="foto">${p.imagen_url ? `<img src="${esc(p.imagen_url)}" alt="" loading="lazy">` : `<div class="ph">${emojiDe(p.categoria)}</div>`}</div>
+      <div class="info">
+        <div class="nom">${esc(p.nombre)}</div>
+        <div class="desc">${esc(p.descripcion || p.categoria || '')}</div>
+        <div class="fila">
+          <div class="precio">${money(p.precio)}</div>
+          <button class="add" data-add="${p.id}">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
+          </button>
+        </div>
+      </div>
+    </div>`).join('') + `</div>`;
+
+  // Toque en la tarjeta = abrir modal; toque en (+) = agregar directo
+  $('listaProds').querySelectorAll('.pcard').forEach(card=>{
+    const id = card.dataset.prod;
+    card.querySelector('.add').onclick = (e)=>{ e.stopPropagation(); agregarRapido(id); };
+    card.onclick = ()=> abrirModal(id);
+  });
+}
+
+/* ============ BUSCADOR ============ */
+$('inputBuscar').oninput = (e)=>{ busqueda = e.target.value.trim(); pintarCategorias(); pintarProductos(); };
+
+/* ============ MODAL DE PRODUCTO ============ */
+let modalEstado = null;
+function abrirModal(pid){
+  const p = PRODUCTOS.find(x=>x.id===pid); if(!p) return;
+  modalEstado = { pid, q:1, opciones:[], nota:'' };
+  const opcionesComunes = ['Extra queso','Sin cebolla','Sin picante','Extra picante','Para llevar'];
+  $('modal').innerHTML = `
+    <div class="m-foto">${p.imagen_url ? `<img src="${esc(p.imagen_url)}" alt="">` : emojiDe(p.categoria)}
+      <button class="m-cerrar" id="mCerrar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg></button>
+    </div>
+    <div class="m-body">
+      <div class="m-nom">${esc(p.nombre)}</div>
+      <div class="m-desc">${esc(p.descripcion || p.categoria || '')}</div>
+      <div class="m-precio">${money(p.precio)}</div>
+      <div class="m-seccion">
+        <h4>Personaliza tu pedido</h4>
+        <div class="m-ops" id="mOps">
+          ${opcionesComunes.map(o=>`<button class="m-op" data-op="${esc(o)}">${esc(o)}</button>`).join('')}
+        </div>
+      </div>
+      <div class="m-seccion">
+        <h4>Nota especial (opcional)</h4>
+        <textarea class="m-nota" id="mNota" rows="2" placeholder="Ej: bien cocido, aparte, etc."></textarea>
+      </div>
+    </div>
+    <div class="m-footer">
+      <div class="m-cant">
+        <button id="mMenos">−</button>
+        <span class="n" id="mCant">1</span>
+        <button id="mMas">+</button>
+      </div>
+      <button class="m-add" id="mAgregar">Agregar · ${money(p.precio)}</button>
+    </div>`;
+
+  $('modalBg').classList.add('on');
+  const recalc = ()=>{ $('mAgregar').textContent = `Agregar · ${money(p.precio*modalEstado.q)}`; $('mCant').textContent = modalEstado.q; };
+  $('mCerrar').onclick = cerrarModal;
+  $('mMenos').onclick = ()=>{ if(modalEstado.q>1){ modalEstado.q--; recalc(); } };
+  $('mMas').onclick = ()=>{ modalEstado.q++; recalc(); };
+  $('mNota').oninput = e=> modalEstado.nota = e.target.value.trim();
+  $('modal').querySelectorAll('.m-op').forEach(b=>{
+    b.onclick = ()=>{
+      const op = b.dataset.op;
+      if(modalEstado.opciones.includes(op)){ modalEstado.opciones = modalEstado.opciones.filter(x=>x!==op); b.classList.remove('on'); }
+      else { modalEstado.opciones.push(op); b.classList.add('on'); }
+    };
+  });
+  $('mAgregar').onclick = ()=>{
+    agregarCarrito(p, modalEstado.q, modalEstado.opciones.slice(), modalEstado.nota);
+    cerrarModal();
+  };
+}
+function cerrarModal(){ $('modalBg').classList.remove('on'); modalEstado=null; }
+$('modalBg').onclick = (e)=>{ if(e.target===$('modalBg')) cerrarModal(); };
+
+/* ============ CARRITO ============ */
+function agregarRapido(pid){
+  const p = PRODUCTOS.find(x=>x.id===pid); if(!p) return;
+  agregarCarrito(p, 1, [], '');
+}
+function agregarCarrito(p, q, opciones, nota){
+  // Si ya existe idéntico (mismo producto, mismas opciones, misma nota) → sumar cantidad
+  const clave = p.id + '|' + opciones.sort().join(',') + '|' + (nota||'');
+  const existe = carrito.find(x=> x._clave === clave);
+  if(existe){ existe.q += q; }
+  else { carrito.push({ _clave:clave, pid:p.id, nombre:p.nombre, precio:Number(p.precio), q, opciones:opciones||[], nota:nota||'' }); }
+  pintarPedido();
+  vibrar();
+  toast(`${p.nombre} agregado`);
+}
+function quitarLinea(clave){ carrito = carrito.filter(x=>x._clave!==clave); pintarPedido(); }
+function cambiarCant(clave, delta){
+  const it = carrito.find(x=>x._clave===clave); if(!it) return;
+  it.q += delta;
+  if(it.q<=0) carrito = carrito.filter(x=>x._clave!==clave);
+  pintarPedido();
+}
+function totalCarrito(){ return carrito.reduce((s,it)=> s + it.precio*it.q, 0); }
+function cantCarrito(){ return carrito.reduce((s,it)=> s + it.q, 0); }
+
+function pintarPedido(){
+  const lista = $('listaPedido');
+  if(!carrito.length){
+    lista.innerHTML = `<div class="pedido-vacio">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>
+      <p>Tu pedido está vacío.<br>Toca los productos para agregarlos.</p></div>`;
+    $('zonaCierre').style.display = 'none';
+    $('zonaUpsell').style.display = 'none';
+  } else {
+    lista.innerHTML = carrito.map(it=>`
+      <div class="linea">
+        <div class="q">${it.q}</div>
+        <div class="med">
+          <div class="n">${esc(it.nombre)}</div>
+          ${it.opciones.length?`<div class="op">${esc(it.opciones.join(' · '))}</div>`:''}
+          ${it.nota?`<div class="op">📝 ${esc(it.nota)}</div>`:''}
+          <div class="ctrl">
+            <button data-menos="${it._clave}">−</button>
+            <span class="qq">${it.q}</span>
+            <button data-mas="${it._clave}">+</button>
+          </div>
+        </div>
+        <div class="der">
+          <div class="p">${money(it.precio*it.q)}</div>
+          <button class="del" data-del="${it._clave}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/></svg></button>
+        </div>
+      </div>`).join('');
+    lista.querySelectorAll('[data-menos]').forEach(b=> b.onclick=()=>cambiarCant(b.dataset.menos,-1));
+    lista.querySelectorAll('[data-mas]').forEach(b=> b.onclick=()=>cambiarCant(b.dataset.mas,1));
+    lista.querySelectorAll('[data-del]').forEach(b=> b.onclick=()=>quitarLinea(b.dataset.del));
+    $('zonaCierre').style.display = 'block';
+    $('subtotal').textContent = money(totalCarrito());
+    $('totalPagar').textContent = money(totalCarrito());
+    pintarUpsell();
+  }
+  // Barra flotante (móvil)
+  $('bfTotal').textContent = money(totalCarrito());
+  $('bfCont').textContent = cantCarrito();
+}
+
+/* ============ UPSELL (con filtro de categoría y flechas) ============ */
+let upFiltroCat = '';   // '' = sugerencias inteligentes; o una categoría específica
+function pintarUpsell(){
+  const enCarrito = new Set(carrito.map(x=>x.pid));
+
+  // Llenar el selector de categorías (una sola vez, o si cambió)
+  const sel = $('upFiltro');
+  if(sel && !sel.dataset.listo){
+    const opts = ['<option value="">Sugeridos</option>'].concat(CATEGORIAS.map(c=>`<option value="${esc(c)}">${esc(c)}</option>`));
+    sel.innerHTML = opts.join('');
+    sel.dataset.listo = '1';
+    sel.onchange = ()=>{ upFiltroCat = sel.value; pintarUpsell(); };
+  }
+
+  let sugeridos;
+  if(upFiltroCat){
+    // Categoría elegida por el cliente
+    sugeridos = PRODUCTOS.filter(p=> (p.categoria||'').trim()===upFiltroCat && !enCarrito.has(p.id));
+  } else {
+    // Sugerencias inteligentes: complementos que no estén en el carrito
+    const categoriasComplemento = ['bebida','postre','acompa','dulce','promo','oferta','soda','jugo'];
+    sugeridos = PRODUCTOS.filter(p=>{
+      if(enCarrito.has(p.id)) return false;
+      const c = (p.categoria||'').toLowerCase();
+      return categoriasComplemento.some(k=>c.includes(k));
+    });
+    if(!sugeridos.length){ sugeridos = PRODUCTOS.filter(p=>!enCarrito.has(p.id)); }
+  }
+  sugeridos = sugeridos.slice(0,12);
+
+  if(!sugeridos.length){ $('zonaUpsell').style.display='none'; return; }
+  $('zonaUpsell').style.display = 'block';
+  $('listaUpsell').innerHTML = sugeridos.map(p=>`
+    <div class="up-item">
+      <div class="f">${p.imagen_url ? `<img src="${esc(p.imagen_url)}" alt="">` : emojiDe(p.categoria)}</div>
+      <div class="n">${esc(p.nombre)}</div>
+      <div class="fila">
+        <div class="p">${money(p.precio)}</div>
+        <button class="b" data-up="${p.id}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg></button>
+      </div>
+    </div>`).join('');
+  $('listaUpsell').querySelectorAll('[data-up]').forEach(b=> b.onclick=()=>agregarRapido(b.dataset.up));
+  actualizarFlechasUpsell();
+}
+
+function actualizarFlechasUpsell(){
+  const cont = $('listaUpsell');
+  const izq = $('upIzq'), der = $('upDer');
+  if(!cont || !izq || !der) return;
+  const hayScroll = cont.scrollWidth > cont.clientWidth + 4;
+  izq.classList.toggle('oculto', !hayScroll || cont.scrollLeft <= 2);
+  der.classList.toggle('oculto', !hayScroll || cont.scrollLeft >= cont.scrollWidth - cont.clientWidth - 2);
+}
+$('upIzq').onclick = ()=>{ $('listaUpsell').scrollBy({left:-240, behavior:'smooth'}); setTimeout(actualizarFlechasUpsell,300); };
+$('upDer').onclick = ()=>{ $('listaUpsell').scrollBy({left:240, behavior:'smooth'}); setTimeout(actualizarFlechasUpsell,300); };
+$('listaUpsell').addEventListener('scroll', actualizarFlechasUpsell, {passive:true});
+
+/* ============ PANTALLA DE DATOS (mesa / nombre / teléfono) ============ */
+let tipoServicio = 'aqui';   // 'aqui' o 'llevar'
+let mesaSel = '';
+
+function abrirDatos(){
+  if(!carrito.length) return;
+  tipoServicio = 'aqui'; mesaSel = '';
+  $('tipoAqui').classList.add('on'); $('tipoLlevar').classList.remove('on');
+  $('campoMesa').classList.remove('datos-oculto');
+  $('datoNombre').value = ''; $('datoTelefono').value = '';
+  // Generar botones de mesa 1..20
+  $('mesaGrid').innerHTML = Array.from({length:20}, (_,i)=>`<button class="mesa-n" data-mesa="${i+1}">${i+1}</button>`).join('');
+  $('mesaGrid').querySelectorAll('[data-mesa]').forEach(b=> b.onclick=()=>{
+    mesaSel = b.dataset.mesa;
+    $('mesaGrid').querySelectorAll('.mesa-n').forEach(x=>x.classList.remove('on'));
+    b.classList.add('on');
+  });
+  $('datosTotal').textContent = money(totalCarrito());
+  $('datosBg').classList.add('on');
+  $('panelDer').classList.remove('abierto');
+}
+function cerrarDatos(){ $('datosBg').classList.remove('on'); }
+
+// Elegir tipo de servicio
+$('tipoAqui').onclick = ()=>{ tipoServicio='aqui'; $('tipoAqui').classList.add('on'); $('tipoLlevar').classList.remove('on'); $('campoMesa').classList.remove('datos-oculto'); };
+$('tipoLlevar').onclick = ()=>{ tipoServicio='llevar'; $('tipoLlevar').classList.add('on'); $('tipoAqui').classList.remove('on'); $('campoMesa').classList.add('datos-oculto'); mesaSel=''; };
+$('datosVolver').onclick = cerrarDatos;
+$('datosBg').onclick = (e)=>{ if(e.target===$('datosBg')) cerrarDatos(); };
+$('datosConfirmar').onclick = ()=> finalizar();
+
+/* ============ FINALIZAR PEDIDO ============ */
+async function finalizar(){
+  if(!carrito.length) return;
+  const btn = $('datosConfirmar');
+  btn.disabled = true; btn.textContent = 'Enviando a cocina…';
+
+  const items = carrito.map(it=>({
+    n: it.nombre, q: it.q,
+    d: [...(it.opciones||[]), it.nota].filter(Boolean).join(' · ') || undefined
+  }));
+  const total = totalCarrito();
+  const notasGlobal = carrito.map(it=> it.nota).filter(Boolean).join(' | ');
+  const nombre = $('datoNombre').value.trim();
+  const telefono = $('datoTelefono').value.trim();
+  const esLlevar = tipoServicio === 'llevar';
+
+  try {
+    const { data, error } = await sb.from('pedidos').insert({
+      negocio_id: NEGOCIO.id,
+      cliente_nombre: nombre || (esLlevar ? '🥡 Para llevar' : 'Kiosco'),
+      cliente_telefono: telefono || null,
+      items,
+      total,
+      estado: 'Nuevo',
+      tipo: 'kiosco',
+      mesa: esLlevar ? null : (mesaSel || null),
+      en_cocina: true,
+      enviado_cocina_en: new Date().toISOString(),
+      notas: (esLlevar ? 'PARA LLEVAR' : '') + (notasGlobal ? (esLlevar?' · ':'')+notasGlobal : '') || null
+    }).select('numero_dia, id').single();
+
+    if(error) throw error;
+
+    const num = data?.numero_dia ?? (data?.id ? String(data.id).slice(0,4).toUpperCase() : '—');
+    cerrarDatos();
+    mostrarExito(num);
+    carrito = [];
+  } catch(e){
+    btn.disabled = false; btn.innerHTML = 'Enviar a cocina · <span id="datosTotal">'+money(total)+'</span>';
+    toast('No se pudo enviar. Intenta de nuevo.', true);
+    console.log(e);
+  }
+}
+
+function mostrarExito(num){
+  $('exitoNum').textContent = 'Pedido #' + num;
+  $('exitoTiempo').textContent = NEGOCIO.tiempo_estimado || '15 minutos';
+  $('pantallaExito').classList.add('on');
+  $('panelDer').classList.remove('abierto');
+  // Auto-reinicio a los 12 segundos (para el siguiente cliente)
+  let seg = 12;
+  $('exitoAuto').textContent = `Nuevo pedido en ${seg}s…`;
+  clearInterval(window._exitoTimer);
+  window._exitoTimer = setInterval(()=>{
+    seg--;
+    if(seg<=0){ clearInterval(window._exitoTimer); reiniciar(); }
+    else $('exitoAuto').textContent = `Nuevo pedido en ${seg}s…`;
+  }, 1000);
+}
+
+function reiniciar(){
+  clearInterval(window._exitoTimer);
+  $('pantallaExito').classList.remove('on');
+  const btn = $('btnFinalizar'); btn.disabled=false; btn.textContent='Finalizar pedido';
+  catActual = CATEGORIAS[0]||''; busqueda=''; $('inputBuscar').value='';
+  pintarCategorias(); pintarProductos(); pintarPedido();
+  $('prods') && ($('listaProds').scrollTop = 0);
+  reiniciarTimerReposo();
+}
+
+/* ============ BOTONES ============ */
+$('btnFinalizar').onclick = abrirDatos;
+$('btnSeguir').onclick = ()=> $('panelDer').classList.remove('abierto');
+$('btnNuevoPedido').onclick = reiniciar;
+$('bfAbrir').onclick = ()=> $('panelDer').classList.add('abierto');
+$('bfFinalizar').onclick = ()=> $('panelDer').classList.add('abierto');
+$('cerrarMovil').onclick = ()=> $('panelDer').classList.remove('abierto');
+
+/* ============ HELPERS ============ */
+let toastTimer;
+function toast(txt, esError){
+  const t = $('toast');
+  $('toastTxt').textContent = txt;
+  t.querySelector('svg').style.color = esError ? 'var(--rojo)' : 'var(--verde)';
+  t.classList.add('on');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(()=> t.classList.remove('on'), 2000);
+}
+function vibrar(){ try{ if(navigator.vibrate) navigator.vibrate(30); }catch(e){} }
+
+/* ============ MODO REPOSO (protector de pantalla) ============ */
+const REPOSO_SEG = 45;   // segundos sin tocar antes de entrar en reposo
+let reposoTimer = null;
+let enReposo = false;
+
+function prepararReposo(){
+  // Imagen de fondo del reposo: la que suba el restaurante, o su logo/foto de perfil
+  const img = NEGOCIO.kiosko_reposo_url || NEGOCIO.foto_url;
+  if(img){ $('reposoFondo').style.backgroundImage = `url("${img}")`; }
+  else { $('reposoFondo').style.background = 'linear-gradient(135deg,#1a1005,#0F1115)'; }
+}
+
+function entrarReposo(){
+  if(enReposo) return;
+  // No entrar en reposo si hay un pedido a medias o la pantalla de éxito está activa
+  if(carrito.length > 0) { reiniciarTimerReposo(); return; }
+  if($('pantallaExito').classList.contains('on')) { reiniciarTimerReposo(); return; }
+  enReposo = true;
+  $('reposo').classList.add('on');
+}
+
+function salirReposo(){
+  enReposo = false;
+  $('reposo').classList.remove('on');
+  reiniciarTimerReposo();
+}
+
+function reiniciarTimerReposo(){
+  clearTimeout(reposoTimer);
+  if(enReposo) return;
+  reposoTimer = setTimeout(entrarReposo, REPOSO_SEG * 1000);
+}
+
+$('btnOrdenar').onclick = salirReposo;
+$('reposo').onclick = salirReposo;
+
+// Cualquier toque/movimiento reinicia el contador de reposo
+['click','touchstart','keydown','mousemove'].forEach(ev=>{
+  document.addEventListener(ev, ()=>{ if(!enReposo) reiniciarTimerReposo(); }, { passive:true });
+});
+</script>
+</body>
+</html>

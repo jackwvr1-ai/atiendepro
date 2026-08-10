@@ -1,0 +1,1638 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ATIENDEPRO — El sistema completo para tu restaurante</title>
+<meta name="description" content="Recepcionista virtual 24/7, kiosko de autoservicio y pantalla de cocina. Todo conectado en un solo panel. Desde $149/mes.">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Sora:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0C1322; --bg-2:#111A2C; --bg-3:#16223A;
+    --panel:rgba(255,255,255,.04); --panel-brd:rgba(255,255,255,.09);
+    --ink:#F1F5F9; --muted:#94A3B8; --faint:#5B6B84;
+    --azul:#3B82F6; --azul-2:#2563EB; --verde:#22C55E; --verde-2:#16A34A;
+    --naranja:#F97316;
+    --glow-azul:rgba(37,99,235,.35); --glow-verde:rgba(34,197,94,.30);
+    --rojo:#EF4444;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html{scroll-behavior:smooth;}
+  body{
+    font-family:'Inter',sans-serif;background:var(--bg);color:var(--ink);
+    -webkit-font-smoothing:antialiased;overflow-x:hidden;
+  }
+  h1,h2,h3,.display{font-family:'Sora','Inter',sans-serif;}
+  .wrap{max-width:1280px;margin:0 auto;padding:0 22px;}
+  .grad-text{background:linear-gradient(105deg,var(--azul) 10%,var(--verde) 90%);-webkit-background-clip:text;background-clip:text;color:transparent;}
+
+  /* Atmósfera de fondo */
+  .aura{position:fixed;inset:0;z-index:0;pointer-events:none;overflow:hidden;}
+  .aura::before{content:'';position:absolute;top:-10%;left:2%;width:700px;height:700px;border-radius:50%;background:radial-gradient(circle,rgba(249,115,22,.17),transparent 66%);filter:blur(40px);}
+  .aura::after{content:'';position:absolute;top:30%;right:-5%;width:620px;height:620px;border-radius:50%;background:radial-gradient(circle,rgba(245,158,11,.14),transparent 64%);filter:blur(44px);}
+  main{position:relative;z-index:1;}
+
+  /* ===== BOTONES ===== */
+  .btn{font-family:inherit;font-weight:600;font-size:14.5px;border-radius:11px;padding:11px 20px;cursor:pointer;border:none;text-decoration:none;display:inline-flex;align-items:center;gap:8px;transition:transform .12s,box-shadow .2s,background .2s;white-space:nowrap;}
+  .btn:active{transform:scale(.97);}
+  .btn-verde{background:linear-gradient(135deg,var(--verde),var(--verde-2));color:#04140A;box-shadow:0 8px 24px -6px var(--glow-verde);}
+  .btn-verde:hover{box-shadow:0 12px 32px -4px var(--glow-verde);}
+  .btn-azul{background:linear-gradient(135deg,var(--azul),var(--azul-2));color:#fff;box-shadow:0 8px 24px -6px var(--glow-azul);}
+  .btn-azul:hover{box-shadow:0 12px 32px -4px var(--glow-azul);}
+  .btn-ghost{background:var(--panel);color:var(--ink);border:1px solid var(--panel-brd);}
+  .btn-ghost:hover{background:rgba(255,255,255,.08);}
+  .btn-lg{padding:15px 28px;font-size:16px;border-radius:13px;}
+
+  /* ===== NAV ===== */
+  nav{position:sticky;top:0;z-index:50;backdrop-filter:blur(14px);background:rgba(12,19,34,.82);border-bottom:1px solid var(--panel-brd);}
+  .nav-in{display:flex;align-items:center;justify-content:space-between;height:66px;gap:20px;}
+  .brand{display:flex;align-items:center;gap:10px;flex-shrink:0;}
+  .brand svg{width:36px;height:36px;}
+  .brand .n{font-family:'Sora',sans-serif;font-weight:800;font-size:18px;letter-spacing:-.4px;}
+  .brand .n span{color:var(--verde);}
+  .nav-links{display:flex;gap:0;margin-left:auto;align-items:center;}
+  .nav-links a{padding:0 16px;white-space:nowrap;}
+  .nav-links a + a{border-left:1px solid rgba(255,255,255,.16);}
+  .nav-links a{color:var(--muted);text-decoration:none;font-size:14px;font-weight:500;transition:color .15s;}
+  .nav-links a:hover{color:var(--ink);}
+  .nav-cta{display:flex;align-items:center;gap:12px;flex-shrink:0;}
+  .lang{display:flex;align-items:center;gap:4px;background:var(--panel);border:1px solid var(--panel-brd);border-radius:9px;padding:4px;}
+  .lang button{background:none;border:none;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;transition:.15s;}
+  .lang button.on{background:rgba(255,255,255,.1);color:var(--ink);}
+  @media(max-width:900px){ .nav-links{display:none;} }
+  @media(max-width:560px){ .nav-cta .btn-ghost{display:none;} }
+
+  /* ===== HERO ===== */
+  .hero{padding:74px 0 46px;position:relative;overflow:hidden;}
+  .hero-bg{position:absolute;inset:0;z-index:0;background:url('img/fondo-hero.jpg') center 35%/cover no-repeat;}
+  .hero-bg::after{content:'';position:absolute;inset:0;background:linear-gradient(105deg,rgba(9,13,25,.86) 20%,rgba(9,13,25,.58) 55%,rgba(9,13,25,.36)),linear-gradient(180deg,rgba(9,13,25,.32),rgba(9,13,25,.16) 55%,var(--bg) 99%);}
+  .hero>.wrap{position:relative;z-index:1;}
+  .hero-eyebrow{display:inline-flex;align-items:center;gap:9px;font-size:12px;font-weight:700;letter-spacing:.13em;text-transform:uppercase;color:var(--verde);margin-bottom:22px;}
+  .hero-eyebrow .pip{width:7px;height:7px;border-radius:50%;background:var(--verde);animation:pip 2.4s infinite;}
+  @keyframes pip{0%{box-shadow:0 0 0 0 rgba(34,197,94,.6);}70%{box-shadow:0 0 0 8px rgba(34,197,94,0);}100%{box-shadow:0 0 0 0 rgba(34,197,94,0);}}
+  .hero h1{font-size:51px;font-weight:800;line-height:1.07;letter-spacing:-1.6px;margin-bottom:22px;max-width:19ch;text-shadow:0 4px 30px rgba(0,0,0,.55);}
+  .hero p.lead{font-size:18px;line-height:1.6;color:#C7D2E2;max-width:52ch;margin-bottom:30px;text-shadow:0 2px 14px rgba(0,0,0,.5);}
+  .hero-cta{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:22px;}
+  .hero-trust{display:flex;flex-direction:column;gap:10px;color:var(--muted);font-size:14px;}
+  .hero-trust span{display:flex;align-items:center;gap:9px;}
+  .hero-trust .ck{color:var(--verde);flex-shrink:0;font-weight:800;}
+  .hero-price{margin-top:18px;font-size:13.5px;color:var(--faint);}
+  .hero-price b{color:var(--ink);font-weight:700;}
+
+  .hero-grid{display:grid;grid-template-columns:1fr 1.05fr;gap:48px;align-items:center;}
+  @media(max-width:960px){ .hero-grid{grid-template-columns:1fr;gap:38px;} .hero h1{font-size:42px;letter-spacing:-1.2px;} }
+  @media(max-width:520px){ .hero h1{font-size:33px;} .hero{padding:40px 0 20px;} }
+
+  /* ===== ESCENA / MAQUETAS ===== */
+  .scene{position:relative;padding-top:108px;}
+  @keyframes deslizar{0%,100%{left:0;}50%{left:calc(100% - 272px);}}
+  .scene-tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+  .scene-tab{background:var(--panel);border:1px solid var(--panel-brd);color:var(--muted);font-family:inherit;font-size:13px;font-weight:600;padding:9px 15px;border-radius:10px;cursor:pointer;transition:.15s;display:flex;align-items:center;gap:7px;}
+  .scene-tab.on{background:linear-gradient(135deg,rgba(59,130,246,.2),rgba(34,197,94,.15));border-color:rgba(59,130,246,.4);color:var(--ink);}
+  .scene-tab .ti{width:15px;height:15px;}
+  .scene-stage{position:relative;border-radius:20px;border:1px solid var(--panel-brd);background:var(--bg-2);box-shadow:0 40px 80px -35px rgba(0,0,0,.85);min-height:440px;}
+  .maq{display:none;}
+  .maq.on{display:block;animation:fade .4s ease;border-radius:20px;overflow:hidden;}
+  @keyframes fade{from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:none;}}
+
+  /* Barra de ventana falsa */
+  .maq-bar{display:flex;align-items:center;gap:7px;padding:11px 14px;background:var(--bg-3);border-bottom:1px solid var(--panel-brd);}
+  .maq-bar .dot{width:11px;height:11px;border-radius:50%;}
+  .maq-bar .r{background:#ff5f57;}.maq-bar .y{background:#febc2e;}.maq-bar .g{background:#28c840;}
+  .maq-bar .url{margin-left:10px;font-size:11.5px;color:var(--faint);background:rgba(255,255,255,.05);padding:4px 12px;border-radius:7px;font-family:ui-monospace,monospace;}
+
+  /* Flotantes sobre la escena */
+  .float-card{position:absolute;background:rgba(14,22,38,.94);backdrop-filter:blur(10px);border:1px solid var(--panel-brd);border-radius:14px;padding:13px 15px;box-shadow:0 20px 50px -18px rgba(0,0,0,.8);z-index:5;}
+  @keyframes floaty{0%,100%{transform:translateY(0);}50%{transform:translateY(-7px);}}
+  .float-recep{top:0;left:0;width:272px;z-index:8;box-shadow:0 24px 60px -18px rgba(0,0,0,.9);animation:deslizar 18s ease-in-out infinite;}
+  .fc-head{display:flex;align-items:center;gap:9px;margin-bottom:8px;}
+  .fc-ico{width:30px;height:30px;border-radius:9px;background:linear-gradient(135deg,var(--azul),var(--verde));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .fc-ico svg{width:16px;height:16px;}
+  .fc-title{font-size:12.5px;font-weight:700;}
+  .fc-sub{font-size:10.5px;color:var(--verde);display:flex;align-items:center;gap:5px;}
+  .fc-sub .d{width:6px;height:6px;border-radius:50%;background:var(--verde);animation:pip 1.6s infinite;}
+  .wave{display:flex;align-items:center;gap:4px;height:34px;}
+  .wave i{width:4px;flex:1;background:linear-gradient(var(--azul),var(--verde));border-radius:3px;animation:wv 1s ease-in-out infinite;}
+  .wave i:nth-child(1){height:40%;animation-delay:0s;}
+  .wave i:nth-child(2){height:75%;animation-delay:.1s;}
+  .wave i:nth-child(3){height:100%;animation-delay:.2s;}
+  .wave i:nth-child(4){height:60%;animation-delay:.3s;}
+  .wave i:nth-child(5){height:85%;animation-delay:.4s;}
+  .wave i:nth-child(6){height:45%;animation-delay:.5s;}
+  .wave i:nth-child(7){height:70%;animation-delay:.6s;}
+  .wave i:nth-child(8){height:35%;animation-delay:.7s;}
+  @keyframes wv{0%,100%{transform:scaleY(.5);}50%{transform:scaleY(1);}}
+
+  /* ===== MAQUETA KIOSKO ===== */
+  .kiosko{display:grid;grid-template-columns:74px 1fr 168px;height:392px;font-size:12px;}
+  .k-cats{background:var(--bg-3);border-right:1px solid var(--panel-brd);padding:12px 8px;display:flex;flex-direction:column;gap:7px;}
+  .k-cat{text-align:center;padding:9px 4px;border-radius:10px;cursor:default;color:var(--muted);}
+  .k-cat.on{background:var(--naranja);color:#fff;}
+  .k-cat .ke{font-size:20px;line-height:1;}
+  .k-cat .kn{font-size:9.5px;margin-top:4px;font-weight:600;}
+  .k-main{padding:14px;overflow:hidden;}
+  .k-main .kh{font-size:10px;letter-spacing:.1em;color:var(--faint);text-transform:uppercase;margin-bottom:10px;font-weight:700;}
+  .k-items{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .k-item{background:#fff;border-radius:12px;overflow:hidden;color:#0B1120;}
+  .k-item .kimg{height:66px;background-size:cover;background-position:center;position:relative;}
+  .k-item .kbody{padding:8px 9px;}
+  .k-item .kt{font-weight:700;font-size:11.5px;}
+  .k-item .kd{font-size:9.5px;color:#64748B;margin:1px 0 5px;}
+  .k-item .kf{display:flex;align-items:center;justify-content:space-between;}
+  .k-item .kp{font-weight:800;font-size:12.5px;}
+  .k-item .kadd{width:24px;height:24px;border-radius:7px;background:var(--naranja);color:#fff;display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:600;line-height:1;}
+  .k-cart{background:var(--bg-3);border-left:1px solid var(--panel-brd);padding:13px 12px;display:flex;flex-direction:column;}
+  .k-cart .kch{font-size:12.5px;font-weight:700;margin-bottom:10px;}
+  .k-line{display:flex;justify-content:space-between;align-items:flex-start;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.06);}
+  .k-line .kln{font-size:11px;}.k-line .klq{color:var(--naranja);font-weight:700;}
+  .k-line .klp{font-size:11px;font-weight:700;}
+  .k-total{margin-top:auto;padding-top:10px;}
+  .k-total .ktr{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-bottom:3px;}
+  .k-total .ktt{display:flex;justify-content:space-between;font-size:14px;font-weight:800;margin:6px 0 10px;}
+  .k-total .ktt b{color:var(--naranja);}
+  .k-pay{background:var(--naranja);color:#fff;text-align:center;padding:11px;border-radius:10px;font-weight:700;font-size:12.5px;}
+
+  /* ===== MAQUETA COCINA ===== */
+  .cocina{height:392px;background:#0A0F1C;padding:16px;overflow:hidden;}
+  .co-top{display:flex;align-items:center;gap:12px;margin-bottom:14px;}
+  .co-top .cot{font-weight:700;font-size:14px;}
+  .co-top .cost{font-size:11px;color:var(--verde);display:flex;align-items:center;gap:5px;}
+  .co-top .cost .d{width:7px;height:7px;border-radius:50%;background:var(--verde);animation:pip 1.6s infinite;}
+  .co-top .clock{margin-left:auto;font-family:ui-monospace,monospace;font-size:15px;font-weight:700;}
+  .co-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:11px;}
+  .co-card{background:var(--bg-3);border-radius:13px;padding:12px;border-top:3px solid var(--muted);}
+  .co-card.nuevo{border-top-color:var(--verde);animation:pop .5s ease;}
+  .co-card.prep{border-top-color:var(--naranja);}
+  .co-card.listo{border-top-color:var(--azul);}
+  @keyframes pop{0%{transform:scale(.9);opacity:0;}100%{transform:scale(1);opacity:1;}}
+  .co-card .cch{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;}
+  .co-card .cn{font-weight:800;font-size:15px;}
+  .co-card .cb{font-size:9px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;padding:3px 7px;border-radius:99px;}
+  .cb.nuevo{background:rgba(34,197,94,.18);color:var(--verde);}
+  .cb.prep{background:rgba(249,115,22,.18);color:var(--naranja);}
+  .cb.listo{background:rgba(59,130,246,.18);color:var(--azul);}
+  .co-card .ctime{font-size:10px;color:var(--faint);margin-bottom:9px;}
+  .co-card .cline{display:flex;gap:8px;font-size:12px;padding:4px 0;}
+  .co-card .cq{color:var(--naranja);font-weight:800;flex-shrink:0;}
+  .co-card .csrc{margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.06);font-size:10px;color:var(--faint);display:flex;align-items:center;gap:5px;}
+
+  /* ===== MAQUETA PANEL ===== */
+  .panel{height:392px;background:var(--bg-2);display:grid;grid-template-columns:52px 1fr;overflow:hidden;}
+  .p-side{background:var(--bg-3);border-right:1px solid var(--panel-brd);padding:12px 0;display:flex;flex-direction:column;align-items:center;gap:14px;}
+  .p-side .plogo{width:28px;height:28px;border-radius:8px;background:linear-gradient(135deg,var(--azul),var(--verde));}
+  .p-side .pi{width:20px;height:20px;color:var(--faint);}
+  .p-side .pi.on{color:var(--azul);}
+  .p-main{padding:14px 16px;overflow:hidden;}
+  .p-hello{font-size:14px;font-weight:700;margin-bottom:2px;}
+  .p-date{font-size:10.5px;color:var(--faint);margin-bottom:12px;}
+  .p-recep{background:linear-gradient(100deg,rgba(37,99,235,.25),rgba(34,197,94,.12));border:1px solid rgba(59,130,246,.3);border-radius:12px;padding:11px 13px;display:flex;align-items:center;gap:10px;margin-bottom:12px;}
+  .p-recep .pri{width:32px;height:32px;border-radius:9px;background:linear-gradient(135deg,var(--azul),var(--verde));display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .p-recep .prt{font-size:12px;font-weight:700;}
+  .p-recep .prs{font-size:10px;color:var(--muted);}
+  .p-recep .prnum{margin-left:auto;text-align:right;}
+  .p-recep .prnum .n{font-size:12px;font-weight:800;color:var(--verde);}
+  .p-recep .prnum .l{font-size:8.5px;color:var(--faint);letter-spacing:.08em;}
+  .p-stats{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;margin-bottom:12px;}
+  .p-stat{background:var(--panel);border:1px solid var(--panel-brd);border-radius:10px;padding:9px 10px;}
+  .p-stat .psl{font-size:9px;color:var(--faint);margin-bottom:5px;}
+  .p-stat .psv{font-size:17px;font-weight:800;letter-spacing:-.5px;}
+  .p-stat .psd{font-size:8.5px;color:var(--verde);margin-top:2px;}
+  .p-orders{background:var(--panel);border:1px solid var(--panel-brd);border-radius:11px;padding:12px;}
+  .p-orders .poh{font-size:11.5px;font-weight:700;margin-bottom:9px;display:flex;justify-content:space-between;}
+  .p-orders .poh a{color:var(--azul);font-size:10px;font-weight:600;}
+  .p-row{display:grid;grid-template-columns:32px 1fr auto auto;gap:8px;align-items:center;padding:6px 0;border-bottom:1px solid rgba(255,255,255,.05);font-size:11px;}
+  .p-row .pon{font-weight:700;color:var(--faint);}
+  .p-row .pc{font-weight:600;}
+  .p-row .pt{font-weight:700;}
+  .p-row .pbadge{font-size:8.5px;font-weight:700;padding:2px 7px;border-radius:99px;}
+  .pbadge.prep{background:rgba(249,115,22,.18);color:var(--naranja);}
+  .pbadge.ok{background:rgba(34,197,94,.18);color:var(--verde);}
+
+  /* ===== FRANJA RUBROS ===== */
+  .strip{border-top:1px solid var(--panel-brd);border-bottom:1px solid var(--panel-brd);background:rgba(255,255,255,.015);}
+  .strip-in{padding:26px 0;text-align:center;}
+  .strip-in .sl{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);font-weight:700;margin-bottom:16px;}
+  .strip-in .st{display:flex;flex-wrap:wrap;gap:14px 30px;justify-content:center;color:var(--muted);font-size:15px;font-weight:600;}
+  .strip-in .st span{display:flex;align-items:center;gap:8px;}
+  .strip-in .st .e{font-size:18px;}
+
+  /* ===== SECCIONES ===== */
+  section.block{padding:84px 0;position:relative;}
+  .sec-head{text-align:center;max-width:820px;margin:0 auto 50px;}
+  .sec-eyebrow{font-size:12px;font-weight:700;letter-spacing:.15em;text-transform:uppercase;color:var(--verde);margin-bottom:13px;}
+  .sec-head h2{font-size:36px;font-weight:800;letter-spacing:-1px;line-height:1.15;margin-bottom:15px;}
+  .sec-head p{font-size:17px;color:var(--muted);line-height:1.6;}
+  @media(max-width:640px){ .sec-head h2{font-size:28px;} section.block{padding:58px 0;} }
+
+  /* Flujo 3 pasos */
+  .flow{display:grid;grid-template-columns:repeat(3,1fr);gap:24px;max-width:1220px;margin:0 auto;}
+  .flow-card{background:var(--panel);border:1px solid var(--panel-brd);border-radius:20px;padding:0 0 24px;overflow:hidden;}
+  .flow-img{height:150px;position:relative;background:var(--bg-3);overflow:hidden;}
+  .flow-img .fnum{position:absolute;top:12px;left:12px;width:30px;height:30px;border-radius:9px;background:rgba(7,11,22,.7);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;font-weight:800;font-size:14px;color:var(--verde);z-index:2;}
+  .flow-body{padding:20px 22px 0;}
+  .flow-body h3{font-size:18px;font-weight:700;margin-bottom:8px;}
+  .flow-body p{font-size:14px;color:var(--muted);line-height:1.6;}
+  @media(max-width:820px){ .flow{grid-template-columns:1fr;max-width:440px;} }
+
+  /* Soluciones grandes (filas alternas) */
+  .sol{display:grid;grid-template-columns:.85fr 1.15fr;gap:54px;align-items:center;max-width:1220px;margin:0 auto 78px;}
+  .sol:last-child{margin-bottom:0;}
+  .sol.rev .sol-media{order:2;}
+  .sol-eyebrow{display:inline-flex;align-items:center;gap:8px;font-size:12px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--verde);margin-bottom:14px;}
+  .sol h3{font-size:29px;font-weight:800;letter-spacing:-.8px;line-height:1.15;margin-bottom:14px;}
+  .sol p{font-size:16px;color:var(--muted);line-height:1.65;margin-bottom:18px;}
+  .sol-list{list-style:none;display:grid;gap:10px;}
+  .sol-list li{display:flex;align-items:flex-start;gap:10px;font-size:14.5px;color:var(--ink);}
+  .sol-list .ck{color:var(--verde);flex-shrink:0;font-weight:800;margin-top:1px;}
+  .sol-media{border-radius:18px;overflow:hidden;border:1px solid var(--panel-brd);background:var(--bg-2);box-shadow:0 30px 70px -30px rgba(0,0,0,.8);position:relative;}
+  @media(max-width:860px){ .sol{grid-template-columns:1fr;gap:28px;margin-bottom:52px;} .sol.rev .sol-media{order:0;} .sol h3{font-size:24px;} }
+
+  /* ===== COMPARACIÓN ===== */
+  .cmp{max-width:860px;margin:0 auto;background:var(--panel);border:1px solid var(--panel-brd);border-radius:18px;overflow:hidden;}
+  .cmp-row{display:grid;grid-template-columns:1fr 140px 140px;align-items:center;border-bottom:1px solid rgba(255,255,255,.06);}
+  .cmp-row:last-child{border-bottom:none;}
+  .cmp-head{background:var(--bg-3);}
+  .cmp-head .ch{padding:16px 20px;font-size:13px;font-weight:700;text-align:center;}
+  .cmp-head .ch.feat{text-align:left;color:var(--muted);font-weight:600;text-transform:uppercase;letter-spacing:.06em;font-size:11px;}
+  .cmp-head .ch.ap{color:var(--verde);}
+  .cmp-head .ch.otro{color:var(--faint);}
+  .cmp-cell{padding:15px 20px;font-size:14px;}
+  .cmp-cell.feat{color:var(--ink);font-weight:500;}
+  .cmp-cell.val{text-align:center;font-size:18px;}
+  .cmp-cell.val.yes{color:var(--verde);}
+  .cmp-cell.val.no{color:var(--faint);}
+  .cmp-cell.val.part{color:var(--muted);font-size:12px;}
+  .cmp-ap{background:rgba(34,197,94,.04);}
+  .cmp-note{max-width:none;margin:26px auto 0;text-align:center;font-size:13.5px;color:var(--ink);line-height:1.6;letter-spacing:.01em;}
+  .cmp-note b{color:var(--ink);}
+  @media(max-width:640px){ .cmp-row{grid-template-columns:1fr 66px 66px;} .cmp-cell{padding:13px 12px;font-size:12.5px;} .cmp-head .ch{padding:13px 8px;font-size:11px;} }
+
+  /* ===== CALCULADORA ===== */
+  .calc-wrap{max-width:920px;margin:0 auto;display:grid;grid-template-columns:1fr 1fr;gap:0;background:var(--panel);border:1px solid var(--panel-brd);border-radius:22px;overflow:hidden;}
+  .calc-controls{padding:32px;border-right:1px solid var(--panel-brd);}
+  .calc-field{margin-bottom:22px;}
+  .calc-field:last-child{margin-bottom:0;}
+  .calc-field label{display:flex;justify-content:space-between;align-items:baseline;font-size:14px;font-weight:600;margin-bottom:11px;}
+  .calc-field label b{color:var(--azul);font-size:15px;}
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;background:rgba(255,255,255,.1);outline:none;}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;appearance:none;width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--azul),var(--verde));cursor:pointer;box-shadow:0 3px 10px rgba(37,99,235,.5);border:2px solid #0B1120;}
+  input[type=range]::-moz-range-thumb{width:22px;height:22px;border-radius:50%;background:linear-gradient(135deg,var(--azul),var(--verde));cursor:pointer;border:2px solid #0B1120;}
+  .calc-hint{font-size:11.5px;color:var(--faint);margin-top:7px;}
+  .calc-out{padding:32px;background:linear-gradient(160deg,rgba(34,197,94,.06),rgba(59,130,246,.03));display:flex;flex-direction:column;}
+  .calc-out .col{font-size:12.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);font-weight:700;margin-bottom:6px;}
+  .calc-big{font-size:42px;font-weight:900;letter-spacing:-1.5px;line-height:1;margin-bottom:4px;font-family:'Sora',sans-serif;}
+  .calc-big .grad-text{display:inline;}
+  .calc-sub{font-size:13px;color:var(--muted);margin-bottom:20px;}
+  .calc-rows{display:grid;gap:9px;margin-bottom:18px;}
+  .calc-row{display:flex;justify-content:space-between;font-size:13.5px;padding:10px 13px;border-radius:10px;background:rgba(255,255,255,.03);border:1px solid rgba(255,255,255,.05);}
+  .calc-row .k{color:var(--muted);}.calc-row .v{font-weight:700;}
+  .calc-row.win .v{color:var(--verde);}
+  .calc-bars{display:grid;gap:14px;margin-bottom:18px;}
+  .cbar-head{display:flex;justify-content:space-between;font-size:13px;margin-bottom:7px;color:var(--muted);}
+  .cbar-head b{color:var(--ink);font-size:13.5px;}
+  .cbar-head b.verde-t{color:var(--verde);}
+  .cbar-track{height:14px;border-radius:99px;background:rgba(255,255,255,.06);overflow:hidden;}
+  .cbar-fill{display:block;height:100%;border-radius:99px;width:0;transition:width .6s cubic-bezier(.2,.8,.2,1);}
+  .cbar-fill.rojo{background:linear-gradient(90deg,#F97316,#EF4444);}
+  .cbar-fill.verde{background:linear-gradient(90deg,var(--verde),#4ADE80);}
+  .cbar-fill.azul{background:linear-gradient(90deg,var(--azul),#60A5FA);}
+  .calc-verdict{font-size:13.5px;line-height:1.55;background:rgba(34,197,94,.08);border:1px solid rgba(34,197,94,.2);border-radius:12px;padding:13px 15px;margin-bottom:16px;}
+  .calc-verdict b{color:var(--verde);}
+  .calc-disc{font-size:11px;color:var(--faint);line-height:1.5;margin-top:auto;}
+  @media(max-width:720px){ .calc-wrap{grid-template-columns:1fr;} .calc-controls{border-right:none;border-bottom:1px solid var(--panel-brd);} }
+
+  /* ===== PRECIO ===== */
+  .price-grid{display:grid;grid-template-columns:1fr 1.06fr;gap:24px;max-width:920px;margin:0 auto;align-items:stretch;}
+  @media(max-width:760px){ .price-grid{grid-template-columns:1fr;max-width:460px;} }
+  .price-fine-center{max-width:none;margin:26px auto 0;text-align:center;font-size:11.5px;color:var(--muted);line-height:1.6;letter-spacing:.01em;}
+  .price-feats li.no{opacity:.55;}
+  .price-feats .ck.x{background:rgba(239,68,68,.15);color:var(--rojo);}
+  .price-card.completo{border-color:rgba(34,197,94,.45);box-shadow:0 30px 70px -25px rgba(34,197,94,.18),0 30px 70px -30px rgba(0,0,0,.8);}
+  .price-card{margin:0 auto;width:100%;background:linear-gradient(160deg,rgba(255,255,255,.06),rgba(255,255,255,.02));border:1px solid var(--panel-brd);border-radius:24px;padding:38px 32px 32px;text-align:center;box-shadow:0 30px 70px -30px rgba(0,0,0,.8);position:relative;display:flex;flex-direction:column;}
+  .price-card .btn{margin-top:auto;}
+  .price-feats{flex:0 0 auto;}
+  .price-badge{position:absolute;top:-13px;left:50%;transform:translateX(-50%);background:linear-gradient(135deg,var(--verde),var(--verde-2));color:#04140A;font-size:12px;font-weight:800;padding:6px 16px;border-radius:99px;letter-spacing:.03em;}
+  .price-name{font-size:14px;color:var(--muted);font-weight:600;margin-bottom:8px;}
+  .price-amount{display:flex;align-items:baseline;justify-content:center;gap:8px;margin:8px 0 3px;}
+  .price-amount .old{font-size:26px;font-weight:700;color:var(--faint);text-decoration:line-through;}
+  .price-amount .num{font-size:60px;font-weight:900;letter-spacing:-2px;font-family:'Sora',sans-serif;}
+  .price-amount .per{font-size:16px;color:var(--muted);}
+  .price-sub{font-size:13.5px;color:var(--muted);margin-bottom:24px;}
+  .price-feats{list-style:none;text-align:left;margin-bottom:26px;display:grid;gap:12px;}
+  .price-feats li{font-size:14.5px;display:flex;align-items:center;gap:11px;}
+  .price-feats .ck{width:22px;height:22px;border-radius:50%;background:rgba(34,197,94,.15);color:var(--verde);display:inline-flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0;font-weight:800;}
+  .price-fine{font-size:11.5px;color:var(--faint);margin-top:16px;line-height:1.5;}
+
+  /* ===== SHOWCASE CÓMO FUNCIONA ===== */
+let storyIdx = 0, storyTimer = null;
+function storyPaint(){
+  document.querySelectorAll('.story-slide').forEach((s,i)=>s.classList.toggle('on', i===storyIdx));
+  document.querySelectorAll('.story-tab').forEach((t,i)=>{
+    t.classList.toggle('on', i===storyIdx);
+    const p = t.querySelector('.prog');
+    if(p){ p.style.animation='none'; void p.offsetWidth; p.style.animation=''; }
+  });
+}
+function storyGo(i){ storyIdx = i; storyPaint(); storyArm(); }
+function storyArm(){ clearInterval(storyTimer); storyTimer = setInterval(()=>{ storyIdx=(storyIdx+1)%3; storyPaint(); }, 6500); }
+storyArm();
+const _stage = document.getElementById('storyStage');
+if(_stage){ _stage.addEventListener('mouseenter', ()=>clearInterval(storyTimer)); _stage.addEventListener('mouseleave', storyArm); }
+
+/* ===== FAQ ===== */
+  .faq{max-width:760px;margin:0 auto;display:grid;gap:12px;}
+  .faq-item{background:var(--panel);border:1px solid var(--panel-brd);border-radius:14px;padding:20px 24px;cursor:pointer;}
+  .faq-q{font-weight:600;font-size:15.5px;display:flex;justify-content:space-between;align-items:center;gap:14px;}
+  .faq-q .chev{color:var(--verde);transition:transform .2s;flex-shrink:0;}
+  .faq-item.open .chev{transform:rotate(180deg);}
+  .faq-a{font-size:14px;color:var(--muted);line-height:1.65;max-height:0;overflow:hidden;transition:max-height .3s ease,margin .3s ease;}
+  .faq-item.open .faq-a{max-height:260px;margin-top:12px;}
+
+  /* ===== CTA FINAL ===== */
+  .cta-final{text-align:center;padding:92px 0;}
+  .cta-final h2{font-size:44px;font-weight:800;letter-spacing:-1.4px;margin-bottom:16px;}
+  .cta-final p{font-size:18px;color:var(--muted);margin-bottom:30px;}
+  @media(max-width:640px){ .cta-final h2{font-size:30px;} }
+
+  /* ===== FOOTER ===== */
+  footer{border-top:1px solid var(--panel-brd);padding:44px 0 30px;}
+  .foot-top{display:flex;justify-content:space-between;flex-wrap:wrap;gap:26px;margin-bottom:30px;}
+  .foot-brand-col{max-width:280px;}
+  .foot-brand{display:flex;align-items:center;gap:9px;font-family:'Sora',sans-serif;font-weight:800;font-size:17px;margin-bottom:12px;}
+  .foot-brand span{color:var(--verde);}
+  .foot-desc{font-size:13.5px;color:var(--muted);line-height:1.6;}
+  .foot-cols{display:flex;gap:52px;flex-wrap:wrap;}
+  .foot-col h4{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);margin-bottom:14px;font-weight:700;}
+  .foot-col a{display:block;color:var(--muted);text-decoration:none;font-size:13.5px;margin-bottom:9px;transition:color .15s;}
+  .foot-col a:hover{color:var(--ink);}
+  .foot-bottom{border-top:1px solid var(--panel-brd);padding-top:22px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:14px;}
+  .foot-note{color:var(--faint);font-size:12.5px;}
+  .foot-lang{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted);}
+  .foot-lang .lang{margin-left:2px;}
+
+  /* ===== DEMO MODAL ===== */
+  .modal-bg{position:fixed;inset:0;z-index:100;background:rgba(4,7,14,.8);backdrop-filter:blur(6px);display:none;align-items:center;justify-content:center;padding:20px;}
+  .modal-bg.open{display:flex;animation:fade .25s;}
+  .modal{background:var(--bg-2);border:1px solid var(--panel-brd);border-radius:22px;width:100%;max-width:480px;padding:34px 32px 30px;position:relative;box-shadow:0 50px 100px -30px rgba(0,0,0,.9);}
+  .modal-close{position:absolute;top:16px;right:18px;background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;line-height:1;}
+  .modal-dots{display:flex;gap:7px;justify-content:center;margin-bottom:24px;}
+  .modal-dots .md{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.15);transition:.25s;}
+  .modal-dots .md.on{background:var(--verde);width:22px;border-radius:99px;}
+  .modal-step{display:none;}
+  .modal-step.on{display:block;animation:fade .3s;}
+  .modal-eyebrow{text-align:center;font-size:12px;color:var(--verde);font-weight:700;letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;}
+  .modal h3{text-align:center;font-size:23px;font-weight:800;letter-spacing:-.6px;margin-bottom:22px;}
+  .modal input{width:100%;background:var(--panel);border:1px solid var(--panel-brd);border-radius:12px;padding:14px 16px;color:var(--ink);font-family:inherit;font-size:15px;outline:none;margin-bottom:12px;transition:border .15s;}
+  .modal input:focus{border-color:var(--azul);}
+  .modal-opts{display:grid;gap:10px;margin-bottom:8px;}
+  .modal-opt{background:var(--panel);border:1px solid var(--panel-brd);border-radius:12px;padding:14px 16px;font-size:14.5px;cursor:pointer;display:flex;align-items:center;gap:12px;transition:.15s;font-family:inherit;color:var(--ink);text-align:left;width:100%;}
+  .modal-opt:hover{border-color:rgba(59,130,246,.4);}
+  .modal-opt.sel{border-color:var(--verde);background:rgba(34,197,94,.08);}
+  .modal-opt .mo-radio{width:18px;height:18px;border-radius:50%;border:2px solid var(--faint);flex-shrink:0;transition:.15s;position:relative;}
+  .modal-opt.sel .mo-radio{border-color:var(--verde);}
+  .modal-opt.sel .mo-radio::after{content:'';position:absolute;inset:3px;border-radius:50%;background:var(--verde);}
+  .modal-nav{display:flex;gap:10px;margin-top:18px;}
+  .modal-nav .btn{flex:1;justify-content:center;}
+  .modal-back{background:none;border:1px solid var(--panel-brd);color:var(--muted);border-radius:12px;padding:14px;cursor:pointer;font-family:inherit;font-weight:600;font-size:14px;flex:0 0 auto;width:52px;}
+  .modal-done{text-align:center;padding:10px 0;}
+  .modal-done .mdi{width:64px;height:64px;border-radius:50%;background:rgba(34,197,94,.15);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;}
+  .modal-done h3{margin-bottom:12px;}
+  .modal-done p{font-size:15px;color:var(--muted);line-height:1.6;margin-bottom:22px;}
+
+  /* ===== AUTH MODAL ===== */
+  .auth-modal{max-width:520px;max-height:calc(100vh - 40px);overflow-y:auto;}
+  .afield{margin-bottom:11px;}
+  .afield label{display:block;font-size:12px;font-weight:600;color:var(--muted);margin-bottom:6px;}
+  .afield input, .afield select{margin-bottom:0;}
+  .arow2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+  .modal select{width:100%;background:var(--panel);border:1px solid var(--panel-brd);border-radius:12px;padding:14px 16px;color:var(--ink);font-family:inherit;font-size:15px;outline:none;appearance:auto;}
+  .modal select:focus{border-color:var(--azul);}
+  .modal select option{background:var(--bg-2);color:var(--ink);}
+  .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:8px;background:var(--panel);border:1px solid var(--panel-brd);border-radius:12px;padding:5px;margin-bottom:18px;}
+  .auth-tab{background:none;border:none;color:var(--muted);font-family:inherit;font-weight:600;font-size:13.5px;padding:10px;border-radius:9px;cursor:pointer;transition:.15s;}
+  .auth-tab.on{background:rgba(255,255,255,.1);color:var(--ink);}
+  .auth-msg{display:none;border-radius:10px;padding:11px 14px;font-size:13px;margin-bottom:12px;line-height:1.45;}
+  .auth-msg.err{display:block;background:rgba(239,68,68,.12);border:1px solid rgba(239,68,68,.3);color:#FCA5A5;}
+  .auth-msg.ok{display:block;background:rgba(34,197,94,.1);border:1px solid rgba(34,197,94,.3);color:#86EFAC;}
+  .auth-note{text-align:center;font-size:12.5px;color:var(--faint);margin-top:16px;line-height:1.5;}
+
+  /* ===== CHAT ANA ===== */
+  .chat-fab{position:fixed;bottom:22px;right:22px;z-index:90;width:60px;height:60px;border-radius:50%;background:linear-gradient(135deg,var(--azul),var(--verde));border:none;cursor:pointer;box-shadow:0 12px 30px -6px rgba(37,99,235,.5);display:flex;align-items:center;justify-content:center;transition:transform .18s;}
+  .chat-fab:hover{transform:scale(1.06);}
+  .chat-fab svg{width:27px;height:27px;}
+  .chat-fab .badge{position:absolute;top:-3px;right:-3px;width:18px;height:18px;background:var(--verde);border:2px solid var(--bg);border-radius:50%;font-size:10px;color:#04140A;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  .chat-win{position:fixed;bottom:22px;right:22px;z-index:95;width:380px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 44px);background:var(--bg-2);border:1px solid var(--panel-brd);border-radius:22px;box-shadow:0 40px 90px -30px rgba(0,0,0,.85);display:none;flex-direction:column;overflow:hidden;}
+  .chat-win.open{display:flex;}
+  .chat-head{padding:18px 20px;background:linear-gradient(135deg,rgba(37,99,235,.22),rgba(34,197,94,.15));border-bottom:1px solid var(--panel-brd);display:flex;align-items:center;gap:12px;}
+  .chat-ava{width:42px;height:42px;border-radius:50%;background:linear-gradient(135deg,var(--azul),var(--verde));display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:17px;flex-shrink:0;}
+  .chat-head .ch-info{flex:1;min-width:0;}
+  .chat-head .ch-name{font-weight:700;font-size:15px;}
+  .chat-head .ch-status{font-size:12px;color:var(--verde);display:flex;align-items:center;gap:5px;}
+  .chat-head .ch-status .dot{width:7px;height:7px;border-radius:50%;background:var(--verde);}
+  .chat-close{background:none;border:none;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:4px;}
+  .chat-body{flex:1;overflow-y:auto;padding:18px;display:flex;flex-direction:column;gap:12px;}
+  .msg{max-width:80%;padding:11px 15px;border-radius:15px;font-size:14px;line-height:1.5;}
+  .msg.ana{background:var(--panel);border:1px solid var(--panel-brd);align-self:flex-start;border-bottom-left-radius:5px;}
+  .msg.yo{background:linear-gradient(135deg,var(--azul-2),var(--azul));color:#fff;align-self:flex-end;border-bottom-right-radius:5px;}
+  .msg.escribiendo{color:var(--muted);font-style:italic;}
+  .chat-chips{display:flex;flex-wrap:wrap;gap:8px;padding:0 18px 12px;}
+  .chip{background:rgba(59,130,246,.1);border:1px solid rgba(59,130,246,.3);color:var(--azul);font-size:12.5px;padding:7px 13px;border-radius:99px;cursor:pointer;transition:background .15s;font-family:inherit;}
+  .chip:hover{background:rgba(59,130,246,.2);}
+  .chat-foot{padding:14px 16px;border-top:1px solid var(--panel-brd);display:flex;gap:9px;}
+  .chat-foot input{flex:1;background:var(--panel);border:1px solid var(--panel-brd);border-radius:12px;padding:11px 14px;color:var(--ink);font-family:inherit;font-size:14px;outline:none;}
+  .chat-foot input:focus{border-color:var(--azul);}
+  .chat-send{background:linear-gradient(135deg,var(--azul),var(--verde));border:none;border-radius:12px;width:44px;cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;}
+  .chat-send svg{width:18px;height:18px;}
+  .chat-foot-note{text-align:center;font-size:10.5px;color:var(--faint);padding:0 16px 10px;}
+
+  
+  .sol-media img{display:block;width:100%;height:auto;}
+  .flow-img{height:300px;}
+  .flow-img img{width:100%;height:100%;object-fit:cover;display:block;}
+  /* ===== SHOWCASE CÓMO FUNCIONA ===== */
+  .story{width:100vw;margin-left:calc(50% - 50vw);position:relative;margin-top:6px;}
+  .story-stage{position:relative;height:min(78vh,720px);overflow:hidden;background:#0A0E18;}
+  .story-slide{position:absolute;inset:0;opacity:0;transition:opacity .8s ease;pointer-events:none;}
+  .story-slide.on{opacity:1;pointer-events:auto;}
+  .story-slide img{width:100%;height:100%;object-fit:contain;display:block;transform:scale(1);background:#0A0E18;}
+  .story-slide.on img{animation:kb 14s ease-in-out infinite alternate;}
+  @keyframes kb{from{transform:scale(1);}to{transform:scale(1.05);}}
+  .story-shade{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,12,22,0) 60%,rgba(8,12,22,.7) 100%);pointer-events:none;}
+  .story-cap{position:absolute;left:6vw;bottom:112px;max-width:600px;}
+  .story-cap h3{font-family:'Sora',sans-serif;font-size:36px;font-weight:800;letter-spacing:-.9px;margin-bottom:9px;text-shadow:0 4px 26px rgba(0,0,0,.65);}
+  .story-cap p{font-size:17px;color:#DCE4F0;line-height:1.55;text-shadow:0 2px 14px rgba(0,0,0,.6);}
+  .story-tabs{position:absolute;left:0;right:0;bottom:24px;display:flex;justify-content:center;gap:12px;padding:0 20px;flex-wrap:wrap;z-index:3;}
+  .story-tab{position:relative;overflow:hidden;background:rgba(10,15,28,.66);backdrop-filter:blur(9px);border:1px solid rgba(255,255,255,.17);color:#E9EFF8;font-family:inherit;font-weight:600;font-size:13.5px;padding:11px 18px 13px;border-radius:99px;cursor:pointer;display:flex;align-items:center;gap:9px;transition:.2s;}
+  .story-tab:hover{border-color:rgba(255,255,255,.35);}
+  .story-tab .sn{width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.13);display:flex;align-items:center;justify-content:center;font-size:11.5px;font-weight:800;flex-shrink:0;}
+  .story-tab.on{border-color:rgba(34,197,94,.6);background:rgba(10,15,28,.85);}
+  .story-tab.on .sn{background:var(--verde);color:#04140A;}
+  .story-tab .prog{position:absolute;left:0;bottom:0;height:3px;width:0;background:linear-gradient(90deg,var(--azul),var(--verde));}
+  .story-tab.on .prog{animation:progfill 6.5s linear forwards;}
+  @keyframes progfill{from{width:0;}to{width:100%;}}
+  @media(max-width:720px){
+    .story-stage{height:64vh;}
+    .story-cap{left:20px;right:20px;bottom:128px;max-width:none;}
+    .story-cap h3{font-size:24px;}
+    .story-cap p{font-size:14.5px;}
+    .story-tab span:not(.sn):not(.prog){display:none;}
+    .story-tab{padding:10px 13px 12px;}
+    .scene{padding-top:96px;}
+    .float-recep{width:230px;}
+    @keyframes deslizar{0%,100%{left:0;}50%{left:calc(100% - 234px);}}
+  }
+  .nowrap-d{white-space:normal;}
+  @media(min-width:1000px){ .nowrap-d{white-space:nowrap;} .sec-head.wide{max-width:none;} }
+  .nowrap-xl{white-space:normal;}
+  @media(min-width:1240px){ .nowrap-xl{white-space:nowrap;} }
+  @media(prefers-reduced-motion:reduce){*{animation:none!important;}}
+</style>
+</head>
+<body>
+
+<div class="aura"></div>
+
+<!-- LOGO SVG -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+  <linearGradient id="apAzul" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#3B82F6"/><stop offset="1" stop-color="#1D4ED8"/></linearGradient>
+  <symbol id="apIcono" viewBox="0 0 120 120">
+    <path d="M18 66 A42 42 0 0 1 102 66" fill="none" stroke="url(#apAzul)" stroke-width="7.5" stroke-linecap="round"/>
+    <rect x="8" y="58" width="21" height="38" rx="10.5" fill="url(#apAzul)"/>
+    <rect x="91" y="58" width="21" height="38" rx="10.5" fill="url(#apAzul)"/>
+    <path d="M60 32 L92 106 L74 106 L60 68 L46 106 L28 106 Z" fill="url(#apAzul)"/>
+    <path d="M60 88 m-24 -8 a24 21 0 1 1 48 0 a24 21 0 0 1 -24 21 l-10 12 l-1 -13 a24 21 0 0 1 -13 -20 z" fill="#fff"/>
+    <circle cx="48" cy="79" r="4.5" fill="#22C55E"/><circle cx="60" cy="79" r="4.5" fill="#22C55E"/><circle cx="72" cy="79" r="4.5" fill="#22C55E"/>
+    <circle cx="79" cy="111" r="7.8" fill="#22C55E"/>
+  </symbol>
+</defs></svg>
+
+<nav>
+  <div class="wrap nav-in">
+    <div class="brand"><svg><use href="#apIcono"/></svg><div class="n">ATIENDE<span>PRO</span></div></div>
+    <div class="nav-links">
+      <a href="#como">Cómo funciona</a>
+      <a href="#soluciones">Soluciones</a>
+      <a href="#comparacion">Comparación</a>
+      <a href="#precio">Precio</a>
+      <a href="#faq">Preguntas</a>
+    </div>
+    <div class="nav-cta">
+      <div class="lang" role="group" aria-label="Idioma">
+        <button class="on" data-lang="es">ES</button>
+        <button data-lang="en">EN</button>
+      </div>
+      <button class="btn btn-ghost" onclick="abrirAuth(&quot;login&quot;)" data-i18n="nav_login">Iniciar sesión</button>
+      <button class="btn btn-azul" onclick="abrirAuth(&quot;registro&quot;)" data-i18n="nav_register">Registrarse</button>
+    </div>
+  </div>
+</nav>
+
+<main>
+<!-- ===== HERO ===== -->
+<section class="hero">
+  <div class="hero-bg" aria-hidden="true"></div>
+  <div class="wrap hero-grid">
+    <div>
+      <div class="hero-eyebrow"><span class="pip"></span><span data-i18n="hero_eyebrow">Recepcionista virtual · Kiosko · Pantalla de cocina</span></div>
+      <h1 data-i18n="hero_title">Todo lo que tu restaurante necesita para <span class="grad-text">recibir y preparar más pedidos</span></h1>
+      <p class="lead" data-i18n="hero_lead">Atiende llamadas las 24 horas, recibe pedidos desde un kiosko y envía cada orden directo a la pantalla de cocina. Todo conectado en un solo panel.</p>
+      <div class="hero-cta">
+        <button class="btn btn-verde btn-lg" onclick="abrirDemo()" data-i18n="hero_cta1">Solicitar una demostración</button>
+        <a href="#calc" class="btn btn-azul btn-lg" data-i18n="hero_cta3">Calcula tu ahorro</a>
+        <a href="#como" class="btn btn-ghost btn-lg" data-i18n="hero_cta2">Ver cómo funciona</a>
+      </div>
+      <div class="hero-trust">
+        <span><span class="ck">✓</span> <span data-i18n="hero_t1">Atiende llamadas 24/7, aunque estés lleno</span></span>
+        <span><span class="ck">✓</span> <span data-i18n="hero_t2">Cada pedido va directo a cocina</span></span>
+        <span><span class="ck">✓</span> <span data-i18n="hero_t3">Se instala sin cambiar tu número</span></span>
+      </div>
+      <div class="hero-price" data-i18n="hero_price">Desde <b>$149 al mes</b> · Cancela cuando quieras</div>
+    </div>
+
+    <!-- ESCENA con pestañas manuales -->
+    <div class="scene">
+      <div class="float-card float-recep">
+          <div class="fc-head">
+            <div class="fc-ico"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+            <div>
+              <div class="fc-title" data-i18n="float_title">Recepcionista virtual</div>
+              <div class="fc-sub"><span class="d"></span> <span data-i18n="float_sub">Atendiendo una llamada…</span></div>
+            </div>
+          </div>
+          <div class="wave"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i style="animation-delay:.15s;height:55%"></i><i style="animation-delay:.45s;height:80%"></i><i style="animation-delay:.25s;height:65%"></i><i style="animation-delay:.6s;height:40%"></i></div>
+        </div>
+      <div class="scene-tabs">
+        <button class="scene-tab on" data-maq="kiosko">
+          <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="16" rx="1"/><path d="M9 22h6"/><path d="M12 18v4"/></svg>
+          <span data-i18n="tab_kiosko">Kiosko</span>
+        </button>
+        <button class="scene-tab" data-maq="cocina">
+          <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="14" rx="2"/><path d="M8 22h8"/></svg>
+          <span data-i18n="tab_cocina">Cocina</span>
+        </button>
+        <button class="scene-tab" data-maq="panel">
+          <svg class="ti" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9" rx="1"/><rect x="14" y="3" width="7" height="5" rx="1"/><rect x="14" y="12" width="7" height="9" rx="1"/><rect x="3" y="16" width="7" height="5" rx="1"/></svg>
+          <span data-i18n="tab_panel">Panel</span>
+        </button>
+      </div>
+
+      <div class="scene-stage">
+        <!-- Flotante recepcionista (siempre visible sobre la escena) -->
+        
+
+        <!-- MAQUETA KIOSKO -->
+        <div class="maq on" data-maq="kiosko">
+          <div class="maq-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">atiendepro.net/kiosko</span></div>
+          <div class="kiosko">
+            <div class="k-cats">
+              <div class="k-cat on"><div class="ke">🌮</div><div class="kn">Tacos</div></div>
+              <div class="k-cat"><div class="ke">🌯</div><div class="kn">Burritos</div></div>
+              <div class="k-cat"><div class="ke">🧀</div><div class="kn">Quesa</div></div>
+              <div class="k-cat"><div class="ke">🥤</div><div class="kn">Bebidas</div></div>
+            </div>
+            <div class="k-main">
+              <div class="kh" data-i18n="k_cat">Tacos</div>
+              <div class="k-items">
+                <div class="k-item"><div class="kimg" style="background:url(img/plato-pollo.jpg) center/cover"></div><div class="kbody"><div class="kt">Taco de pollo</div><div class="kd">Cilantro y cebolla</div><div class="kf"><span class="kp">$2.50</span><span class="kadd">+</span></div></div></div>
+                <div class="k-item"><div class="kimg" style="background:url(img/plato-pastor.jpg) center/cover"></div><div class="kbody"><div class="kt">Taco al pastor</div><div class="kd">Con piña</div><div class="kf"><span class="kp">$2.75</span><span class="kadd">+</span></div></div></div>
+                <div class="k-item"><div class="kimg" style="background:url(img/plato-asada.jpg) center/cover"></div><div class="kbody"><div class="kt">Taco de asada</div><div class="kd">Res a la parrilla</div><div class="kf"><span class="kp">$3.00</span><span class="kadd">+</span></div></div></div>
+                <div class="k-item"><div class="kimg" style="background:url(img/plato-quesadilla.jpg) center/cover"></div><div class="kbody"><div class="kt">Quesadilla</div><div class="kd">Queso fundido</div><div class="kf"><span class="kp">$3.50</span><span class="kadd">+</span></div></div></div>
+              </div>
+            </div>
+            <div class="k-cart">
+              <div class="kch" data-i18n="k_cart">Tu pedido</div>
+              <div class="k-line"><div><span class="klq">2×</span> <span class="kln">Taco al pastor</span></div><span class="klp">$5.50</span></div>
+              <div class="k-line"><div><span class="klq">1×</span> <span class="kln">Quesadilla</span></div><span class="klp">$3.50</span></div>
+              <div class="k-line"><div><span class="klq">1×</span> <span class="kln">Refresco</span></div><span class="klp">$2.00</span></div>
+              <div class="k-total">
+                <div class="ktr"><span data-i18n="k_sub">Subtotal</span><span>$11.00</span></div>
+                <div class="ktt"><span data-i18n="k_total">Total</span><b>$11.00</b></div>
+                <div class="k-pay" data-i18n="k_pay">Finalizar pedido</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAQUETA COCINA -->
+        <div class="maq" data-maq="cocina">
+          <div class="maq-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">atiendepro.net/cocina</span></div>
+          <div class="cocina">
+            <div class="co-top">
+              <div class="cot">El Buen Sabor</div>
+              <div class="cost"><span class="d"></span> <span data-i18n="co_live">Pedidos en vivo</span></div>
+              <div class="clock">14:32</div>
+            </div>
+            <div class="co-grid">
+              <div class="co-card nuevo">
+                <div class="cch"><span class="cn">#28</span><span class="cb nuevo" data-i18n="co_new">Nuevo</span></div>
+                <div class="ctime" data-i18n="co_time1">hace 30 seg</div>
+                <div class="cline"><span class="cq">2×</span><span>Taco al pastor</span></div>
+                <div class="cline"><span class="cq">1×</span><span>Quesadilla</span></div>
+                <div class="csrc"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> <span data-i18n="co_src1">Recepcionista virtual</span></div>
+              </div>
+              <div class="co-card prep">
+                <div class="cch"><span class="cn">#27</span><span class="cb prep" data-i18n="co_prep">Preparando</span></div>
+                <div class="ctime" data-i18n="co_time2">hace 4 min</div>
+                <div class="cline"><span class="cq">3×</span><span>Taco de asada</span></div>
+                <div class="cline"><span class="cq">2×</span><span>Refresco</span></div>
+                <div class="csrc"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="7" y="2" width="10" height="16" rx="1"/></svg> <span data-i18n="co_src2">Kiosko</span></div>
+              </div>
+              <div class="co-card listo">
+                <div class="cch"><span class="cn">#26</span><span class="cb listo" data-i18n="co_ready">Listo</span></div>
+                <div class="ctime" data-i18n="co_time3">hace 8 min</div>
+                <div class="cline"><span class="cq">1×</span><span>Burrito mixto</span></div>
+                <div class="cline"><span class="cq">1×</span><span>Agua fresca</span></div>
+                <div class="csrc"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg> <span data-i18n="co_src1b">Recepcionista virtual</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- MAQUETA PANEL -->
+        <div class="maq" data-maq="panel">
+          <div class="maq-bar"><span class="dot r"></span><span class="dot y"></span><span class="dot g"></span><span class="url">atiendepro.net/app</span></div>
+          <div class="panel">
+            <div class="p-side">
+              <div class="plogo"></div>
+              <svg class="pi on" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="9"/><rect x="14" y="3" width="7" height="5"/><rect x="14" y="12" width="7" height="9"/><rect x="3" y="16" width="7" height="5"/></svg>
+              <svg class="pi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><path d="M3 6h18"/></svg>
+              <svg class="pi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+              <svg class="pi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 3v18h18"/><path d="m7 14 4-4 4 4 5-5"/></svg>
+            </div>
+            <div class="p-main">
+              <div class="p-hello" data-i18n="p_hello">¡Buenas tardes, El Buen Sabor! 👋</div>
+              <div class="p-date" data-i18n="p_date">Aquí está el resumen de tu negocio hoy.</div>
+              <div class="p-recep">
+                <div class="pri"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg></div>
+                <div><div class="prt" data-i18n="p_recep_t">Recepcionista virtual — activa 24/7</div><div class="prs" data-i18n="p_recep_s">Contesta y registra pedidos al instante.</div></div>
+                <div class="prnum"><div class="n">+1 (914) 307-8235</div><div class="l" data-i18n="p_recep_num">TU NÚMERO</div></div>
+              </div>
+              <div class="p-stats">
+                <div class="p-stat"><div class="psl" data-i18n="p_s1">Pedidos hoy</div><div class="psv">34</div><div class="psd">↑ 18% vs ayer</div></div>
+                <div class="p-stat"><div class="psl" data-i18n="p_s2">Llamadas hoy</div><div class="psv">41</div><div class="psd">↑ 12% vs ayer</div></div>
+                <div class="p-stat"><div class="psl" data-i18n="p_s3">Ventas hoy</div><div class="psv">$487</div><div class="psd">↑ 22% vs ayer</div></div>
+                <div class="p-stat"><div class="psl" data-i18n="p_s4">Ticket prom.</div><div class="psv">$14</div><div class="psd">↑ 5% vs ayer</div></div>
+              </div>
+              <div class="p-orders">
+                <div class="poh"><span data-i18n="p_orders">Pedidos recientes</span><a data-i18n="p_all">Ver todos →</a></div>
+                <div class="p-row"><span class="pon">#34</span><span class="pc" data-i18n="p_r1">Llamada · Ana M.</span><span class="pt">$18.50</span><span class="pbadge prep" data-i18n="p_prep">Preparando</span></div>
+                <div class="p-row"><span class="pon">#33</span><span class="pc" data-i18n="p_r2">Kiosko</span><span class="pt">$11.00</span><span class="pbadge prep" data-i18n="p_prep2">Preparando</span></div>
+                <div class="p-row"><span class="pon">#32</span><span class="pc" data-i18n="p_r3">Llamada · Luis R.</span><span class="pt">$24.00</span><span class="pbadge ok" data-i18n="p_ok">Entregado</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== FRANJA RUBROS ===== -->
+<div class="strip">
+  <div class="wrap strip-in">
+    <div class="sl" data-i18n="strip_l">Diseñado para negocios de comida con alto volumen de pedidos</div>
+    <div class="st">
+      <span><span class="e">🌮</span> <span data-i18n="strip1">Taquerías</span></span>
+      <span><span class="e">🍕</span> <span data-i18n="strip2">Pizzerías</span></span>
+      <span><span class="e">🍔</span> <span data-i18n="strip3">Comida rápida</span></span>
+      <span><span class="e">🚚</span> <span data-i18n="strip4">Food trucks</span></span>
+      <span><span class="e">🍗</span> <span data-i18n="strip5">Pollerías</span></span>
+      <span><span class="e">🥡</span> <span data-i18n="strip6">Restaurantes</span></span>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CÓMO FUNCIONA ===== -->
+<section class="block" id="como">
+  <div class="wrap">
+    <div class="sec-head wide">
+      <div class="sec-eyebrow" data-i18n="how_eye">Cómo funciona</div>
+      <h2 class="nowrap-d" data-i18n="how_title">De la llamada a la cocina, <span class="grad-text">sin que muevas un dedo</span></h2>
+      <p class="nowrap-d" data-i18n="how_sub">Tu cliente pide, tu equipo prepara, tú controlas todo desde un panel. Tres momentos, una sola plataforma.</p>
+    </div>
+    <div class="story">
+      <div class="story-stage" id="storyStage">
+        <div class="story-slide on">
+          <img src="img/foto-cliente.jpg" alt="Cliente feliz llamando para ordenar">
+          <div class="story-shade"></div>
+        </div>
+        <div class="story-slide">
+          <img src="img/foto-equipo.jpg" alt="Cocineros celebrando con la pantalla de pedidos">
+          <div class="story-shade"></div>
+        </div>
+        <div class="story-slide">
+          <img src="img/foto-dueno.jpg" alt="Dueño tranquilo revisando su panel">
+          <div class="story-shade"></div>
+        </div>
+        <div class="story-tabs">
+          <button class="story-tab on" onclick="storyGo(0)"><span class="sn">1</span><span data-i18n="how1_tb">El cliente pide</span><span class="prog"></span></button>
+          <button class="story-tab" onclick="storyGo(1)"><span class="sn">2</span><span data-i18n="how2_tb">Llega a cocina</span><span class="prog"></span></button>
+          <button class="story-tab" onclick="storyGo(2)"><span class="sn">3</span><span data-i18n="how3_tb">Tú controlas todo</span><span class="prog"></span></button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== SOLUCIONES ===== -->
+<section class="block" id="soluciones" style="background:rgba(255,255,255,.012);border-top:1px solid var(--panel-brd);border-bottom:1px solid var(--panel-brd);">
+  <div class="wrap">
+    <div class="sec-head wide">
+      <div class="sec-eyebrow" data-i18n="sol_eye">Soluciones</div>
+      <h2 class="nowrap-d" data-i18n="sol_title">Un sistema operativo <span class="grad-text">completo para tu restaurante</span></h2>
+      <p data-i18n="sol_sub">Cuatro piezas que trabajan juntas. Empieza con lo que más necesitas y suma el resto cuando quieras.</p>
+    </div>
+
+    <!-- Recepcionista -->
+    <div class="sol">
+      <div>
+        <div class="sol-eyebrow" data-i18n="sol1_eye">◆ Recepcionista virtual</div>
+        <h3 data-i18n="sol1_t">Tus empleados cocinan. ATIENDEPRO contesta el teléfono.</h3>
+        <p data-i18n="sol1_p">Cada llamada contestada al primer timbre, con el saludo de tu negocio. Toma el pedido, confirma los detalles y lo registra al instante — a cualquier hora, sin dejar a nadie esperando.</p>
+        <ul class="sol-list">
+          <li><span class="ck">✓</span> <span data-i18n="sol1_l1">Contesta 24/7, incluso en hora pico o fuera de horario</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol1_l2">Habla natural, entiende acentos y modismos</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol1_l3">Usa tu número de siempre, sin cambiar nada</span></li>
+        </ul>
+      </div>
+      <div class="sol-media"><img src="img/foto-recepcionista.jpg" alt="Recepcionista virtual contestando una llamada en el mostrador del restaurante" loading="lazy" width="1600" height="900"></div>
+    </div>
+
+    <!-- Kiosko -->
+    <div class="sol rev">
+      <div>
+        <div class="sol-eyebrow" data-i18n="sol2_eye">◆ Kiosko de autoservicio</div>
+        <h3 data-i18n="sol2_t">Menos filas, pedidos más grandes.</h3>
+        <p data-i18n="sol2_p">Tus clientes ordenan solos en una pantalla clara, con fotos y precios. El kiosko sugiere agregar bebida, acompañante o postre — y sube el valor de cada pedido sin que nadie tenga que preguntarlo.</p>
+        <ul class="sol-list">
+          <li><span class="ck">✓</span> <span data-i18n="sol2_l1">Menú con fotos, categorías y precios claros</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol2_l2">Sugerencias automáticas: "¿Deseas agregar una bebida?"</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol2_l3">El pedido va directo a cocina, sin intermediarios</span></li>
+        </ul>
+      </div>
+      <div class="sol-media"><img src="img/foto-kiosko.jpg" alt="Clienta ordenando en el kiosko de autoservicio" loading="lazy" width="1600" height="900"></div>
+    </div>
+
+    <!-- Cocina -->
+    <div class="sol">
+      <div>
+        <div class="sol-eyebrow" data-i18n="sol3_eye">◆ Pantalla de cocina</div>
+        <h3 data-i18n="sol3_t">Cada pedido llega claro, organizado y en tiempo real.</h3>
+        <p data-i18n="sol3_p">Tu equipo ve todos los pedidos en una pantalla, con colores por estado. Vengan del teléfono o del kiosko, llegan al mismo lugar — sin papelitos, sin gritos, sin confusiones.</p>
+        <ul class="sol-list">
+          <li><span class="ck">✓</span> <span data-i18n="sol3_l1">Tarjetas de color según el estado del pedido</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol3_l2">Alarma cuando entra un pedido nuevo</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol3_l3">Marca cada orden: en espera, preparando, listo</span></li>
+        </ul>
+      </div>
+      <div class="sol-media"><img src="img/foto-cocina.jpg" alt="Cocinero viendo los pedidos en la pantalla de cocina" loading="lazy" width="1600" height="900"></div>
+    </div>
+
+    <!-- Panel -->
+    <div class="sol rev">
+      <div>
+        <div class="sol-eyebrow" data-i18n="sol4_eye">◆ Panel del restaurante</div>
+        <h3 data-i18n="sol4_t">Controla tu operación desde cualquier dispositivo.</h3>
+        <p data-i18n="sol4_p">Pedidos, llamadas, clientes, menú, ventas y reportes en un solo lugar. Sabes exactamente cuántas llamadas recibiste, cuántos pedidos entraron y cuánto vendiste — sin adivinar.</p>
+        <ul class="sol-list">
+          <li><span class="ck">✓</span> <span data-i18n="sol4_l1">Resumen del día: pedidos, llamadas y ventas</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol4_l2">Edita tu menú y precios cuando quieras</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="sol4_l3">Reportes de ventas por rango de fechas</span></li>
+        </ul>
+      </div>
+      <div class="sol-media"><img src="img/foto-panel.jpg" alt="Dueño del restaurante revisando el panel en su tablet" loading="lazy" width="1600" height="900"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== COMPARACIÓN ===== -->
+<section class="block" id="comparacion">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow" data-i18n="cmp_eye">Comparación</div>
+      <h2 data-i18n="cmp_title">Otros sistemas empiezan tarde.<br><span style="color:var(--ink)">ATIENDE</span><span style="color:var(--verde)">PRO</span> <span class="grad-text">empieza en la llamada.</span></h2>
+      <p data-i18n="cmp_sub">Un sistema de pedidos tradicional solo actúa cuando el cliente ya hizo el pedido. ATIENDEPRO empieza desde que el cliente llama o entra al restaurante.</p>
+    </div>
+    <div class="cmp">
+      <div class="cmp-row cmp-head">
+        <div class="ch feat" data-i18n="cmp_h1">Función</div>
+        <div class="ch ap" style="display:flex;align-items:center;justify-content:center;gap:7px;"><svg width="22" height="22" style="flex-shrink:0"><use href="#apIcono"/></svg><span style="color:var(--ink)">ATIENDE</span><span style="color:var(--verde);margin-left:-7px">PRO</span></div>
+        <div class="ch otro" data-i18n="cmp_h2">Sistema tradicional</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r1">Contesta llamadas 24/7</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val no">—</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r2">Toma pedidos por teléfono</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val no">—</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r3">Kiosko de autoservicio</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val part" data-i18n="cmp_some1">Algunos</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r4">Pantalla de cocina</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val part" data-i18n="cmp_some2">Algunos</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r5">Panel de pedidos y ventas</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val yes">✓</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r6">Todo conectado en una plataforma</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val no">—</div>
+      </div>
+      <div class="cmp-row">
+        <div class="cmp-cell feat" data-i18n="cmp_r7">Configuración personalizada</div>
+        <div class="cmp-cell val yes cmp-ap">✓</div>
+        <div class="cmp-cell val part" data-i18n="cmp_limit">Limitada</div>
+      </div>
+    </div>
+    <p class="cmp-note nowrap-xl" data-i18n="cmp_note"><b>NINGUNA OTRA PLATAFORMA CONTESTA EL TELÉFONO POR TI. ESE ES EL MOMENTO DONDE SE GANAN O SE PIERDEN LOS CLIENTES.</b></p>
+  </div>
+</section>
+
+<!-- ===== CALCULADORA ===== -->
+<section class="block" id="calc" style="background:rgba(255,255,255,.012);border-top:1px solid var(--panel-brd);border-bottom:1px solid var(--panel-brd);">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow" data-i18n="calc_eye">Calcula tu ahorro</div>
+      <h2 data-i18n="calc_title">¿Cuánto pierdes por <span class="grad-text">llamadas sin contestar?</span></h2>
+      <p data-i18n="calc_sub">Mueve los controles con los datos de tu restaurante. Es una estimación honesta, no una promesa.</p>
+    </div>
+    <div class="calc-wrap">
+      <div class="calc-controls">
+        <div class="calc-field">
+          <label><span data-i18n="calc_f1">Llamadas que recibes al día</span> <b id="vLlamadas">15</b></label>
+          <input type="range" id="rLlamadas" min="5" max="80" value="15" step="1">
+          <div class="calc-hint" data-i18n="calc_h1">Incluye las que a veces no alcanzas a contestar.</div>
+        </div>
+        <div class="calc-field">
+          <label><span data-i18n="calc_f2">¿Cuántas se te escapan?</span> <b id="vPerdidas">20%</b></label>
+          <input type="range" id="rPerdidas" min="5" max="50" value="20" step="5">
+          <div class="calc-hint" data-i18n="calc_h2">Hora pico, cocina llena, fuera de horario…</div>
+        </div>
+        <div class="calc-field">
+          <label><span data-i18n="calc_f3">Valor promedio de un pedido</span> <b id="vTicket">$25</b></label>
+          <input type="range" id="rTicket" min="8" max="80" value="25" step="1">
+          <div class="calc-hint" data-i18n="calc_h3">Cuánto gasta un cliente en promedio.</div>
+        </div>
+      </div>
+      <div class="calc-out">
+        <div class="col" data-i18n="calc_col">Podrías estar perdiendo al mes</div>
+        <div class="calc-big"><span class="grad-text" id="oPerdido">$1,125</span></div>
+        <div class="calc-sub" id="oResumen">—</div>
+        <div class="calc-bars">
+          <div class="cbar-row">
+            <div class="cbar-head"><span data-i18n="calc_b1">Ventas que se te escapan</span><b id="bPierdeV">$1,125</b></div>
+            <div class="cbar-track"><i class="cbar-fill rojo" id="bPierde"></i></div>
+          </div>
+          <div class="cbar-row">
+            <div class="cbar-head"><span data-i18n="calc_b2">Ventas que recuperas con ATIENDEPRO</span><b id="bRecuperaV" class="verde-t">$1,125</b></div>
+            <div class="cbar-track"><i class="cbar-fill verde" id="bRecupera"></i></div>
+          </div>
+          <div class="cbar-row">
+            <div class="cbar-head"><span data-i18n="calc_b3">Lo que cuesta ATIENDEPRO</span><b id="bCostoV">$149</b></div>
+            <div class="cbar-track"><i class="cbar-fill azul" id="bCosto"></i></div>
+          </div>
+        </div>
+        <div class="calc-verdict" id="oVeredicto">—</div>
+        <button class="btn btn-verde btn-lg" onclick="abrirDemo()" style="width:100%;justify-content:center;" data-i18n="calc_cta">Solicitar una demostración →</button>
+        <div class="calc-disc" data-i18n="calc_disc">Estimación honesta: asumimos que solo la mitad de las llamadas perdidas habrían sido un pedido real. Los resultados dependen de tu volumen y ticket promedio.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== PRECIO ===== -->
+<section class="block" id="precio">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow" data-i18n="price_eye">Precio</div>
+      <h2 data-i18n="price_title">Dos planes simples. <span class="grad-text">Sin sorpresas.</span></h2>
+      <p data-i18n="price_sub">La recepcionista virtual es lo que marca la diferencia.</p>
+    </div>
+    <div class="price-grid">
+      <!-- Plan Esencial -->
+      <div class="price-card esencial">
+        <div class="price-name" data-i18n="price2_name">Plan Esencial</div>
+        <div class="price-amount"><span class="old">$99</span><span class="num">$79</span><span class="per" data-i18n="price2_per">/ mes</span></div>
+        <div class="price-sub" data-i18n="price2_sub">Organiza tu operación de pedidos.</div>
+        <ul class="price-feats">
+          <li><span class="ck">✓</span> <span data-i18n="price2_l1">Kiosko de autoservicio</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price2_l2">Pantalla de cocina</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price2_l3">Panel de pedidos, clientes y ventas</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price2_l4">Pedidos ilimitados</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price2_l5">Soporte en español</span></li>
+          <li class="no"><span class="ck x">✕</span> <span data-i18n="price2_l6">Recepcionista virtual 24/7</span></li>
+        </ul>
+        <button class="btn btn-ghost btn-lg" onclick="abrirDemo()" style="width:100%;justify-content:center;" data-i18n="price2_cta">Solicitar una demostración</button>
+      </div>
+      <!-- Plan Completo -->
+      <div class="price-card completo">
+        <div class="price-badge" data-i18n="price_badge">RECOMENDADO · PRECIO DE LANZAMIENTO</div>
+        <div class="price-name" data-i18n="price_name">Plan Completo</div>
+        <div class="price-amount"><span class="old">$199</span><span class="num">$149</span><span class="per" data-i18n="price_per">/ mes</span></div>
+        <div class="price-sub" data-i18n="price_recup">Tu negocio contesta y vende las 24 horas.</div>
+        <ul class="price-feats">
+          <li><span class="ck">✓</span> <span data-i18n="price_l1"><b>Recepcionista virtual 24/7</b></span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price_l2">Kiosko de autoservicio</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price_l3">Pantalla de cocina</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price_l4">Panel de pedidos, clientes y ventas</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price_l5">Pedidos ilimitados</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price_l6">Configuración personalizada de tu menú</span></li>
+          <li><span class="ck">✓</span> <span data-i18n="price_l7">Soporte prioritario en español</span></li>
+        </ul>
+        <button class="btn btn-verde btn-lg" onclick="abrirDemo()" style="width:100%;justify-content:center;" data-i18n="price_cta">Solicitar una demostración →</button>
+      </div>
+    </div>
+    <p class="price-fine-center nowrap-xl" data-i18n="price_fine"><b>SIN PERMANENCIA. CANCELA CUANDO QUIERAS. EL USO TELEFÓNICO Y LA INSTALACIÓN SE CONVERSAN SEGÚN TU VOLUMEN; TE LO EXPLICAMOS CLARO ANTES DE EMPEZAR.</b></p>
+  </div>
+</section>
+
+<!-- ===== FAQ ===== -->
+<section class="block" id="faq" style="background:rgba(255,255,255,.012);border-top:1px solid var(--panel-brd);border-bottom:1px solid var(--panel-brd);">
+  <div class="wrap">
+    <div class="sec-head">
+      <div class="sec-eyebrow" data-i18n="faq_eye">Preguntas</div>
+      <h2 data-i18n="faq_title">Lo que todo restaurante <span class="grad-text">quiere saber</span></h2>
+    </div>
+    <div class="faq">
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq_q1">¿Necesito instalar algo o comprar equipos?</span><span class="chev">▾</span></div>
+        <div class="faq-a" data-i18n="faq_a1">Para la recepcionista virtual no. Usas tu número de siempre y funciona desde internet. El kiosko sí necesita una pantalla o tablet; lo conversamos según tu restaurante.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq_q2">¿La recepcionista suena como robot?</span><span class="chev">▾</span></div>
+        <div class="faq-a" data-i18n="faq_a2">No. Habla de forma natural, con el saludo de tu negocio. La mayoría de clientes ni se da cuenta de que no es una persona.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq_q3">¿Los pedidos del teléfono y del kiosko llegan al mismo lugar?</span><span class="chev">▾</span></div>
+        <div class="faq-a" data-i18n="faq_a3">Sí. Vengan del teléfono, del kiosko o del personal, todos llegan a la misma pantalla de cocina y al mismo panel. Todo conectado.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq_q4">¿En cuánto tiempo queda listo?</span><span class="chev">▾</span></div>
+        <div class="faq-a" data-i18n="faq_a4">Normalmente en pocos días. Configuramos tu negocio, tu menú y tu número, y empiezas a recibir pedidos enseguida.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq_q5">¿Puedo cancelar cuando quiera?</span><span class="chev">▾</span></div>
+        <div class="faq-a" data-i18n="faq_a5">Sí. No hay permanencia ni contratos largos. Cancelas cuando quieras y tus datos siempre son tuyos.</div>
+      </div>
+      <div class="faq-item">
+        <div class="faq-q"><span data-i18n="faq_q6">¿Hay costos adicionales?</span><span class="chev">▾</span></div>
+        <div class="faq-a" data-i18n="faq_a6">El plan mensual es $149. Según tu volumen de llamadas puede haber un costo de uso telefónico, y el kiosko requiere una pantalla. Te explicamos todo con claridad antes de empezar, sin sorpresas.</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ===== CTA FINAL ===== -->
+<section class="cta-final">
+  <div class="wrap">
+    <h2 data-i18n="cta_title">Más pedidos. Menos errores. <span class="grad-text">Una operación conectada.</span></h2>
+    <p data-i18n="cta_sub">Te mostramos ATIENDEPRO funcionando con un restaurante parecido al tuyo.</p>
+    <button class="btn btn-verde btn-lg" onclick="abrirDemo()" data-i18n="cta_btn">Solicitar una demostración →</button>
+  </div>
+</section>
+
+</main>
+
+<!-- ===== FOOTER ===== -->
+<footer>
+  <div class="wrap">
+    <div class="foot-top">
+      <div class="foot-brand-col">
+        <div class="foot-brand"><svg width="28" height="28"><use href="#apIcono"/></svg> ATIENDE<span>PRO</span></div>
+        <div class="foot-desc" data-i18n="foot_desc">El sistema completo para restaurantes: recepcionista virtual, kiosko y pantalla de cocina, todo conectado en un solo panel.</div>
+      </div>
+      <div class="foot-cols">
+        <div class="foot-col">
+          <h4 data-i18n="foot_c1">Producto</h4>
+          <a href="#soluciones" data-i18n="foot_l1">Recepcionista virtual</a>
+          <a href="#soluciones" data-i18n="foot_l2">Kiosko</a>
+          <a href="#soluciones" data-i18n="foot_l3">Pantalla de cocina</a>
+          <a href="#precio" data-i18n="foot_l4">Precio</a>
+        </div>
+        <div class="foot-col">
+          <h4 data-i18n="foot_c2">Recursos</h4>
+          <a href="#como" data-i18n="foot_l5">Cómo funciona</a>
+          <a href="#comparacion" data-i18n="foot_l6">Comparación</a>
+          <a href="#faq" data-i18n="foot_l7">Preguntas</a>
+          <a href="#" onclick="abrirAuth(&quot;login&quot;);return false;" data-i18n="foot_l8">Iniciar sesión</a>
+        </div>
+        <div class="foot-col">
+          <h4 data-i18n="foot_c3">Contacto</h4>
+          <a href="mailto:contact@atiendepro.net" data-i18n="foot_contact">Contáctanos</a>
+          <a href="mailto:contact@atiendepro.net">contact@atiendepro.net</a>
+          <a href="#" onclick="abrirDemo();return false;" data-i18n="foot_demo">Solicitar demo</a>
+        </div>
+      </div>
+    </div>
+    <div class="foot-bottom">
+      <div class="foot-note" data-i18n="foot_copy">© 2026 ATIENDEPRO · Tu negocio siempre responde.</div>
+      <div class="foot-lang">
+        <span data-i18n="foot_lang_l">Idioma</span>
+        <div class="lang" role="group" aria-label="Idioma">
+          <button class="on" data-lang="es">ES</button>
+          <button data-lang="en">EN</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</footer>
+
+<!-- ===== DEMO MODAL ===== -->
+<div class="modal-bg" id="demoModal">
+  <div class="modal">
+    <button class="modal-close" onclick="cerrarDemo()" aria-label="Cerrar">×</button>
+    <div class="modal-dots" id="demoDots">
+      <span class="md on"></span><span class="md"></span><span class="md"></span><span class="md"></span><span class="md"></span>
+    </div>
+
+    <div class="modal-step on" data-step="0">
+      <div class="modal-eyebrow" data-i18n="d_eye0">Solicitar demostración</div>
+      <h3 data-i18n="d_t0">¿Cómo se llama tu restaurante?</h3>
+      <input type="text" id="dNegocio" placeholder="Ej: Taquería El Buen Sabor" data-i18n-ph="d_ph0">
+      <div class="modal-nav"><button class="btn btn-verde" onclick="demoNext()" style="flex:1;justify-content:center;" data-i18n="d_next">Continuar →</button></div>
+    </div>
+
+    <div class="modal-step" data-step="1">
+      <div class="modal-eyebrow" data-i18n="d_eye1">Un gusto conocerte</div>
+      <h3 data-i18n="d_t1">¿Cuál es tu nombre?</h3>
+      <input type="text" id="dNombre" placeholder="Nombre y apellido" data-i18n-ph="d_ph1">
+      <div class="modal-nav"><button class="modal-back" onclick="demoBack()">←</button><button class="btn btn-verde" onclick="demoNext()" style="flex:1;justify-content:center;" data-i18n="d_next2">Continuar →</button></div>
+    </div>
+
+    <div class="modal-step" data-step="2">
+      <div class="modal-eyebrow" data-i18n="d_eye2">Para contactarte</div>
+      <h3 data-i18n="d_t2">Tu teléfono y correo</h3>
+      <input type="tel" id="dTel" placeholder="Teléfono" data-i18n-ph="d_ph2a">
+      <input type="email" id="dEmail" placeholder="Correo electrónico" data-i18n-ph="d_ph2b">
+      <div class="modal-nav"><button class="modal-back" onclick="demoBack()">←</button><button class="btn btn-verde" onclick="demoNext()" style="flex:1;justify-content:center;" data-i18n="d_next3">Continuar →</button></div>
+    </div>
+
+    <div class="modal-step" data-step="3">
+      <div class="modal-eyebrow" data-i18n="d_eye3">Casi listo</div>
+      <h3 data-i18n="d_t3">¿Qué te interesa más?</h3>
+      <div class="modal-opts" id="dInteres">
+        <button class="modal-opt" data-val="Sistema completo"><span class="mo-radio"></span><span data-i18n="d_o1">El sistema completo</span></button>
+        <button class="modal-opt" data-val="Recepcionista virtual"><span class="mo-radio"></span><span data-i18n="d_o2">Solo la recepcionista virtual</span></button>
+        <button class="modal-opt" data-val="Kiosko"><span class="mo-radio"></span><span data-i18n="d_o3">Solo el kiosko</span></button>
+        <button class="modal-opt" data-val="Pantalla de cocina"><span class="mo-radio"></span><span data-i18n="d_o4">Solo la pantalla de cocina</span></button>
+      </div>
+      <div class="modal-nav"><button class="modal-back" onclick="demoBack()">←</button><button class="btn btn-verde" onclick="demoEnviar()" style="flex:1;justify-content:center;" data-i18n="d_send">Enviar solicitud →</button></div>
+    </div>
+
+    <div class="modal-step" data-step="4">
+      <div class="modal-done">
+        <div class="mdi"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="3"><path d="M20 6 9 17l-5-5"/></svg></div>
+        <h3 data-i18n="d_done_t">¡Listo!</h3>
+        <p data-i18n="d_done_p">Te contactaremos pronto para mostrarte ATIENDEPRO funcionando con un restaurante parecido al tuyo.</p>
+        <button class="btn btn-verde btn-lg" onclick="cerrarDemo()" style="width:100%;justify-content:center;" data-i18n="d_done_btn">Cerrar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ===== AUTH MODAL ===== -->
+<div class="modal-bg" id="authModal">
+  <div class="modal auth-modal">
+    <button class="modal-close" onclick="cerrarAuth()" aria-label="Cerrar">×</button>
+    <div style="display:flex;flex-direction:column;align-items:center;margin-bottom:16px;">
+      <svg width="50" height="50"><use href="#apIcono"/></svg>
+      <div style="font-family:'Sora',sans-serif;font-weight:800;font-size:19px;margin-top:7px;">ATIENDE<span style="color:var(--verde)">PRO</span></div>
+    </div>
+    <div class="auth-tabs">
+      <button class="auth-tab on" id="tabLogin" onclick="authModo('login')" data-i18n="auth_tab_login">Iniciar sesión</button>
+      <button class="auth-tab" id="tabReg" onclick="authModo('registro')" data-i18n="auth_tab_reg">Crear cuenta</button>
+    </div>
+    <div class="auth-msg" id="authMsg"></div>
+
+    <!-- LOGIN -->
+    <div id="authLogin">
+      <input type="email" id="aEmail" placeholder="Correo electrónico" data-i18n-ph="auth_ph_email" autocomplete="off" name="ap_correo_x">
+      <input type="password" id="aPass" placeholder="Contraseña" data-i18n-ph="auth_ph_pass" autocomplete="new-password" name="ap_clave_x">
+      <div style="text-align:right;margin:-4px 0 12px;"><a href="#" onclick="authOlvido();return false;" style="font-size:12.5px;color:var(--azul);font-weight:600;text-decoration:none;" data-i18n="auth_forgot">¿Olvidaste tu contraseña?</a></div>
+      <button class="btn btn-verde btn-lg" id="authAction" onclick="authLogin()" style="width:100%;justify-content:center;margin-top:4px;" data-i18n="auth_btn_login">Entrar a mi panel →</button>
+      <div class="auth-note" data-i18n="auth_note_login">¿Aún no tienes cuenta? Crea una en la pestaña de arriba.</div>
+    </div>
+
+    <!-- REGISTRO COMPLETO -->
+    <div id="authReg" style="display:none;">
+      <div class="afield"><label data-i18n="reg_l_neg">Nombre de tu negocio *</label><input id="rNegocio" placeholder="Ej. Mi Negocio" autocomplete="off"></div>
+      <div class="afield"><label data-i18n="reg_l_tipo">Tipo de restaurante *</label>
+        <select id="rTipo">
+          <option value="" data-i18n="reg_tipo_0">Elige uno…</option>
+          <option>Taquería</option><option>Pizzería</option><option>Comida rápida</option>
+          <option>Food truck</option><option>Pollería</option><option>Cafetería</option>
+          <option>Panadería</option><option>Mariscos</option><option>Buffet</option>
+          <option>Restaurante</option><option>Otro</option>
+        </select>
+      </div>
+      <div class="afield"><label data-i18n="reg_l_dir">Dirección *</label><input id="rDir" placeholder="Calle y número" autocomplete="off"></div>
+      <div class="arow2">
+        <div class="afield"><label data-i18n="reg_l_ciudad">Ciudad *</label><input id="rCiudad" placeholder="Ciudad" autocomplete="off"></div>
+        <div class="afield"><label data-i18n="reg_l_estado">Estado *</label><input id="rEstado" placeholder="Ej. Arizona" autocomplete="off"></div>
+      </div>
+      <div class="arow2">
+        <div class="afield"><label data-i18n="reg_l_zip">Código postal (ZIP) *</label><input id="rZip" placeholder="Ej. 85001" autocomplete="off"></div>
+        <div class="afield"><label data-i18n="reg_l_pais">País *</label><input id="rPais" value="Estados Unidos" autocomplete="off"></div>
+      </div>
+      <div class="afield"><label data-i18n="reg_l_tel">Teléfono del negocio *</label><input id="rTel" placeholder="Ej. +1 (602) 555-0100" autocomplete="off"></div>
+      <div class="afield"><label data-i18n="reg_l_email">Correo electrónico *</label><input type="email" id="rEmail" placeholder="tucorreo@ejemplo.com" autocomplete="off" name="ap_reg_correo_x"></div>
+      <div class="afield"><label data-i18n="reg_l_pass">Contraseña *</label><input type="password" id="rPass" placeholder="Mínimo 6 caracteres" autocomplete="new-password" name="ap_reg_clave_x"></div>
+      <button class="btn btn-verde btn-lg" id="authRegBtn" onclick="authRegistro()" style="width:100%;justify-content:center;margin-top:4px;" data-i18n="auth_btn_reg">Crear mi cuenta →</button>
+      <div class="auth-note" data-i18n="auth_note_reg">Crearás tu cuenta y entrarás directo a tu panel.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ===== CHAT ANA ===== -->
+<button class="chat-fab" id="chatFab" aria-label="Abrir chat">
+  <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/></svg>
+  <span class="badge">1</span>
+</button>
+
+<div class="chat-win" id="chatWin">
+  <div class="chat-head">
+    <div class="chat-ava">A</div>
+    <div class="ch-info">
+      <div class="ch-name">Ana · Asistente</div>
+      <div class="ch-status"><span class="dot"></span> En línea</div>
+    </div>
+    <button class="chat-close" id="chatClose">×</button>
+  </div>
+  <div class="chat-body" id="chatBody">
+    <div class="msg ana">¡Hola! Soy Ana, de ATIENDEPRO. 👋 Te ayudo con precios, cómo funciona y todo lo del servicio. ¿Qué te gustaría saber?</div>
+  </div>
+  <div class="chat-chips" id="chatChips">
+    <button class="chip">¿Cuánto cuesta?</button>
+    <button class="chip">¿Cómo funciona?</button>
+    <button class="chip">¿Sirve para mi restaurante?</button>
+  </div>
+  <div class="chat-foot">
+    <input id="chatInput" placeholder="Escribe tu pregunta…" autocomplete="off">
+    <button class="chat-send" id="chatSend" aria-label="Enviar">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+    </button>
+  </div>
+  <div class="chat-foot-note">Respuestas automáticas · ATIENDEPRO</div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const money = n => '$' + Math.round(n).toLocaleString('en-US');
+
+/* ===== ESCENA: pestañas manuales ===== */
+document.querySelectorAll('.scene-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const key = tab.dataset.maq;
+    document.querySelectorAll('.scene-tab').forEach(t => t.classList.toggle('on', t === tab));
+    document.querySelectorAll('.maq').forEach(m => m.classList.toggle('on', m.dataset.maq === key));
+  });
+});
+
+/* ===== CALCULADORA (honesta y conservadora) ===== */
+const rLlamadas = $('rLlamadas'), rPerdidas = $('rPerdidas'), rTicket = $('rTicket');
+function calcular(){
+  const llamadasDia = +rLlamadas.value, pctPerdidas = +rPerdidas.value, ticket = +rTicket.value;
+  $('vLlamadas').textContent = llamadasDia;
+  $('vPerdidas').textContent = pctPerdidas + '%';
+  $('vTicket').textContent = '$' + ticket;
+
+  const TASA_PEDIDO = 0.50;
+  const perdidasMes = llamadasDia * 30 * (pctPerdidas/100);
+  const pedidosPerdidos = perdidasMes * TASA_PEDIDO;
+  const ventasPerdidas = pedidosPerdidos * ticket;
+  const COSTO = 149;
+
+  $('oPerdido').textContent = money(ventasPerdidas);
+  $('oResumen').textContent = t('calc_res', {n: Math.round(pedidosPerdidos), t: ticket});
+  $('bPierdeV').textContent = money(ventasPerdidas);
+  $('bRecuperaV').textContent = money(ventasPerdidas);
+  $('bCostoV').textContent = '$' + COSTO;
+  const maxV = Math.max(ventasPerdidas, COSTO);
+  $('bPierde').style.width = (ventasPerdidas/maxV*100) + '%';
+  $('bRecupera').style.width = (ventasPerdidas/maxV*100) + '%';
+  $('bCosto').style.width = Math.max(4,(COSTO/maxV*100)) + '%';
+
+  const pedidosParaPagar = Math.max(1, Math.ceil(COSTO / ticket));
+  $('oVeredicto').innerHTML = t('calc_verd', {n: pedidosParaPagar, t: ticket});
+}
+[rLlamadas, rPerdidas, rTicket].forEach(r => r.addEventListener('input', calcular));
+
+/* ===== SHOWCASE CÓMO FUNCIONA ===== */
+let storyIdx = 0, storyTimer = null;
+function storyPaint(){
+  document.querySelectorAll('.story-slide').forEach((s,i)=>s.classList.toggle('on', i===storyIdx));
+  document.querySelectorAll('.story-tab').forEach((t,i)=>{
+    t.classList.toggle('on', i===storyIdx);
+    const p = t.querySelector('.prog');
+    if(p){ p.style.animation='none'; void p.offsetWidth; p.style.animation=''; }
+  });
+}
+function storyGo(i){ storyIdx = i; storyPaint(); storyArm(); }
+function storyArm(){ clearInterval(storyTimer); storyTimer = setInterval(()=>{ storyIdx=(storyIdx+1)%3; storyPaint(); }, 6500); }
+storyArm();
+const _stage = document.getElementById('storyStage');
+if(_stage){ _stage.addEventListener('mouseenter', ()=>clearInterval(storyTimer)); _stage.addEventListener('mouseleave', storyArm); }
+
+/* ===== FAQ ===== */
+document.querySelectorAll('.faq-item').forEach(item => {
+  item.addEventListener('click', () => item.classList.toggle('open'));
+});
+
+/* ===== DEMO MODAL ===== */
+let demoStep = 0;
+const demoData = {};
+function abrirDemo(){ demoStep = 0; showDemoStep(); $('demoModal').classList.add('open'); }
+function cerrarDemo(){ $('demoModal').classList.remove('open'); }
+function showDemoStep(){
+  document.querySelectorAll('.modal-step').forEach(s => s.classList.toggle('on', +s.dataset.step === demoStep));
+  document.querySelectorAll('#demoDots .md').forEach((d,i) => d.classList.toggle('on', i === demoStep));
+}
+function demoNext(){
+  if(demoStep === 0 && !$('dNegocio').value.trim()){ $('dNegocio').focus(); return; }
+  if(demoStep === 1 && !$('dNombre').value.trim()){ $('dNombre').focus(); return; }
+  if(demoStep === 2 && (!$('dTel').value.trim() || !$('dEmail').value.trim())){ ($('dTel').value.trim()?$('dEmail'):$('dTel')).focus(); return; }
+  demoStep++; showDemoStep();
+}
+function demoBack(){ if(demoStep>0){ demoStep--; showDemoStep(); } }
+document.querySelectorAll('#dInteres .modal-opt').forEach(opt => {
+  opt.addEventListener('click', () => {
+    document.querySelectorAll('#dInteres .modal-opt').forEach(o => o.classList.toggle('sel', o === opt));
+    demoData.interes = opt.dataset.val;
+  });
+});
+async function demoEnviar(){
+  demoData.negocio = $('dNegocio').value.trim();
+  demoData.nombre = $('dNombre').value.trim();
+  demoData.telefono = $('dTel').value.trim();
+  demoData.email = $('dEmail').value.trim();
+  demoData.idioma = currentLang;
+  demoData.fecha = new Date().toISOString();
+  // Enviar a la Edge Function (guarda en Supabase + avisa por correo al creador)
+  try {
+    fetch('https://wetpjfpefypgzmcfoxui.supabase.co/functions/v1/solicitud-demo', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(demoData)
+    }).catch(()=>{});
+  } catch(e){}
+  demoStep = 4; showDemoStep();
+}
+$('demoModal').addEventListener('click', e => { if(e.target === $('demoModal')) cerrarDemo(); });
+
+/* ===== CHAT ANA ===== */
+const ENDPOINT_CHAT = 'https://wetpjfpefypgzmcfoxui.supabase.co/functions/v1/asistente-web';
+const chatFab = $('chatFab'), chatWin = $('chatWin'), chatBody = $('chatBody');
+const chatInput = $('chatInput'), chatSend = $('chatSend'), chatChips = $('chatChips');
+let historial = [], enviando = false;
+chatFab.onclick = () => { chatWin.classList.add('open'); chatFab.style.display='none'; document.querySelector('.chat-fab .badge')?.remove(); setTimeout(()=>chatInput.focus(),200); };
+$('chatClose').onclick = () => { chatWin.classList.remove('open'); chatFab.style.display='flex'; };
+function pintarMsg(texto, quien){ const d=document.createElement('div'); d.className='msg '+quien; d.textContent=texto; chatBody.appendChild(d); chatBody.scrollTop=chatBody.scrollHeight; return d; }
+async function enviarMsg(texto){
+  if(enviando || !texto.trim()) return;
+  enviando=true; chatInput.value=''; chatChips.style.display='none';
+  pintarMsg(texto,'yo'); historial.push({rol:'usuario',texto});
+  const esc = pintarMsg('Ana está escribiendo…','ana escribiendo');
+  try {
+    const r = await fetch(ENDPOINT_CHAT,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({mensaje:texto,historial:historial.slice(-8)})});
+    const data = await r.json(); esc.remove();
+    const resp = data.respuesta || 'Disculpa, no pude responder. Intenta de nuevo.';
+    pintarMsg(resp,'ana'); historial.push({rol:'asistente',texto:resp});
+  } catch(e){ esc.remove(); pintarMsg('Ups, no pude conectar. Revisa tu internet e intenta de nuevo.','ana'); }
+  enviando=false; chatInput.focus();
+}
+chatSend.onclick = () => enviarMsg(chatInput.value);
+chatInput.addEventListener('keydown', e => { if(e.key==='Enter') enviarMsg(chatInput.value); });
+chatChips.querySelectorAll('.chip').forEach(c => c.onclick = () => enviarMsg(c.textContent));
+
+
+/* ===== AUTENTICACION (mismo Supabase y misma clave de sesion que el panel) ===== */
+let sbAuth = null;
+function getSbAuth(){
+  if(!sbAuth && window.supabase){
+    sbAuth = window.supabase.createClient('https://wetpjfpefypgzmcfoxui.supabase.co','sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn',{
+      auth:{ autoRefreshToken:true, persistSession:true, detectSessionInUrl:true, storageKey:'atiendepro-auth', storage:window.localStorage }
+    });
+  }
+  return sbAuth;
+}
+let authModoActual = 'login';
+function abrirAuth(modo){ authModo(modo); $('authModal').classList.add('open'); }
+function cerrarAuth(){ $('authModal').classList.remove('open'); $('authMsg').className='auth-msg'; }
+function authModo(modo){
+  authModoActual = modo;
+  $('tabLogin').classList.toggle('on', modo==='login');
+  $('tabReg').classList.toggle('on', modo==='registro');
+  $('authLogin').style.display = modo==='login' ? 'block' : 'none';
+  $('authReg').style.display = modo==='registro' ? 'block' : 'none';
+  $('authMsg').className='auth-msg';
+}
+function authMsg(tipo, texto){ const m=$('authMsg'); m.className='auth-msg '+tipo; m.textContent=texto; }
+function traducirErrorAuth(msg){
+  msg = (msg||'').toLowerCase();
+  if(msg.includes('invalid login')) return t('auth_err_cred');
+  if(msg.includes('already registered') || msg.includes('already been registered')) return t('auth_err_existe');
+  if(msg.includes('password')) return t('auth_err_pass');
+  if(msg.includes('email')) return t('auth_err_email');
+  if(!msg) return t('auth_err_gen');
+  return t('auth_err_gen');
+}
+async function authLogin(){
+  const email=$('aEmail').value.trim(), pass=$('aPass').value;
+  if(!email || !pass){ authMsg('err', t('auth_err_campos')); return; }
+  const sb = getSbAuth();
+  if(!sb){ authMsg('err', t('auth_err_gen')); return; }
+  const btn=$('authAction'); btn.disabled=true; const orig=btn.textContent; btn.textContent='...';
+  try{
+    const { error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if(error) throw error;
+    window.location.href='/app'; return;
+  }catch(e){ authMsg('err', traducirErrorAuth(e && e.message)); }
+  btn.disabled=false; btn.textContent=orig;
+}
+async function authRegistro(){
+  const datosNeg = {
+    nombre: $('rNegocio').value.trim(),
+    tipo_negocio: $('rTipo').value,
+    direccion: $('rDir').value.trim(),
+    ciudad: $('rCiudad').value.trim(),
+    estado: $('rEstado').value.trim(),
+    zip: $('rZip').value.trim(),
+    pais: $('rPais').value.trim(),
+    telefono: $('rTel').value.trim()
+  };
+  const email=$('rEmail').value.trim(), pass=$('rPass').value;
+  const faltan=[];
+  if(!datosNeg.nombre) faltan.push(t('reg_f_neg'));
+  if(!datosNeg.tipo_negocio) faltan.push(t('reg_f_tipo'));
+  if(!datosNeg.direccion) faltan.push(t('reg_f_dir'));
+  if(!datosNeg.ciudad) faltan.push(t('reg_f_ciudad'));
+  if(!datosNeg.estado) faltan.push(t('reg_f_estado'));
+  if(!datosNeg.zip) faltan.push(t('reg_f_zip'));
+  if(!datosNeg.pais) faltan.push(t('reg_f_pais'));
+  if(!datosNeg.telefono) faltan.push(t('reg_f_tel'));
+  if(!email) faltan.push(t('reg_f_email'));
+  if(!pass) faltan.push(t('reg_f_pass'));
+  if(pass && pass.length < 6) faltan.push(t('reg_f_pass6'));
+  if(faltan.length){ authMsg('err', t('auth_err_faltan') + faltan.join(', ') + '.'); return; }
+  const sb = getSbAuth();
+  if(!sb){ authMsg('err', t('auth_err_gen')); return; }
+  const btn=$('authRegBtn'); btn.disabled=true; const orig=btn.textContent; btn.textContent='...';
+  try{
+    // Guardamos los datos del negocio en el metadata del usuario.
+    // Se crearán en la tabla automáticamente cuando confirme su correo y entre por 1ra vez.
+    const { data, error } = await sb.auth.signUp({
+      email, password: pass,
+      options: {
+        data: { negocio_pendiente: datosNeg },
+        emailRedirectTo: window.location.origin + '/app?confirmado=1'
+      }
+    });
+    if(error) throw error;
+
+    // Con "Confirm email" activo, no hay sesión: mostramos pantalla de "revisa tu correo".
+    if(!data.session){
+      mostrarConfirmaCorreo(email);
+      return;
+    }
+    // Si por config no pidiera confirmación, entra directo.
+    window.location.href='/app?confirmado=1';
+    return;
+  }catch(e){ authMsg('err', traducirErrorAuth(e && e.message)); }
+  btn.disabled=false; btn.textContent=orig;
+}
+
+function mostrarConfirmaCorreo(email){
+  const cont = document.querySelector('#authModal .modal');
+  if(!cont) return;
+  cont.innerHTML = `
+    <button class="modal-close" onclick="cerrarAuth()" aria-label="Cerrar">\u00d7</button>
+    <div style="text-align:center;padding:6px 4px;">
+      <div style="width:66px;height:66px;border-radius:50%;background:rgba(34,197,94,.14);display:flex;align-items:center;justify-content:center;margin:0 auto 18px;">
+        <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="#22C55E" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-10 6L2 7"/></svg>
+      </div>
+      <h3 style="font-family:'Sora',sans-serif;font-size:22px;font-weight:800;margin-bottom:10px;">${t('conf_titulo')}</h3>
+      <p style="font-size:14.5px;color:var(--muted);line-height:1.6;margin-bottom:8px;">${t('conf_texto1')}</p>
+      <p style="font-size:14.5px;color:var(--ink);font-weight:700;margin-bottom:16px;">${email}</p>
+      <p style="font-size:13px;color:var(--faint);line-height:1.55;margin-bottom:22px;">${t('conf_texto2')}</p>
+      <button class="btn btn-verde btn-lg" onclick="cerrarAuth()" style="width:100%;justify-content:center;">${t('conf_ok')}</button>
+    </div>`;
+}
+$('authModal').addEventListener('click', e => { if(e.target === $('authModal')) cerrarAuth(); });
+$('aPass').addEventListener('keydown', e => { if(e.key==='Enter') authLogin(); });
+async function authOlvido(){
+  const email = $('aEmail').value.trim();
+  if(!email){ authMsg('err', t('auth_forgot_email')); $('aEmail').focus(); return; }
+  const sb = getSbAuth();
+  if(!sb){ authMsg('err', t('auth_err_gen')); return; }
+  authMsg('ok', t('auth_forgot_env'));
+  try{
+    const { error } = await sb.auth.resetPasswordForEmail(email, { redirectTo: window.location.origin + '/app' });
+    if(error) throw error;
+    authMsg('ok', t('auth_forgot_ok'));
+  }catch(e){ authMsg('err', t('auth_err_gen')); }
+}
+
+
+/* ===== IDIOMA ES/EN ===== */
+const I18N = {
+  es: {
+    auth_btn_login:"Entrar a mi panel \u2192", auth_btn_reg:"Crear mi cuenta \u2192",
+    auth_note_login:"\u00bfA\u00fan no tienes cuenta? Crea una en la pesta\u00f1a de arriba.",
+    auth_note_reg:"Crear\u00e1s tu cuenta y entrar\u00e1s directo a tu panel.",
+    auth_err_campos:"Escribe tu correo y contrase\u00f1a.", auth_err_cred:"Correo o contrase\u00f1a incorrectos.",
+    auth_err_pass:"La contrase\u00f1a no cumple los requisitos (m\u00ednimo 6 caracteres).",
+    auth_err_email:"Revisa que el correo est\u00e9 bien escrito.",
+    auth_err_faltan:"Falta completar: ",
+    auth_forgot_email:"Escribe tu correo arriba y vuelve a tocar aqu\u00ed.",
+    auth_forgot_env:"Enviando\u2026",
+    auth_forgot_ok:"Listo. Te enviamos un correo con el enlace para crear una contrase\u00f1a nueva. Revisa tu bandeja (y el spam).",
+    reg_f_neg:"nombre del negocio", reg_f_tipo:"tipo de restaurante", reg_f_dir:"direcci\u00f3n",
+    reg_f_ciudad:"ciudad", reg_f_estado:"estado", reg_f_zip:"c\u00f3digo postal", reg_f_pais:"pa\u00eds",
+    reg_f_tel:"tel\u00e9fono", reg_f_email:"correo", reg_f_pass:"contrase\u00f1a", reg_f_pass6:"contrase\u00f1a de al menos 6 caracteres",
+    conf_titulo:"\u00a1Revisa tu correo!", 
+    conf_texto1:"Te enviamos un enlace de confirmaci\u00f3n a:",
+    conf_texto2:"Haz clic en el enlace del correo para activar tu cuenta y elegir tu plan. Si no lo ves, revisa la carpeta de spam.",
+    conf_ok:"Entendido",
+    auth_err_existe:"Ese correo ya tiene cuenta. Inicia sesi\u00f3n.", auth_err_gen:"No pudimos conectar. Intenta de nuevo.",
+    auth_ok_reg:"\u00a1Cuenta creada! Entrando a tu panel\u2026",
+    calc_res: (p) => `≈ ${p.n} pedidos perdidos al mes, a $${p.t} cada uno.`,
+    calc_verd: (p) => `Recuperando solo <b>${p.n} ${p.n===1?'pedido':'pedidos'} de $${p.t}</b> al mes ya cubres la mensualidad.`,
+  },
+  en: {
+    nav_login:"Sign in", nav_register:"Sign up", nav_demo:"Request demo", nav_calc:"Calculate savings",
+    hero_cta3:"Calculate your savings",
+    auth_tab_login:"Sign in", auth_tab_reg:"Create account",
+    auth_ph_email:"Email", auth_ph_pass:"Password",
+    auth_btn_login:"Go to my dashboard \u2192", auth_btn_reg:"Create my account \u2192",
+    auth_note_login:"No account yet? Create one in the tab above.",
+    auth_note_reg:"You will create your account and go straight to your dashboard.",
+    auth_err_campos:"Enter your email and password.", auth_err_cred:"Wrong email or password.",
+    auth_err_existe:"That email already has an account. Sign in.", auth_err_gen:"Could not connect. Try again.",
+    auth_ok_reg:"Account created! Entering your dashboard\u2026",
+    auth_err_pass:"Password does not meet requirements (6 characters minimum).",
+    auth_err_email:"Check that the email is written correctly.",
+    auth_err_faltan:"Missing: ",
+    auth_forgot:"Forgot your password?",
+    auth_forgot_email:"Type your email above and tap here again.",
+    auth_forgot_env:"Sending\u2026",
+    auth_forgot_ok:"Done. We sent you an email with the link to create a new password. Check your inbox (and spam).",
+    reg_f_neg:"business name", reg_f_tipo:"restaurant type", reg_f_dir:"address",
+    reg_f_ciudad:"city", reg_f_estado:"state", reg_f_zip:"ZIP code", reg_f_pais:"country",
+    reg_f_tel:"phone", reg_f_email:"email", reg_f_pass:"password", reg_f_pass6:"password of at least 6 characters",
+    conf_titulo:"Check your email!",
+    conf_texto1:"We sent a confirmation link to:",
+    conf_texto2:"Click the link in the email to activate your account and choose your plan. If you don't see it, check your spam folder.",
+    conf_ok:"Got it",
+    reg_l_neg:"Your business name *", reg_l_tipo:"Restaurant type *", reg_tipo_0:"Choose one\u2026",
+    reg_l_dir:"Address *", reg_l_ciudad:"City *", reg_l_estado:"State *", reg_l_zip:"ZIP code *",
+    reg_l_pais:"Country *", reg_l_tel:"Business phone *", reg_l_email:"Email *", reg_l_pass:"Password *",
+    calc_b1:"Sales slipping away", calc_b2:"Sales you recover with ATIENDEPRO", calc_b3:"What ATIENDEPRO costs",
+    price2_name:"Essential Plan", price2_per:"/ month", price2_sub:"Organize your order operation.",
+    price2_l1:"Self-service kiosk", price2_l2:"Kitchen display", price2_l3:"Orders, customers & sales dashboard",
+    price2_l4:"Unlimited orders", price2_l5:"Support in Spanish", price2_l6:"Virtual receptionist 24/7",
+    price2_cta:"Request a demo",
+    hero_eyebrow:"Virtual receptionist · Kiosk · Kitchen display",
+    hero_title_html:'Everything your restaurant needs to <span class="grad-text">take and prepare more orders</span>',
+    hero_lead:"Answers calls 24/7, takes orders from a kiosk, and sends each one straight to the kitchen display. All connected in one dashboard.",
+    hero_cta1:"Request a demo", hero_cta2:"See how it works",
+    hero_t1:"Answers calls 24/7, even when you're slammed",
+    hero_t2:"Every order goes straight to the kitchen",
+    hero_t3:"Set up without changing your number",
+    hero_price_html:'From <b>$149/month</b> · Cancel anytime',
+    tab_kiosko:"Kiosk", tab_cocina:"Kitchen", tab_panel:"Dashboard",
+    float_title:"Virtual receptionist", float_sub:"Answering a call…",
+    k_cat:"Tacos", k_cart:"Your order", k_sub:"Subtotal", k_total:"Total", k_pay:"Place order",
+    co_live:"Live orders", co_new:"New", co_prep:"Preparing", co_ready:"Ready",
+    co_time1:"30 sec ago", co_time2:"4 min ago", co_time3:"8 min ago",
+    co_src1:"Virtual receptionist", co_src1b:"Virtual receptionist", co_src2:"Kiosk",
+    p_hello:"Good afternoon, El Buen Sabor! 👋", p_date:"Here's your business summary today.",
+    p_recep_t:"Virtual receptionist — active 24/7", p_recep_s:"Answers and logs orders instantly.", p_recep_num:"YOUR NUMBER",
+    p_s1:"Orders today", p_s2:"Calls today", p_s3:"Sales today", p_s4:"Avg. ticket",
+    p_orders:"Recent orders", p_all:"View all →", p_r1:"Call · Ana M.", p_r2:"Kiosk", p_r3:"Call · Luis R.",
+    p_prep:"Preparing", p_prep2:"Preparing", p_ok:"Delivered",
+    strip_l:"Built for high-volume food businesses",
+    strip1:"Taquerias", strip2:"Pizzerias", strip3:"Fast food", strip4:"Food trucks", strip5:"Chicken spots", strip6:"Restaurants",
+    how_eye:"How it works", how_title_html:'From the call to the kitchen, <span class="grad-text">without lifting a finger</span>',
+    how_sub:"Your customer orders, your team prepares, you control everything from one dashboard.",
+    how1_tb:"The customer orders", how2_tb:"Hits the kitchen", how3_tb:"You control everything",
+    how1_t:"The customer orders", how1_p:"By phone with the virtual receptionist, at the self-service kiosk, or directly with your staff.",
+    how2_t:"The order hits the kitchen", how2_p:"It appears instantly on the kitchen display with items, quantities, notes and time. Your team prepares it without errors.",
+    how3_t:"You control everything", how3_p:"Orders, calls, customers, products and sales from one dashboard, on any device.",
+    sol_eye:"Solutions", sol_title_html:'A complete <span class="grad-text">operating system for your restaurant</span>',
+    sol_sub:"Four pieces that work together. Start with what you need most and add the rest whenever you want.",
+    sol1_eye:"◆ Virtual receptionist", sol1_t:"Your staff cooks. ATIENDEPRO answers the phone.",
+    sol1_p:"Every call answered on the first ring, with your business greeting. Takes the order, confirms the details and logs it instantly — anytime, without keeping anyone waiting.",
+    sol1_l1:"Answers 24/7, even at peak hours or after closing", sol1_l2:"Speaks naturally, understands accents and slang", sol1_l3:"Uses your same number, no changes needed",
+    sol1_live:"Call in progress", sol1_cap:'"Good afternoon, El Buen Sabor, what can I get you?"',
+    sol2_eye:"◆ Self-service kiosk", sol2_t:"Fewer lines, bigger orders.",
+    sol2_p:"Customers order on their own on a clear screen, with photos and prices. The kiosk suggests adding a drink, side or dessert — raising the value of each order without anyone having to ask.",
+    sol2_l1:"Menu with photos, categories and clear prices", sol2_l2:'Automatic suggestions: "Add a drink?"', sol2_l3:"The order goes straight to the kitchen",
+    sol2_up:"Add a drink?",
+    sol3_eye:"◆ Kitchen display", sol3_t:"Every order arrives clear, organized and in real time.",
+    sol3_p:"Your team sees every order on one screen, color-coded by status. Whether from the phone or the kiosk, they land in the same place — no paper tickets, no shouting, no confusion.",
+    sol3_l1:"Color cards by order status", sol3_l2:"Alarm when a new order comes in", sol3_l3:"Mark each order: waiting, preparing, ready",
+    sol3_new:"NEW", sol3_prep:"PREPARING",
+    sol4_eye:"◆ Restaurant dashboard", sol4_t:"Run your operation from any device.",
+    sol4_p:"Orders, calls, customers, menu, sales and reports in one place. You know exactly how many calls you got, how many orders came in and how much you sold — no guessing.",
+    sol4_l1:"Daily summary: orders, calls and sales", sol4_l2:"Edit your menu and prices whenever you want", sol4_l3:"Sales reports by date range",
+    sol4_s1:"Orders today", sol4_s2:"Calls", sol4_s3:"Sales", sol4_top:"Top products",
+    cmp_eye:"Comparison", cmp_title_html:'Other systems start late.<br><span style="color:var(--ink)">ATIENDE</span><span style="color:var(--verde)">PRO</span> <span class="grad-text">starts at the call.</span>',
+    cmp_sub:"A traditional ordering system only acts once the customer already placed the order. ATIENDEPRO starts the moment the customer calls or walks in.",
+    cmp_h1:"Feature", cmp_h2:"Traditional system",
+    cmp_r1:"Answers calls 24/7", cmp_r2:"Takes orders by phone", cmp_r3:"Self-service kiosk", cmp_r4:"Kitchen display", cmp_r5:"Orders & sales dashboard", cmp_r6:"Everything in one platform", cmp_r7:"Custom setup",
+    cmp_some1:"Some", cmp_some2:"Some", cmp_limit:"Limited",
+    cmp_note_html:'<b>NO OTHER PLATFORM ANSWERS THE PHONE FOR YOU. THAT IS WHERE CUSTOMERS ARE WON OR LOST.</b>',
+    calc_eye:"Calculate your savings", calc_title_html:'How much are you losing to <span class="grad-text">unanswered calls?</span>',
+    calc_sub:"Move the sliders with your restaurant's numbers. It's an honest estimate, not a promise.",
+    calc_f1:"Calls you get per day", calc_h1:"Include the ones you sometimes can't answer.",
+    calc_f2:"How many slip away?", calc_h2:"Peak hours, busy kitchen, after closing…",
+    calc_f3:"Average order value", calc_h3:"How much a customer spends on average.",
+    calc_col:"You could be losing", calc_rec:"Sales you could recover", calc_cost:"ATIENDEPRO cost", calc_cta:"Request a demo →",
+    calc_disc:"This is an estimate. Results depend on call volume and average order value. We assume half of missed calls would be a real order.",
+    calc_res: (p) => `≈ ${p.n} lost orders per month, at $${p.t} each.`,
+    calc_verd: (p) => `Recovering just <b>${p.n} ${p.n===1?'order':'orders'} of $${p.t}</b> a month covers the fee.`,
+    price_eye:"Pricing", price_title_html:'Two simple plans. <span class="grad-text">No surprises.</span>', price_sub:"The virtual receptionist is what makes the difference.",
+    price_badge:"RECOMMENDED \u00b7 LAUNCH PRICE", price_name:"Complete Plan", price_per:"/ month", price_recup:"Your business answers and sells 24 hours a day.",
+    price_l1:"Virtual receptionist 24/7", price_l2:"Self-service kiosk", price_l3:"Kitchen display", price_l4:"Orders, customers & sales dashboard", price_l5:"Unlimited orders", price_l6:"Custom menu setup", price_l7:"Priority support in Spanish",
+    price_cta:"Request a demo →", price_fine_html:"<b>NO COMMITMENT. CANCEL ANYTIME. PHONE USAGE AND SETUP ARE DISCUSSED BASED ON YOUR VOLUME; WE EXPLAIN IT CLEARLY BEFORE YOU START.</b>",
+    faq_eye:"Questions", faq_title_html:'What every restaurant <span class="grad-text">wants to know</span>',
+    faq_q1:"Do I need to install anything or buy equipment?", faq_a1:"Not for the virtual receptionist. You use your same number and it works over the internet. The kiosk does need a screen or tablet; we discuss that based on your restaurant.",
+    faq_q2:"Does the receptionist sound like a robot?", faq_a2:"No. It speaks naturally, with your business greeting. Most customers don't even notice it isn't a person.",
+    faq_q3:"Do phone and kiosk orders land in the same place?", faq_a3:"Yes. Whether from the phone, the kiosk or staff, they all reach the same kitchen display and dashboard. All connected.",
+    faq_q4:"How long until it's ready?", faq_a4:"Usually a few days. We set up your business, your menu and your number, and you start receiving orders right away.",
+    faq_q5:"Can I cancel anytime?", faq_a5:"Yes. No commitment or long contracts. Cancel whenever you want and your data is always yours.",
+    faq_q6:"Are there extra costs?", faq_a6:"The monthly plan is $149. Depending on your call volume there may be a phone usage cost, and the kiosk needs a screen. We explain everything clearly before starting, no surprises.",
+    cta_title_html:'More orders. Fewer errors. <span class="grad-text">One connected operation.</span>', cta_sub:"We'll show you ATIENDEPRO working with a restaurant like yours.", cta_btn:"Request a demo →",
+    foot_desc:"The complete system for restaurants: virtual receptionist, kiosk and kitchen display, all connected in one dashboard.",
+    foot_c1:"Product", foot_l1:"Virtual receptionist", foot_l2:"Kiosk", foot_l3:"Kitchen display", foot_l4:"Pricing",
+    foot_c2:"Resources", foot_l5:"How it works", foot_l6:"Comparison", foot_l7:"Questions", foot_l8:"Sign in",
+    foot_copy:"© 2026 ATIENDEPRO · Your business always answers.", foot_lang_l:"Language",
+    foot_c3:"Contact", foot_contact:"Contact us", foot_demo:"Request demo",
+    d_eye0:"Request demo", d_t0:"What's your restaurant's name?", d_ph0:"e.g. El Buen Sabor Taqueria", d_next:"Continue →",
+    d_eye1:"Nice to meet you", d_t1:"What's your name?", d_ph1:"First and last name", d_next2:"Continue →",
+    d_eye2:"To reach you", d_t2:"Your phone and email", d_ph2a:"Phone", d_ph2b:"Email", d_next3:"Continue →",
+    d_eye3:"Almost done", d_t3:"What interests you most?", d_o1:"The complete system", d_o2:"Just the virtual receptionist", d_o3:"Just the kiosk", d_o4:"Just the kitchen display", d_send:"Send request →",
+    d_done_t:"Done!", d_done_p:"We'll be in touch soon to show you ATIENDEPRO working with a restaurant like yours.", d_done_btn:"Close",
+  }
+};
+function t(key, params){
+  const dict = I18N[currentLang] || {};
+  const base = I18N.es[key] || I18N.en[key];
+  const fn = dict[key] || base;
+  return typeof fn === 'function' ? fn(params) : fn;
+}
+let currentLang = 'es';
+// Guardar textos originales ES la primera vez
+const esOriginals = {};
+function snapshotES(){
+  document.querySelectorAll('[data-i18n]').forEach(el => { esOriginals[el.getAttribute('data-i18n')] = el.innerHTML; });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => { esOriginals['ph_'+el.getAttribute('data-i18n-ph')] = el.getAttribute('placeholder'); });
+}
+function setLang(lang){
+  currentLang = lang;
+  document.querySelectorAll('.lang button').forEach(b => b.classList.toggle('on', b.dataset.lang === lang));
+  document.documentElement.lang = lang;
+  if(lang === 'en'){
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      let v = I18N.en[key+'_html'] || I18N.en[key];
+      if(v != null) el.innerHTML = v;
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const v = I18N.en[el.getAttribute('data-i18n-ph')];
+      if(v != null) el.setAttribute('placeholder', v);
+    });
+  } else {
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const key = el.getAttribute('data-i18n');
+      if(esOriginals[key] != null) el.innerHTML = esOriginals[key];
+    });
+    document.querySelectorAll('[data-i18n-ph]').forEach(el => {
+      const v = esOriginals['ph_'+el.getAttribute('data-i18n-ph')];
+      if(v != null) el.setAttribute('placeholder', v);
+    });
+  }
+  calcular();
+}
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => setLang(b.dataset.lang)));
+
+// Init
+snapshotES();
+calcular();
+</script>
+
+</body>
+</html>

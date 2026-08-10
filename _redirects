@@ -1,0 +1,16 @@
+# ── AtiendePro · reglas de rutas ────────────────────────────
+# 200 = la direccion se queda igual en la barra del navegador
+#       (necesario para que el sistema lea el nombre del negocio)
+
+# Cocina:  atiendepro.net/cocina/rinconcito
+/cocina/*        /cocina.html      200
+
+# Kiosko:  atiendepro.net/kiosko/rinconcito
+/kiosko/*        /kiosko.html      200
+
+# Panel y consola (por si acaso; Netlify ya las resuelve solo)
+/app             /app.html         200
+/comando         /comando.html     200
+
+# Notas internas: nunca visibles al publico
+/docs/*          /                 301!

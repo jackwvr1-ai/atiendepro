@@ -1,0 +1,28 @@
+# ── AtiendePro · configuracion de publicacion ──────────────
+# Sitio estatico: no hay nada que "construir".
+# Netlify solo copia los archivos tal como estan.
+
+[build]
+  publish = "."
+  command = ""
+
+# Rutas limpias: /app en vez de /app.html
+[build.processing]
+  skip_processing = false
+
+[build.processing.html]
+  pretty_urls = true
+
+# ── Seguridad basica ───────────────────────────────────────
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+
+# El kiosko SI puede ir dentro de un marco (tablets/pantallas)
+[[headers]]
+  for = "/kiosko/*"
+  [headers.values]
+    X-Frame-Options = "ALLOWALL"

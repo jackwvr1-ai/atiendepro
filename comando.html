@@ -1,0 +1,642 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, maximum-scale=1">
+<title>CORE · ATIENDEPRO</title>
+
+<meta name="theme-color" content="#090B12">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="CORE">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 120'%3E%3Crect width='120' height='120' rx='26' fill='%23090B12'/%3E%3Cpath d='M30 60 A30 30 0 0 1 90 60' fill='none' stroke='%2334D399' stroke-width='6' stroke-linecap='round'/%3E%3Cpath d='M60 38 L82 92 L68 92 L60 66 L52 92 L38 92 Z' fill='%2334D399'/%3E%3C/svg%3E">
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  :root{
+    --bg:#090B12; --card:#121722; --card-2:#0E131E; --line:#222A39; --line-soft:#1A2130;
+    --ink:#F4F6FB; --muted:#8B95A7; --faint:#5A6474;
+    --verde:#34D399; --amber:#FBBF24; --rojo:#F87171; --azul:#60A5FA; --morado:#A78BFA;
+    --verde-dim:rgba(52,211,153,.12); --amber-dim:rgba(251,191,36,.12); --rojo-dim:rgba(248,113,113,.12);
+    --azul-dim:rgba(96,165,250,.12); --morado-dim:rgba(167,139,250,.12);
+  }
+  *{box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent;}
+  html,body{background:var(--bg);}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,'SF Pro Text','Inter',system-ui,sans-serif;
+    color:var(--ink); min-height:100vh; -webkit-font-smoothing:antialiased;
+    padding:calc(env(safe-area-inset-top) + 20px) 18px calc(env(safe-area-inset-bottom) + 28px);
+    letter-spacing:-.01em;
+  }
+  .mono{font-family:'SF Mono','Roboto Mono',ui-monospace,monospace; letter-spacing:0;}
+
+  /* ===== Login ===== */
+  .login{max-width:400px; margin:14vh auto 0;}
+  .login .brand{text-align:center; margin-bottom:30px;}
+  .login .brand .logo{font-size:22px; font-weight:800; letter-spacing:-.02em;}
+  .login .brand .logo b{color:var(--verde);}
+  .login .brand .sub{font-size:11px; letter-spacing:.24em; color:var(--faint); margin-top:6px; text-transform:uppercase;}
+  .field{margin-bottom:14px;}
+  .field label{display:block; font-size:10.5px; letter-spacing:.14em; color:var(--faint); margin-bottom:8px; text-transform:uppercase;}
+  input, select{
+    width:100%; background:var(--card-2); border:1px solid var(--line); color:var(--ink);
+    padding:15px; border-radius:14px; font-size:16px; font-family:inherit; outline:none; transition:border-color .15s;
+  }
+  input:focus, select:focus{border-color:var(--verde);}
+  .btn-primary{
+    width:100%; background:var(--verde); color:#04120C; border:none; padding:16px; border-radius:14px;
+    font-size:15px; font-weight:700; font-family:inherit; cursor:pointer; margin-top:6px; letter-spacing:-.01em;
+    transition:transform .1s, opacity .15s;
+  }
+  .btn-primary:active{transform:scale(.98);}
+  .msg{font-size:13px; text-align:center; margin-top:16px; min-height:18px; color:var(--muted);}
+  .msg.err{color:var(--rojo);} .msg.ok{color:var(--verde);}
+
+  /* ===== Header ===== */
+  .header{display:flex; align-items:flex-start; justify-content:space-between; margin-bottom:20px;}
+  .header .left .logo{font-size:19px; font-weight:800; letter-spacing:-.02em; line-height:1;}
+  .header .left .logo b{color:var(--verde);}
+  .header .left .tag{font-size:10.5px; letter-spacing:.2em; color:var(--faint); text-transform:uppercase; margin-top:7px;}
+  .header .right{text-align:right;}
+  .status-pill{display:inline-flex; align-items:center; gap:7px; font-size:11px; letter-spacing:.04em; color:var(--muted);
+    background:var(--card); border:1px solid var(--line); padding:7px 12px; border-radius:100px; font-weight:500;}
+  .status-pill .dot{width:7px; height:7px; border-radius:99px; background:var(--verde); box-shadow:0 0 8px var(--verde);}
+  .status-pill.warn .dot{background:var(--amber); box-shadow:0 0 8px var(--amber);}
+  .status-pill.err .dot{background:var(--rojo); box-shadow:0 0 8px var(--rojo);}
+  .header .reloj{font-size:11px; color:var(--faint); margin-top:9px;}
+
+  /* ===== Barra de filtros (agenda) ===== */
+  .filtros-bar{background:var(--card); border:1px solid var(--line); border-radius:18px; padding:14px; margin-bottom:22px;}
+  .filtros-row{display:flex; gap:10px; margin-bottom:10px;}
+  .filtros-row:last-child{margin-bottom:0;}
+  .filtro-campo{flex:1; min-width:0;}
+  .filtro-campo label{display:block; font-size:9.5px; letter-spacing:.12em; color:var(--faint); margin-bottom:6px; text-transform:uppercase;}
+  .filtros-bar input, .filtros-bar select{
+    padding:12px; border-radius:12px; font-size:14px; background:var(--card-2);
+  }
+  .rapidos{display:flex; gap:7px; flex-wrap:wrap;}
+  .rapido{
+    background:var(--card-2); border:1px solid var(--line); color:var(--muted);
+    font-size:12px; padding:9px 13px; border-radius:100px; font-family:inherit; cursor:pointer; font-weight:500;
+    transition:all .12s; white-space:nowrap;
+  }
+  .rapido.on{background:var(--verde-dim); border-color:var(--verde); color:var(--verde);}
+  .filtro-info{font-size:11px; color:var(--faint); margin-top:10px; text-align:center;}
+
+  /* ===== Bloque genérico ===== */
+  .block{margin-bottom:24px;}
+  .block-head{display:flex; align-items:center; justify-content:space-between; margin:0 2px 12px;}
+  .block-title{font-size:11px; letter-spacing:.16em; color:var(--faint); text-transform:uppercase; font-weight:600;}
+  .block-meta{font-size:10.5px; color:var(--faint);}
+
+  /* ===== Saldo de Vapi ===== */
+  .saldo{background:var(--card); border:1px solid var(--line); border-radius:20px; padding:20px; position:relative; overflow:hidden;}
+  .saldo .aura{position:absolute; top:-40%; right:-20%; width:70%; height:180%; border-radius:50%;
+    background:radial-gradient(circle, var(--verde-dim), transparent 70%); pointer-events:none;}
+  .saldo.warn .aura{background:radial-gradient(circle, var(--amber-dim), transparent 70%);}
+  .saldo.err .aura{background:radial-gradient(circle, var(--rojo-dim), transparent 70%);}
+  .saldo .top{display:flex; align-items:center; justify-content:space-between; margin-bottom:14px; position:relative;}
+  .saldo .top .lbl{font-size:11px; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; display:flex; align-items:center; gap:8px;}
+  .saldo .top .lbl svg{width:16px; height:16px; color:var(--morado);}
+  .saldo .btn-mini{background:var(--card-2); border:1px solid var(--line); color:var(--muted); font-size:11.5px;
+    padding:8px 12px; border-radius:10px; font-family:inherit; cursor:pointer; font-weight:500;}
+  .saldo .btn-mini:active{border-color:var(--verde);}
+  .saldo .monto{font-size:38px; font-weight:800; letter-spacing:-.03em; line-height:1; position:relative;}
+  .saldo.ok .monto{color:var(--verde);} .saldo.warn .monto{color:var(--amber);} .saldo.err .monto{color:var(--rojo);}
+  .saldo .monto-sub{font-size:12px; color:var(--muted); margin-top:6px; position:relative;}
+  .saldo .barra{height:6px; background:var(--line-soft); border-radius:99px; margin-top:14px; overflow:hidden; position:relative;}
+  .saldo .barra .fill{height:100%; border-radius:99px; transition:width .4s;}
+  .saldo.ok .barra .fill{background:var(--verde);} .saldo.warn .barra .fill{background:var(--amber);} .saldo.err .barra .fill{background:var(--rojo);}
+  .saldo .gastado{font-size:11px; color:var(--faint); margin-top:8px; text-align:right; position:relative;}
+  .saldo .aviso{margin-top:14px; padding:12px 14px; border-radius:12px; font-size:12.5px; display:flex; align-items:center; gap:9px; position:relative;}
+  .saldo .aviso.warn{background:var(--amber-dim); color:var(--amber);}
+  .saldo .aviso.err{background:var(--rojo-dim); color:var(--rojo);}
+  .saldo .aviso svg{width:16px; height:16px; flex-shrink:0;}
+  .saldo .sinrecarga{font-size:12.5px; color:var(--muted); position:relative; margin-top:4px;}
+
+  /* ===== Resumen (tarjetas) ===== */
+  .grid3{display:grid; grid-template-columns:1fr 1fr 1fr; gap:10px;}
+  .stat{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:15px 14px;}
+  .stat .k{font-size:9.5px; letter-spacing:.1em; color:var(--faint); text-transform:uppercase; margin-bottom:9px;}
+  .stat .v{font-size:26px; font-weight:800; letter-spacing:-.03em; line-height:1;}
+  .stat .s{font-size:10.5px; color:var(--faint); margin-top:6px;}
+  .stat.v-verde .v{color:var(--verde);} .stat.v-azul .v{color:var(--azul);} .stat.v-morado .v{color:var(--morado);}
+
+  /* ===== Listas (pedidos / llamadas) ===== */
+  .lista{background:var(--card); border:1px solid var(--line); border-radius:18px; overflow:hidden;}
+  .fila{display:flex; align-items:flex-start; gap:13px; padding:14px 16px; border-bottom:1px solid var(--line-soft);}
+  .fila:last-child{border-bottom:none;}
+  .fila .ico{width:30px; height:30px; border-radius:9px; flex-shrink:0; display:flex; align-items:center; justify-content:center;}
+  .fila .ico svg{width:15px; height:15px;}
+  .ic-ped{background:var(--verde-dim); color:var(--verde);}
+  .ic-lla{background:var(--azul-dim); color:var(--azul);}
+  .fila .body{flex:1; min-width:0;}
+  .fila .t1{font-size:14px; font-weight:600; color:var(--ink); line-height:1.3; display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .fila .t2{font-size:11.5px; color:var(--faint); margin-top:3px; overflow:hidden; text-overflow:ellipsis;}
+  .fila .right{text-align:right; flex-shrink:0; display:flex; flex-direction:column; align-items:flex-end; gap:4px;}
+  .fila .monto{font-size:14px; font-weight:700; color:var(--verde); font-family:'SF Mono',ui-monospace,monospace;}
+  .fila .hora{font-size:10.5px; color:var(--faint); font-family:'SF Mono',ui-monospace,monospace;}
+  .fila .costo{font-size:12px; font-weight:600; color:var(--morado); font-family:'SF Mono',ui-monospace,monospace;}
+  .chip{font-size:9.5px; letter-spacing:.04em; padding:3px 8px; border-radius:100px; font-weight:600; text-transform:uppercase;}
+  .chip.entregado{background:var(--verde-dim); color:var(--verde);}
+  .chip.preparando{background:var(--amber-dim); color:var(--amber);}
+  .chip.listo{background:var(--azul-dim); color:var(--azul);}
+  .chip.nuevo{background:var(--morado-dim); color:var(--morado);}
+  .chip.cancelado{background:var(--rojo-dim); color:var(--rojo);}
+  .chip.otro{background:var(--line-soft); color:var(--muted);}
+  .chip.negocio{background:var(--line-soft); color:var(--muted); text-transform:none; letter-spacing:0;}
+
+  .empty{padding:26px; text-align:center; color:var(--faint); font-size:12.5px;}
+  .loading{padding:22px; text-align:center; color:var(--faint); font-size:12.5px;}
+
+  /* ===== Footer ===== */
+  .footer{display:flex; gap:9px; margin-top:8px;}
+  .footer button{flex:1; background:var(--card); border:1px solid var(--line); color:var(--muted); font-size:12px;
+    padding:13px 8px; border-radius:13px; font-family:inherit; cursor:pointer; font-weight:500;
+    display:flex; align-items:center; justify-content:center; gap:6px;}
+  .footer button:active{border-color:var(--verde);}
+  .footer button svg{width:15px; height:15px;}
+
+  .hidden{display:none !important;}
+</style>
+</head>
+<body>
+
+<!-- ===================== LOGIN ===================== -->
+<div id="loginScreen" class="login">
+  <div class="brand">
+    <div class="logo">ATIENDE<b>PRO</b></div>
+    <div class="sub">Core · Consola privada</div>
+  </div>
+  <div class="field">
+    <label>Correo del creador</label>
+    <input id="email" type="email" inputmode="email" autocomplete="username" placeholder="tucorreo@ejemplo.com">
+  </div>
+  <div class="field">
+    <label>Contraseña</label>
+    <input id="pass" type="password" autocomplete="current-password" placeholder="••••••••">
+  </div>
+  <button class="btn-primary" id="btnEntrar">Entrar al Core</button>
+  <div class="msg" id="loginMsg"></div>
+</div>
+
+<!-- ===================== CORE ===================== -->
+<div id="core" class="hidden">
+
+  <!-- Header -->
+  <div class="header">
+    <div class="left">
+      <div class="logo">ATIENDE<b>PRO</b></div>
+      <div class="tag">// Centro de Operaciones</div>
+    </div>
+    <div class="right">
+      <span class="status-pill" id="statusPill"><span class="dot"></span><span id="statusTxt">Operativo</span></span>
+      <div class="reloj mono" id="reloj">—</div>
+    </div>
+  </div>
+
+  <!-- Barra de filtros: agenda + negocio -->
+  <div class="filtros-bar">
+    <div class="filtros-row">
+      <div class="filtro-campo">
+        <label>Día</label>
+        <input type="date" id="fFecha">
+      </div>
+      <div class="filtro-campo">
+        <label>Negocio</label>
+        <select id="fNegocio"><option value="">Todos los negocios</option></select>
+      </div>
+    </div>
+    <div class="rapidos" id="rapidos">
+      <button class="rapido" data-r="hoy">Hoy</button>
+      <button class="rapido" data-r="ayer">Ayer</button>
+      <button class="rapido" data-r="7">7 días</button>
+      <button class="rapido" data-r="mes">Este mes</button>
+      <button class="rapido" data-r="todo">Todo</button>
+    </div>
+    <div class="filtro-info" id="filtroInfo">—</div>
+  </div>
+
+  <!-- Saldo de Vapi -->
+  <div class="block">
+    <div class="saldo ok" id="saldoBox">
+      <div class="aura"></div>
+      <div class="top">
+        <span class="lbl">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="1" y="4" width="22" height="16" rx="2"/><line x1="1" y1="10" x2="23" y2="10"/></svg>
+          Saldo de Vapi
+        </span>
+        <button class="btn-mini" id="btnSaldo">Actualizar saldo</button>
+      </div>
+      <div id="saldoCuerpo"><div class="loading">Cargando saldo…</div></div>
+    </div>
+  </div>
+
+  <!-- Resumen del rango -->
+  <div class="block">
+    <div class="block-head"><span class="block-title">Resumen del rango</span><span class="block-meta" id="resumenRango">—</span></div>
+    <div class="grid3">
+      <div class="stat v-verde"><div class="k">Pedidos</div><div class="v" id="stPedidos">—</div><div class="s" id="stPedidosSub">en el rango</div></div>
+      <div class="stat v-azul"><div class="k">Llamadas</div><div class="v" id="stLlamadas">—</div><div class="s" id="stLlamadasSub">en el rango</div></div>
+      <div class="stat v-morado"><div class="k">Costo Vapi</div><div class="v mono" id="stCosto" style="font-size:20px;">—</div><div class="s" id="stCostoSub">en el rango</div></div>
+    </div>
+  </div>
+
+  <!-- Pedidos -->
+  <div class="block">
+    <div class="block-head"><span class="block-title">Pedidos</span><span class="block-meta" id="pedCount">—</span></div>
+    <div class="lista" id="listaPedidos"><div class="loading">Cargando…</div></div>
+  </div>
+
+  <!-- Llamadas -->
+  <div class="block">
+    <div class="block-head"><span class="block-title">Llamadas</span><span class="block-meta" id="llaCount">—</span></div>
+    <div class="lista" id="listaLlamadas"><div class="loading">Cargando…</div></div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    <button id="btnRefrescar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polyline points="23 4 23 10 17 10"/><path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/></svg>Actualizar</button>
+    <button id="btnSalir"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>Salir</button>
+  </div>
+</div>
+
+<script>
+const SB_URL = 'https://wetpjfpefypgzmcfoxui.supabase.co';
+const SB_KEY = 'sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn';
+const sb = window.supabase.createClient(SB_URL, SB_KEY, {
+  auth:{ autoRefreshToken:true, persistSession:true, detectSessionInUrl:false, storageKey:'atiendepro-core' }
+});
+
+const $ = id => document.getElementById(id);
+const money = n => '$' + (Number(n)||0).toFixed(2);
+const TZ = 'America/Phoenix';
+
+/* Estado del filtro */
+let filtro = { modo:'hoy', fecha:fechaHoyLocal(), negocio:'' };
+let negociosCache = [];
+let nombrePorId = {};
+
+/* ================= LOGIN ================= */
+async function entrar(){
+  const email = $('email').value.trim();
+  const pass = $('pass').value;
+  if(!email || !pass){ msg('Escribe tu correo y contraseña.', 'err'); return; }
+  msg('Verificando…');
+  const { data, error } = await sb.auth.signInWithPassword({ email, password:pass });
+  if(error){ msg('No pudimos entrar: ' + error.message, 'err'); return; }
+  const { data: adminRow } = await sb.from('administradores').select('es_creador').eq('user_id', data.user.id).single();
+  if(!adminRow || adminRow.es_creador !== true){
+    msg('Esta cuenta no es de creador.', 'err');
+    await sb.auth.signOut();
+    return;
+  }
+  abrirCore();
+}
+function msg(t, cls=''){ const m=$('loginMsg'); m.textContent=t; m.className='msg '+cls; }
+
+async function abrirCore(){
+  $('loginScreen').classList.add('hidden');
+  $('core').classList.remove('hidden');
+  $('fFecha').value = filtro.fecha;
+  marcarRapido('hoy');
+  await cargarNegocios();
+  cargarTodo();
+  setInterval(tick, 1000); tick();
+  conectarVivo();
+}
+
+/* ================= RELOJ ================= */
+function tick(){
+  const ahora = new Date().toLocaleString('es-ES', {
+    timeZone:TZ, hour:'2-digit', minute:'2-digit', second:'2-digit', hour12:false
+  });
+  $('reloj').textContent = ahora + ' · Phoenix';
+}
+
+/* ================= NEGOCIOS (para el desplegable) ================= */
+async function cargarNegocios(){
+  const { data } = await sb.from('negocios').select('id, nombre').order('nombre');
+  negociosCache = data || [];
+  nombrePorId = {};
+  negociosCache.forEach(n => nombrePorId[n.id] = n.nombre);
+  const sel = $('fNegocio');
+  sel.innerHTML = '<option value="">Todos los negocios</option>' +
+    negociosCache.map(n=>`<option value="${n.id}">${esc(n.nombre)}</option>`).join('');
+}
+
+/* ================= RANGO DE FECHAS =================
+   Devuelve { desde, hasta } en ISO, o null si es "todo".
+   Todo se calcula en la zona horaria de Phoenix. */
+function calcularRango(){
+  if(filtro.modo === 'todo') return { desde:null, hasta:null };
+
+  if(filtro.modo === 'dia'){
+    return rangoDeDia(filtro.fecha);
+  }
+  if(filtro.modo === 'hoy'){
+    return rangoDeDia(fechaHoyLocal());
+  }
+  if(filtro.modo === 'ayer'){
+    const d = new Date(); d.setDate(d.getDate()-1);
+    return rangoDeDia(fechaLocalDe(d));
+  }
+  if(filtro.modo === '7'){
+    const ini = new Date(); ini.setDate(ini.getDate()-6);
+    const a = rangoDeDia(fechaLocalDe(ini)).desde;
+    const b = rangoDeDia(fechaHoyLocal()).hasta;
+    return { desde:a, hasta:b };
+  }
+  if(filtro.modo === 'mes'){
+    const hoy = new Date();
+    const primer = new Date(hoy.getFullYear(), hoy.getMonth(), 1);
+    const a = rangoDeDia(fechaLocalDe(primer)).desde;
+    const b = rangoDeDia(fechaHoyLocal()).hasta;
+    return { desde:a, hasta:b };
+  }
+  return rangoDeDia(fechaHoyLocal());
+}
+/* Rango [00:00, 23:59:59] de un día YYYY-MM-DD, ajustado a Phoenix (-07:00, sin horario de verano) */
+function rangoDeDia(ymd){
+  return {
+    desde: `${ymd}T00:00:00-07:00`,
+    hasta: `${ymd}T23:59:59-07:00`
+  };
+}
+function fechaHoyLocal(){
+  return new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date());
+}
+function fechaLocalDe(d){
+  return new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+}
+function etiquetaRango(){
+  const m = filtro.modo;
+  if(m==='todo') return 'Todo el historial';
+  if(m==='hoy') return 'Hoy';
+  if(m==='ayer') return 'Ayer';
+  if(m==='7') return 'Últimos 7 días';
+  if(m==='mes') return 'Este mes';
+  if(m==='dia'){
+    const [y,mo,d] = filtro.fecha.split('-');
+    return `${d}/${mo}/${y}`;
+  }
+  return '';
+}
+
+/* ================= CARGA PRINCIPAL ================= */
+async function cargarTodo(){
+  try {
+    setStatus('ok');
+    const negTxt = filtro.negocio ? (nombrePorId[filtro.negocio]||'negocio') : 'todos los negocios';
+    $('filtroInfo').textContent = etiquetaRango() + ' · ' + negTxt;
+    $('resumenRango').textContent = etiquetaRango();
+
+    await Promise.all([ cargarSaldo(), cargarPedidos(), cargarLlamadas() ]);
+  } catch(e){
+    setStatus('err');
+    console.log('Error al cargar:', e);
+  }
+}
+
+/* ---- Query base con filtros de fecha + negocio ---- */
+function aplicarFiltros(q){
+  const { desde, hasta } = calcularRango();
+  if(desde) q = q.gte('creado_en', desde);
+  if(hasta) q = q.lte('creado_en', hasta);
+  if(filtro.negocio) q = q.eq('negocio_id', filtro.negocio);
+  return q;
+}
+
+/* ================= PEDIDOS ================= */
+async function cargarPedidos(){
+  let q = sb.from('pedidos')
+    .select('id, negocio_id, cliente_nombre, cliente_telefono, total, estado, creado_en, items, tipo')
+    .order('creado_en',{ascending:false}).limit(300);
+  q = aplicarFiltros(q);
+  const { data, error } = await q;
+  if(error){ $('listaPedidos').innerHTML = `<div class="empty">No se pudieron cargar.</div>`; return; }
+
+  const peds = data || [];
+  $('stPedidos').textContent = peds.length;
+  $('pedCount').textContent = peds.length + (peds.length===1?' pedido':' pedidos');
+
+  if(!peds.length){
+    $('listaPedidos').innerHTML = `<div class="empty">Sin pedidos en este rango.</div>`;
+    return;
+  }
+
+  const svgPed = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/></svg>';
+
+  $('listaPedidos').innerHTML = peds.map(p=>{
+    const items = Array.isArray(p.items) ? p.items : [];
+    const numItems = items.reduce((s,it)=> s + (Number(it.q)||1), 0) || items.length;
+    const detalle = items.slice(0,3).map(it=>`${(it.q||1)}× ${esc(it.n||it.nombre||'item')}`).join(', ');
+    const masTxt = items.length>3 ? ` +${items.length-3} más` : '';
+    return `<div class="fila">
+      <div class="ico ic-ped">${svgPed}</div>
+      <div class="body">
+        <div class="t1">${esc(p.cliente_nombre||'Cliente')} ${chipEstado(p.estado)}</div>
+        <div class="t2">${detalle||numItems+' artículo(s)'}${masTxt}${filtro.negocio?'':' · '+esc(nombrePorId[p.negocio_id]||'—')}</div>
+      </div>
+      <div class="right">
+        <span class="monto">${money(p.total)}</span>
+        <span class="hora">${horaCorta(p.creado_en)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function chipEstado(e){
+  const s = (e||'').toLowerCase();
+  let cls = 'otro';
+  if(s==='entregado') cls='entregado';
+  else if(s==='preparando') cls='preparando';
+  else if(s==='listo') cls='listo';
+  else if(s==='nuevo'||s==='en espera') cls='nuevo';
+  else if(s==='cancelado') cls='cancelado';
+  return `<span class="chip ${cls}">${esc(e||'—')}</span>`;
+}
+
+/* ================= LLAMADAS ================= */
+async function cargarLlamadas(){
+  let q = sb.from('llamadas')
+    .select('id, negocio_id, cliente_nombre, cliente_telefono, duracion, duracion_seg, costo, estado, creado_en, pedido_id')
+    .order('creado_en',{ascending:false}).limit(300);
+  q = aplicarFiltros(q);
+  const { data, error } = await q;
+  if(error){ $('listaLlamadas').innerHTML = `<div class="empty">No se pudieron cargar.</div>`; return; }
+
+  const llas = data || [];
+  const costoRango = llas.reduce((s,l)=> s + (Number(l.costo)||0), 0);
+  $('stLlamadas').textContent = llas.length;
+  $('stCosto').textContent = money(costoRango);
+  $('llaCount').textContent = llas.length + (llas.length===1?' llamada':' llamadas');
+
+  if(!llas.length){
+    $('listaLlamadas').innerHTML = `<div class="empty">Sin llamadas en este rango.</div>`;
+    return;
+  }
+
+  const svgLla = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.13.96.36 1.9.7 2.81a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45c.9.34 1.85.57 2.81.7A2 2 0 0 1 22 16.92z"/></svg>';
+
+  $('listaLlamadas').innerHTML = llas.map(l=>{
+    const dur = l.duracion || (l.duracion_seg ? fmtSeg(l.duracion_seg) : '—');
+    const gen = l.pedido_id ? '<span class="chip listo">Pedido</span>' : '';
+    return `<div class="fila">
+      <div class="ico ic-lla">${svgLla}</div>
+      <div class="body">
+        <div class="t1">${esc(l.cliente_telefono||l.cliente_nombre||'Llamada')} ${gen}</div>
+        <div class="t2">Duración ${esc(dur)}${filtro.negocio?'':' · '+esc(nombrePorId[l.negocio_id]||'—')}</div>
+      </div>
+      <div class="right">
+        <span class="costo">${money(l.costo)}</span>
+        <span class="hora">${horaCorta(l.creado_en)}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+function fmtSeg(s){
+  s = Number(s)||0;
+  const m = Math.floor(s/60), r = s%60;
+  return m ? `${m}m ${r}s` : `${r}s`;
+}
+
+/* ================= SALDO DE VAPI (igual que la app) =================
+   recarga = config_global['vapi_recarga']
+   gastado = suma de costo de TODAS las llamadas (histórico)
+   queda   = recarga - gastado */
+async function cargarSaldo(){
+  try {
+    const { data: cfg } = await sb.from('config_global').select('valor').eq('clave','vapi_recarga').limit(1);
+    const recarga = (cfg && cfg.length) ? (Number(cfg[0].valor)||0) : 0;
+    const { data: todas } = await sb.from('llamadas').select('costo');
+    const gastado = (todas||[]).reduce((a,l)=>a+(Number(l.costo)||0),0);
+    const queda = recarga - gastado;
+    pintarSaldo(recarga, gastado, queda);
+  } catch(e){
+    $('saldoCuerpo').innerHTML = `<div class="sinrecarga">No se pudo leer el saldo.</div>`;
+  }
+}
+
+function pintarSaldo(recarga, gastado, queda){
+  const box = $('saldoBox');
+  const cuerpo = $('saldoCuerpo');
+
+  if(!recarga){
+    box.className = 'saldo warn';
+    cuerpo.innerHTML = `<div class="sinrecarga">Aún no has anotado tu saldo de Vapi. Toca <b>Actualizar saldo</b> y escribe cuánto tienes ahora en tu cuenta de Vapi.</div>`;
+    return;
+  }
+
+  const pct = Math.max(0, Math.min(100, (queda/recarga)*100));
+  let nivel = 'ok';
+  if(queda <= 2) nivel = 'err';
+  else if(queda <= 6) nivel = 'warn';
+  box.className = 'saldo ' + nivel;
+
+  let aviso = '';
+  const svgW = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>';
+  if(nivel==='err') aviso = `<div class="aviso err">${svgW}Saldo casi agotado. Si llega a $0, TODOS tus clientes se quedan sin recepcionista. Recarga en Vapi.</div>`;
+  else if(nivel==='warn') aviso = `<div class="aviso warn">${svgW}Saldo bajo. Conviene recargar pronto en Vapi.</div>`;
+
+  cuerpo.innerHTML = `
+    <div class="monto">${money(queda)}</div>
+    <div class="monto-sub">disponible de ${money(recarga)} recargados</div>
+    <div class="barra"><div class="fill" style="width:${pct}%;"></div></div>
+    <div class="gastado">Gastado: <b class="mono">${money(gastado)}</b></div>
+    ${aviso}`;
+}
+
+/* Actualizar saldo (mismo método que la app: tú anotas cuánto tienes ahora) */
+async function actualizarSaldo(){
+  // Traer gastado actual para calcular la recarga total
+  const { data: todas } = await sb.from('llamadas').select('costo');
+  const gastado = (todas||[]).reduce((a,l)=>a+(Number(l.costo)||0),0);
+  const { data: cfg } = await sb.from('config_global').select('valor').eq('clave','vapi_recarga').limit(1);
+  const recargaPrev = (cfg && cfg.length) ? (Number(cfg[0].valor)||0) : 0;
+  const quedaPrev = recargaPrev - gastado;
+
+  const v = prompt(
+    'Saldo de Vapi\n\n' +
+    'Míralo en dashboard.vapi.ai (arriba dice "Credits").\n' +
+    'Escribe cuánto tienes AHORA en Vapi. El sistema irá restando lo que gastes.\n\n' +
+    'Gastado hasta hoy según tus llamadas: ' + money(gastado),
+    quedaPrev > 0 ? quedaPrev.toFixed(2) : ''
+  );
+  if(v === null) return;
+  const num = parseFloat(v);
+  if(isNaN(num) || num < 0){ alert('Escribe un número válido.'); return; }
+
+  const recargaTotal = num + gastado;
+  const { error } = await sb.from('config_global')
+    .upsert({ clave:'vapi_recarga', valor: String(recargaTotal), actualizado_en: new Date().toISOString() });
+  if(error){ alert('No se pudo guardar: ' + error.message); return; }
+  cargarSaldo();
+}
+
+/* ================= STATUS ================= */
+function setStatus(nivel){
+  const p = $('statusPill'), t = $('statusTxt');
+  p.className = 'status-pill' + (nivel==='ok'?'':(nivel==='warn'?' warn':' err'));
+  t.textContent = nivel==='ok' ? 'Operativo' : (nivel==='warn' ? 'Degradado' : 'Sin conexión');
+}
+
+/* ================= TIEMPO REAL ================= */
+let canal = null;
+function conectarVivo(){
+  if(canal){ try{ sb.removeChannel(canal); }catch(e){} }
+  canal = sb.channel('core-vivo')
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'pedidos' }, () => { cargarPedidos(); })
+    .on('postgres_changes', { event:'INSERT', schema:'public', table:'llamadas' }, () => { cargarLlamadas(); cargarSaldo(); })
+    .subscribe(st => { if(st==='CHANNEL_ERROR' || st==='TIMED_OUT'){ setTimeout(conectarVivo, 4000); } });
+}
+
+/* ================= UTILIDADES ================= */
+function horaCorta(iso){
+  if(!iso) return '';
+  return new Date(iso).toLocaleTimeString('es-ES',{timeZone:TZ,hour:'2-digit',minute:'2-digit',hour12:false});
+}
+function esc(s){ return String(s||'').replace(/[&<>"]/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c])); }
+
+/* ================= FILTROS: eventos ================= */
+function marcarRapido(modo){
+  document.querySelectorAll('.rapido').forEach(b=> b.classList.toggle('on', b.dataset.r===modo));
+}
+$('rapidos').addEventListener('click', e=>{
+  const b = e.target.closest('.rapido'); if(!b) return;
+  filtro.modo = b.dataset.r;
+  marcarRapido(b.dataset.r);
+  // Si eligen Hoy, sincronizamos el campo de fecha para claridad
+  if(filtro.modo==='hoy'){ filtro.fecha = fechaHoyLocal(); $('fFecha').value = filtro.fecha; }
+  if(filtro.modo==='ayer'){ const d=new Date(); d.setDate(d.getDate()-1); $('fFecha').value = fechaLocalDe(d); }
+  cargarTodo();
+});
+$('fFecha').addEventListener('change', ()=>{
+  filtro.fecha = $('fFecha').value || fechaHoyLocal();
+  filtro.modo = 'dia';           // elegir un día exacto activa el modo "día"
+  marcarRapido('');              // ningún botón rápido queda encendido
+  cargarTodo();
+});
+$('fNegocio').addEventListener('change', ()=>{
+  filtro.negocio = $('fNegocio').value;
+  cargarTodo();
+});
+
+/* ================= BOTONES ================= */
+$('btnEntrar').onclick = entrar;
+$('pass').addEventListener('keydown', e=>{ if(e.key==='Enter') entrar(); });
+$('btnRefrescar').onclick = ()=>cargarTodo();
+$('btnSaldo').onclick = actualizarSaldo;
+$('btnSalir').onclick = async ()=>{ await sb.auth.signOut({scope:'local'}); location.reload(); };
+
+/* ================= AUTOLOGIN ================= */
+(async ()=>{
+  const { data:{ session } } = await sb.auth.getSession();
+  if(session){
+    const { data: adminRow } = await sb.from('administradores').select('es_creador').eq('user_id', session.user.id).single();
+    if(adminRow?.es_creador === true) abrirCore();
+  }
+})();
+</script>
+</body>
+</html>
