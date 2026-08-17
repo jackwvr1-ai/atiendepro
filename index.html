@@ -62,7 +62,12 @@
   .lang button{background:none;border:none;color:var(--muted);font-family:inherit;font-size:12.5px;font-weight:600;padding:4px 9px;border-radius:6px;cursor:pointer;transition:.15s;}
   .lang button.on{background:rgba(255,255,255,.1);color:var(--ink);}
   @media(max-width:900px){ .nav-links{display:none;} }
-  @media(max-width:560px){ .nav-cta .btn-ghost{display:none;} }
+  @media(max-width:560px){
+    .nav-cta .btn-ghost{display:none;}
+    .nav-in{flex-wrap:wrap;height:auto;padding:12px 0;row-gap:10px;}
+    .brand{width:100%;}
+    .nav-cta{width:100%;justify-content:flex-end;}
+  }
 
   /* ===== HERO ===== */
   .hero{padding:74px 0 46px;position:relative;overflow:hidden;}
@@ -153,6 +158,15 @@
   .k-total .ktt{display:flex;justify-content:space-between;font-size:14px;font-weight:800;margin:6px 0 10px;}
   .k-total .ktt b{color:var(--naranja);}
   .k-pay{background:var(--naranja);color:#fff;text-align:center;padding:11px;border-radius:10px;font-weight:700;font-size:12.5px;}
+
+  /* Maqueta del kiosko en móvil: se dibuja a su tamaño real (460px) y se
+     achica completa, como una foto, en vez de reacomodar sus columnas. */
+  @media(max-width:480px){
+    .maq[data-maq="kiosko"]{width:460px;}
+  }
+  @media(min-width:430px) and (max-width:480px){ .maq[data-maq="kiosko"]{zoom:.839;} }
+  @media(min-width:375px) and (max-width:429px){ .maq[data-maq="kiosko"]{zoom:.72;} }
+  @media(max-width:374px){ .maq[data-maq="kiosko"]{zoom:.6;} }
 
   /* ===== MAQUETA COCINA ===== */
   .cocina{height:392px;background:#0A0F1C;padding:16px;overflow:hidden;}
@@ -423,6 +437,11 @@ if(_stage){ _stage.addEventListener('mouseenter', ()=>clearInterval(storyTimer))
   .chat-fab:hover{transform:scale(1.06);}
   .chat-fab svg{width:27px;height:27px;}
   .chat-fab .badge{position:absolute;top:-3px;right:-3px;width:18px;height:18px;background:var(--verde);border:2px solid var(--bg);border-radius:50%;font-size:10px;color:#04140A;font-weight:800;display:flex;align-items:center;justify-content:center;}
+  @media(max-width:480px){
+    .chat-fab{width:50px;height:50px;bottom:16px;right:16px;}
+    .chat-fab svg{width:23px;height:23px;}
+    .chat-fab .badge{width:16px;height:16px;font-size:9px;}
+  }
   .chat-win{position:fixed;bottom:22px;right:22px;z-index:95;width:380px;max-width:calc(100vw - 32px);height:560px;max-height:calc(100vh - 44px);background:var(--bg-2);border:1px solid var(--panel-brd);border-radius:22px;box-shadow:0 40px 90px -30px rgba(0,0,0,.85);display:none;flex-direction:column;overflow:hidden;}
   .chat-win.open{display:flex;}
   .chat-head{padding:18px 20px;background:linear-gradient(135deg,rgba(37,99,235,.22),rgba(34,197,94,.15));border-bottom:1px solid var(--panel-brd);display:flex;align-items:center;gap:12px;}
