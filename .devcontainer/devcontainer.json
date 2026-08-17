@@ -1,0 +1,38 @@
+{
+  "name": "AtiendePro",
+  "image": "mcr.microsoft.com/devcontainers/base:ubuntu",
+
+  "features": {
+    "ghcr.io/devcontainers/features/node:1": {},
+    "ghcr.io/devcontainers/features/github-cli:1": {},
+    "ghcr.io/anthropics/devcontainer-features/claude-code:1.0": {}
+  },
+
+  "postCreateCommand": "npm install -g http-server",
+
+  "postAttachCommand": "bash -lc 'pkill -f http-server || true; nohup http-server . -p 8000 -c-1 --silent > /tmp/servidor.log 2>&1 & echo Servidor-local-listo-puerto-8000'",
+
+  "forwardPorts": [8000],
+
+  "portsAttributes": {
+    "8000": {
+      "label": "Vista previa AtiendePro",
+      "onAutoForward": "openPreview"
+    }
+  },
+
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "esbenp.prettier-vscode"
+      ],
+      "settings": {
+        "files.eol": "\n",
+        "editor.formatOnSave": false,
+        "editor.wordWrap": "on"
+      }
+    }
+  },
+
+  "remoteUser": "vscode"
+}
