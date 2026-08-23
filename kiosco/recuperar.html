@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recupera tu contraseña — Kiosco</title>
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+<div class="tarjeta">
+  <p class="logo">Kiosco</p>
+  <p class="subtitulo">Escribe tu correo y te enviamos un enlace para crear una nueva contraseña.</p>
+
+  <form id="formRecuperar" novalidate>
+    <div class="campo">
+      <label for="correo">Correo</label>
+      <input type="email" id="correo" name="correo" placeholder="tu@correo.com" autocomplete="email" required>
+    </div>
+
+    <div id="mensaje" class="mensaje" hidden></div>
+
+    <button type="submit" id="btnRecuperar">Enviar enlace</button>
+  </form>
+
+  <p class="pie">¿Ya la recordaste? <a href="/login">Inicia sesión</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { storageKey: "kiosco-auth" }
+  });
+
+  var form = document.getElementById("formRecuperar");
+  var mensaje = document.getElementById("mensaje");
+  var boton = document.getElementById("btnRecuperar");
+
+  function mostrarMensaje(texto, tipo) {
+    mensaje.textContent = texto;
+    mensaje.className = "mensaje " + tipo;
+    mensaje.hidden = false;
+  }
+
+  function traducirError(error) {
+    var msg = (error && error.message) || "";
+
+    if (msg.indexOf("rate limit") !== -1 || msg.indexOf("too many") !== -1) {
+      return "Has hecho demasiados intentos. Espera unos minutos e intenta de nuevo.";
+    }
+    if (msg.indexOf("valid email") !== -1 || msg.indexOf("Unable to validate") !== -1) {
+      return "Ese correo no parece válido. Revísalo e intenta de nuevo.";
+    }
+    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
+      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    }
+    return "Algo salió mal. Intenta de nuevo en un momento.";
+  }
+
+  form.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    mensaje.hidden = true;
+
+    var correo = document.getElementById("correo").value.trim();
+
+    boton.disabled = true;
+    boton.textContent = "Enviando...";
+
+    sb.auth.resetPasswordForEmail(correo, {
+      redirectTo: "https://kiosco.atiendepro.net/nueva-clave"
+    }).then(function (resultado) {
+      boton.disabled = false;
+      boton.textContent = "Enviar enlace";
+
+      if (resultado.error) {
+        mostrarMensaje(traducirError(resultado.error), "error");
+        return;
+      }
+
+      form.hidden = true;
+      mostrarMensaje("Si ese correo tiene una cuenta, te enviamos un enlace para restablecer tu contraseña.", "exito");
+    }).catch(function () {
+      boton.disabled = false;
+      boton.textContent = "Enviar enlace";
+      mostrarMensaje("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

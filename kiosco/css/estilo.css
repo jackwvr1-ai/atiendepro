@@ -1,0 +1,158 @@
+/* Identidad visual de Kiosco: blanco y negro, simple, mobile-first. */
+
+:root {
+  --fondo: #ffffff;
+  --papel: #ffffff;
+  --texto: #111111;
+  --texto-suave: #666666;
+  --negro: #111111;
+  --borde: #e5e5e5;
+  --error-fondo: #fdeceb;
+  --error-texto: #b8402c;
+  --exito-fondo: #ecf6ee;
+  --exito-texto: #3f7a4c;
+  --radio: 18px;
+  --radio-chico: 12px;
+  --sombra: 0 6px 20px rgba(17, 17, 17, 0.08);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  min-height: 100vh;
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px 16px;
+}
+
+.tarjeta {
+  background: var(--papel);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra);
+  padding: 32px 24px;
+  width: 100%;
+  max-width: 400px;
+}
+
+.logo {
+  text-align: center;
+  font-size: 1.9rem;
+  font-weight: 800;
+  color: var(--negro);
+  margin: 0 0 6px;
+}
+
+.subtitulo {
+  text-align: center;
+  color: var(--texto-suave);
+  margin: 0 0 28px;
+  font-size: 0.98rem;
+  line-height: 1.4;
+}
+
+form {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+label {
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin-bottom: 6px;
+  display: block;
+  color: var(--texto);
+}
+
+.campo {
+  display: flex;
+  flex-direction: column;
+}
+
+input[type="email"],
+input[type="password"],
+input[type="text"] {
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  font-size: 16px;
+  color: var(--texto);
+  background: var(--fondo);
+  outline: none;
+  transition: border-color 0.15s ease;
+  width: 100%;
+}
+
+input:focus {
+  border-color: var(--negro);
+}
+
+button[type="submit"] {
+  min-height: 52px;
+  border: none;
+  border-radius: var(--radio-chico);
+  background: var(--negro);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+  margin-top: 4px;
+}
+
+button[type="submit"]:active {
+  transform: scale(0.98);
+}
+
+button[type="submit"]:disabled {
+  opacity: 0.65;
+  cursor: default;
+  transform: none;
+}
+
+.mensaje {
+  border-radius: var(--radio-chico);
+  padding: 12px 14px;
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.mensaje.error {
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+
+.mensaje.exito {
+  background: var(--exito-fondo);
+  color: var(--exito-texto);
+}
+
+.pie {
+  text-align: center;
+  margin: 24px 0 0;
+  font-size: 0.92rem;
+  color: var(--texto-suave);
+}
+
+.pie a {
+  color: var(--negro);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.pie a:hover,
+.pie a:active {
+  text-decoration: underline;
+}

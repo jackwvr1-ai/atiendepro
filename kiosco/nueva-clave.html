@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crea tu nueva contraseña — Kiosco</title>
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+<div class="tarjeta">
+  <p class="logo">Kiosco</p>
+
+  <div id="bloqueInvalido" hidden>
+    <p class="subtitulo">Este enlace no es válido o ya venció.</p>
+    <p class="pie"><a href="/recuperar">Solicitar un enlace nuevo</a></p>
+  </div>
+
+  <div id="bloqueFormulario" hidden>
+    <p class="subtitulo">Escribe tu nueva contraseña.</p>
+
+    <form id="formNuevaClave" novalidate>
+      <div class="campo">
+        <label for="clave">Contraseña nueva</label>
+        <input type="password" id="clave" name="clave" placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6" required>
+      </div>
+
+      <div class="campo">
+        <label for="clave2">Confirma tu contraseña</label>
+        <input type="password" id="clave2" name="clave2" placeholder="Repite tu contraseña" autocomplete="new-password" required>
+      </div>
+
+      <div id="mensaje" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardar">Guardar contraseña</button>
+    </form>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { storageKey: "kiosco-auth" }
+  });
+
+  var bloqueInvalido = document.getElementById("bloqueInvalido");
+  var bloqueFormulario = document.getElementById("bloqueFormulario");
+  var form = document.getElementById("formNuevaClave");
+  var mensaje = document.getElementById("mensaje");
+  var boton = document.getElementById("btnGuardar");
+
+  function mostrarMensaje(texto, tipo) {
+    mensaje.textContent = texto;
+    mensaje.className = "mensaje " + tipo;
+    mensaje.hidden = false;
+  }
+
+  function tieneEnlaceDeRecuperacion() {
+    var params = new URLSearchParams(
+      (window.location.hash || "").replace(/^#/, "")
+    );
+    if (params.get("type") === "recovery" && params.get("access_token")) {
+      return true;
+    }
+    var paramsUrl = new URLSearchParams(window.location.search || "");
+    return paramsUrl.get("type") === "recovery";
+  }
+
+  if (tieneEnlaceDeRecuperacion()) {
+    bloqueFormulario.hidden = false;
+  } else {
+    bloqueInvalido.hidden = false;
+  }
+
+  function traducirError(error) {
+    var msg = (error && error.message) || "";
+
+    if (msg.indexOf("Auth session missing") !== -1 || msg.indexOf("session") !== -1) {
+      return "Tu enlace expiró o ya se usó. Solicita uno nuevo.";
+    }
+    if (msg.indexOf("Password should be at least") !== -1) {
+      return "La contraseña debe tener al menos 6 caracteres.";
+    }
+    if (msg.indexOf("different from the old password") !== -1) {
+      return "La nueva contraseña debe ser distinta a la anterior.";
+    }
+    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
+      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    }
+    return "Algo salió mal. Intenta de nuevo en un momento.";
+  }
+
+  form.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    mensaje.hidden = true;
+
+    var clave = document.getElementById("clave").value;
+    var clave2 = document.getElementById("clave2").value;
+
+    if (clave.length < 6) {
+      mostrarMensaje("La contraseña debe tener al menos 6 caracteres.", "error");
+      return;
+    }
+    if (clave !== clave2) {
+      mostrarMensaje("Las contraseñas no coinciden.", "error");
+      return;
+    }
+
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+
+    sb.auth.updateUser({ password: clave }).then(function (resultado) {
+      if (resultado.error) {
+        boton.disabled = false;
+        boton.textContent = "Guardar contraseña";
+        mostrarMensaje(traducirError(resultado.error), "error");
+        return;
+      }
+
+      form.hidden = true;
+      mostrarMensaje("Tu contraseña se actualizó. Ya puedes iniciar sesión.", "exito");
+      setTimeout(function () {
+        window.location.href = "/login";
+      }, 1800);
+    }).catch(function () {
+      boton.disabled = false;
+      boton.textContent = "Guardar contraseña";
+      mostrarMensaje("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+})();
+</script>
+
+</body>
+</html>

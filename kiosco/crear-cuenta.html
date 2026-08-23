@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crea tu cuenta — Kiosco</title>
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+<div class="tarjeta">
+  <p class="logo">Kiosco</p>
+  <p class="subtitulo">Sube tus productos, comparte tu enlace y recibe pedidos.</p>
+
+  <form id="formRegistro" novalidate>
+    <div class="campo">
+      <label for="correo">Correo</label>
+      <input type="email" id="correo" name="correo" placeholder="tu@correo.com" autocomplete="email" required>
+    </div>
+
+    <div class="campo">
+      <label for="clave">Contraseña</label>
+      <input type="password" id="clave" name="clave" placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6" required>
+    </div>
+
+    <div class="campo">
+      <label for="clave2">Confirma tu contraseña</label>
+      <input type="password" id="clave2" name="clave2" placeholder="Repite tu contraseña" autocomplete="new-password" required>
+    </div>
+
+    <div id="mensaje" class="mensaje" hidden></div>
+
+    <button type="submit" id="btnRegistro">Crear cuenta</button>
+  </form>
+
+  <p class="pie">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { storageKey: "kiosco-auth" }
+  });
+
+  var form = document.getElementById("formRegistro");
+  var mensaje = document.getElementById("mensaje");
+  var boton = document.getElementById("btnRegistro");
+
+  function mostrarMensaje(texto, tipo) {
+    mensaje.textContent = texto;
+    mensaje.className = "mensaje " + tipo;
+    mensaje.hidden = false;
+  }
+
+  function traducirError(error) {
+    var msg = (error && error.message) || "";
+
+    if (msg.indexOf("already registered") !== -1 || msg.indexOf("already exists") !== -1) {
+      return "Ya existe una cuenta con este correo. Intenta iniciar sesión.";
+    }
+    if (msg.indexOf("Password should be at least") !== -1) {
+      return "La contraseña debe tener al menos 6 caracteres.";
+    }
+    if (msg.indexOf("valid email") !== -1 || msg.indexOf("Unable to validate") !== -1) {
+      return "Ese correo no parece válido. Revísalo e intenta de nuevo.";
+    }
+    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
+      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    }
+    return "Algo salió mal. Intenta de nuevo en un momento.";
+  }
+
+  form.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    mensaje.hidden = true;
+
+    var correo = document.getElementById("correo").value.trim();
+    var clave = document.getElementById("clave").value;
+    var clave2 = document.getElementById("clave2").value;
+
+    if (clave.length < 6) {
+      mostrarMensaje("La contraseña debe tener al menos 6 caracteres.", "error");
+      return;
+    }
+    if (clave !== clave2) {
+      mostrarMensaje("Las contraseñas no coinciden.", "error");
+      return;
+    }
+
+    boton.disabled = true;
+    boton.textContent = "Creando cuenta...";
+
+    sb.auth.signUp({
+      email: correo,
+      password: clave,
+      options: {
+        emailRedirectTo: "https://kiosco.atiendepro.net/login"
+      }
+    }).then(function (resultado) {
+      boton.disabled = false;
+      boton.textContent = "Crear cuenta";
+
+      if (resultado.error) {
+        mostrarMensaje(traducirError(resultado.error), "error");
+        return;
+      }
+
+      form.hidden = true;
+      mostrarMensaje("Listo. Revisa tu correo y confirma tu cuenta para poder entrar.", "exito");
+    }).catch(function () {
+      boton.disabled = false;
+      boton.textContent = "Crear cuenta";
+      mostrarMensaje("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
