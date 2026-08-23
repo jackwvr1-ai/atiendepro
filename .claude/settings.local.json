@@ -1,0 +1,16 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx --no-install playwright --version)",
+      "Bash(python3 -c \"import playwright\")",
+      "Bash(grep -noE \"width:[0-9]{3,4}px\" /workspaces/atiendepro/index.html)",
+      "Bash(awk -F: '{if \\($3+0 > 340\\) print}')",
+      "Bash(sort -t: -k3 -n)",
+      "Bash(grep -noE \"\\([a-z-]*width\\):[0-9]{3,4}px\" /workspaces/atiendepro/index.html)",
+      "Bash(sort -t: -k2 -n -u)",
+      "Bash(python3 *)",
+      "Bash(curl -s http://localhost:8000/index.html)",
+      "Bash(grep *)"
+    ]
+  }
+}
