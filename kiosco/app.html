@@ -1,0 +1,361 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tu panel — Kiosco</title>
+<link rel="stylesheet" href="css/estilo.css">
+</head>
+<body>
+
+<div class="envoltorio">
+
+  <div class="topbar">
+    <span class="marca">Kiosco</span>
+    <button type="button" id="btnSalir" class="salir">Cerrar sesión</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaFormulario" hidden>
+    <h1 class="titulo" id="tituloFormulario">Crea tu kiosco</h1>
+    <p class="subtitulo" id="subtituloFormulario">Cuéntanos lo básico. Podrás agregar productos después.</p>
+
+    <form id="formKiosco" novalidate>
+      <div class="campo">
+        <label for="nombre">Nombre del negocio</label>
+        <input type="text" id="nombre" name="nombre" placeholder="Galletas María" maxlength="80" required>
+      </div>
+
+      <div class="campo">
+        <label for="slug">Dirección de tu kiosco</label>
+        <input type="text" id="slug" name="slug" placeholder="galletas-maria" maxlength="40" autocapitalize="off" autocorrect="off" spellcheck="false" required>
+        <p class="ayuda-slug">Tu kiosco estará en: <strong id="previaSlug">kiosco.atiendepro.net/tu-direccion</strong></p>
+      </div>
+
+      <div class="campo">
+        <label for="descripcion">Descripción corta (opcional)</label>
+        <textarea id="descripcion" name="descripcion" placeholder="Galletas caseras hechas con amor" maxlength="200" rows="3"></textarea>
+      </div>
+
+      <div class="campo">
+        <label for="telefono">Teléfono de contacto (opcional)</label>
+        <input type="tel" id="telefono" name="telefono" placeholder="Tu número de teléfono" maxlength="30">
+      </div>
+
+      <div class="campo">
+        <label for="correoPedidos">Correo donde recibir los pedidos</label>
+        <input type="email" id="correoPedidos" name="correoPedidos" placeholder="tu@correo.com" autocomplete="email" required>
+      </div>
+
+      <div id="mensajeFormulario" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardar">Crear kiosco</button>
+    </form>
+    <button type="button" id="btnCancelarEdicion" class="boton-secundario" style="margin-top: 12px;" hidden>Cancelar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaPanel" hidden>
+    <h1 class="titulo" id="panelNombre">Tu kiosco</h1>
+    <p class="nota" id="panelEstado">Aún no está publicado.</p>
+
+    <div class="campo-enlace">
+      <label>Enlace público</label>
+      <a id="panelEnlace" href="#" target="_blank" rel="noopener" class="enlace-publico">kiosco.atiendepro.net/tu-direccion</a>
+    </div>
+
+    <button type="button" id="btnEditar" class="boton-secundario">Editar datos</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaError" hidden>
+    <h1 class="titulo">No se pudo cargar</h1>
+    <p class="subtitulo" id="textoError">No se pudo conectar. Revisa tu internet e intenta de nuevo.</p>
+    <button type="button" id="btnReintentar">Reintentar</button>
+  </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { storageKey: "kiosco-auth" }
+  });
+
+  var SLUGS_RESERVADOS = [
+    "login", "crear-cuenta", "recuperar", "nueva-clave", "app", "admin", "api",
+    "cuenta", "panel", "ayuda", "soporte", "precios", "terminos", "privacidad",
+    "contacto", "blog", "css", "js", "img", "assets", "static", "favicon.ico",
+    "robots.txt", "sitemap.xml", "index", "home", "k", "kiosco", "kiosko",
+    "atiendepro", "null", "undefined", "www", "mail", "ftp"
+  ];
+
+  var PATRON_SLUG = /^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/;
+  var PATRON_CORREO = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+  var usuarioActual = null;
+  var kioscoActual = null;
+  var slugEditadoManual = false;
+
+  var tarjetaFormulario = document.getElementById("tarjetaFormulario");
+  var tarjetaPanel = document.getElementById("tarjetaPanel");
+  var tarjetaError = document.getElementById("tarjetaError");
+  var textoError = document.getElementById("textoError");
+
+  var tituloFormulario = document.getElementById("tituloFormulario");
+  var subtituloFormulario = document.getElementById("subtituloFormulario");
+  var form = document.getElementById("formKiosco");
+  var campoNombre = document.getElementById("nombre");
+  var campoSlug = document.getElementById("slug");
+  var previaSlug = document.getElementById("previaSlug");
+  var campoDescripcion = document.getElementById("descripcion");
+  var campoTelefono = document.getElementById("telefono");
+  var campoCorreoPedidos = document.getElementById("correoPedidos");
+  var mensajeFormulario = document.getElementById("mensajeFormulario");
+  var btnGuardar = document.getElementById("btnGuardar");
+  var btnCancelarEdicion = document.getElementById("btnCancelarEdicion");
+
+  var panelNombre = document.getElementById("panelNombre");
+  var panelEstado = document.getElementById("panelEstado");
+  var panelEnlace = document.getElementById("panelEnlace");
+  var btnEditar = document.getElementById("btnEditar");
+
+  var btnSalir = document.getElementById("btnSalir");
+  var btnReintentar = document.getElementById("btnReintentar");
+
+  function ocultarTodo() {
+    tarjetaFormulario.hidden = true;
+    tarjetaPanel.hidden = true;
+    tarjetaError.hidden = true;
+  }
+
+  function mostrarError(texto) {
+    ocultarTodo();
+    textoError.textContent = texto || "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    tarjetaError.hidden = false;
+  }
+
+  function mostrarMensajeFormulario(texto, tipo) {
+    mensajeFormulario.textContent = texto;
+    mensajeFormulario.className = "mensaje " + tipo;
+    mensajeFormulario.hidden = false;
+  }
+
+  function generarSlug(texto) {
+    return (texto || "")
+      .toString()
+      .normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .slice(0, 40)
+      .replace(/-+$/g, "");
+  }
+
+  function actualizarPreviaSlug() {
+    var valor = campoSlug.value.trim() || "tu-direccion";
+    previaSlug.textContent = "kiosco.atiendepro.net/" + valor;
+  }
+
+  campoNombre.addEventListener("input", function () {
+    if (!slugEditadoManual) {
+      campoSlug.value = generarSlug(campoNombre.value);
+      actualizarPreviaSlug();
+    }
+  });
+
+  campoSlug.addEventListener("input", function () {
+    slugEditadoManual = true;
+    campoSlug.value = campoSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
+    actualizarPreviaSlug();
+  });
+
+  function mostrarFormularioCreacion() {
+    ocultarTodo();
+    tituloFormulario.textContent = "Crea tu kiosco";
+    subtituloFormulario.textContent = "Cuéntanos lo básico. Podrás agregar productos después.";
+    btnGuardar.textContent = "Crear kiosco";
+    btnCancelarEdicion.hidden = true;
+    mensajeFormulario.hidden = true;
+
+    form.reset();
+    slugEditadoManual = false;
+    actualizarPreviaSlug();
+    campoCorreoPedidos.value = (usuarioActual && usuarioActual.email) || "";
+
+    tarjetaFormulario.hidden = false;
+  }
+
+  function mostrarFormularioEdicion() {
+    ocultarTodo();
+    tituloFormulario.textContent = "Editar datos";
+    subtituloFormulario.textContent = "Actualiza la información de tu kiosco.";
+    btnGuardar.textContent = "Guardar cambios";
+    btnCancelarEdicion.hidden = false;
+    mensajeFormulario.hidden = true;
+
+    campoNombre.value = kioscoActual.nombre || "";
+    campoSlug.value = kioscoActual.slug || "";
+    campoDescripcion.value = kioscoActual.descripcion || "";
+    campoTelefono.value = kioscoActual.telefono_contacto || "";
+    campoCorreoPedidos.value = kioscoActual.email_pedidos || (usuarioActual && usuarioActual.email) || "";
+    slugEditadoManual = true;
+    actualizarPreviaSlug();
+
+    tarjetaFormulario.hidden = false;
+  }
+
+  function mostrarPanel() {
+    ocultarTodo();
+    panelNombre.textContent = kioscoActual.nombre;
+    panelEstado.textContent = kioscoActual.publicado ? "Publicado." : "Aún no está publicado.";
+    var direccion = "kiosco.atiendepro.net/" + kioscoActual.slug;
+    panelEnlace.textContent = direccion;
+    panelEnlace.href = "https://" + direccion;
+    tarjetaPanel.hidden = false;
+  }
+
+  btnEditar.addEventListener("click", mostrarFormularioEdicion);
+
+  btnCancelarEdicion.addEventListener("click", function () {
+    if (kioscoActual) {
+      mostrarPanel();
+    }
+  });
+
+  btnSalir.addEventListener("click", function () {
+    btnSalir.disabled = true;
+    sb.auth.signOut().then(function () {
+      window.location.href = "/login";
+    }).catch(function () {
+      window.location.href = "/login";
+    });
+  });
+
+  btnReintentar.addEventListener("click", function () {
+    window.location.reload();
+  });
+
+  function traducirErrorGuardado(error) {
+    var msg = (error && error.message) || "";
+    var codigo = error && error.code;
+
+    if (codigo === "23505" || msg.indexOf("duplicate key") !== -1 || msg.toLowerCase().indexOf("unique") !== -1) {
+      return "Esa dirección ya está en uso por otro kiosco. Elige otra.";
+    }
+    if (msg.indexOf("kioscos_slug_check") !== -1 || msg.toLowerCase().indexOf("check constraint") !== -1) {
+      return "La dirección no tiene un formato válido.";
+    }
+    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
+      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    }
+    return "Algo salió mal. Intenta de nuevo en un momento.";
+  }
+
+  form.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    mensajeFormulario.hidden = true;
+
+    var nombre = campoNombre.value.trim();
+    var slug = campoSlug.value.trim().toLowerCase();
+    var descripcion = campoDescripcion.value.trim();
+    var telefono = campoTelefono.value.trim();
+    var correoPedidos = campoCorreoPedidos.value.trim();
+
+    if (!nombre) {
+      mostrarMensajeFormulario("Escribe el nombre de tu negocio.", "error");
+      return;
+    }
+    if (!slug) {
+      mostrarMensajeFormulario("Escribe una dirección para tu kiosco.", "error");
+      return;
+    }
+    if (!PATRON_SLUG.test(slug)) {
+      mostrarMensajeFormulario("La dirección debe tener entre 3 y 40 caracteres: solo minúsculas, números y guiones, sin empezar ni terminar en guión.", "error");
+      return;
+    }
+    if (SLUGS_RESERVADOS.indexOf(slug) !== -1) {
+      mostrarMensajeFormulario("Esa dirección no está disponible. Elige otra.", "error");
+      return;
+    }
+    if (!correoPedidos || !PATRON_CORREO.test(correoPedidos)) {
+      mostrarMensajeFormulario("Escribe un correo válido para recibir tus pedidos.", "error");
+      return;
+    }
+
+    var payload = {
+      nombre: nombre,
+      slug: slug,
+      descripcion: descripcion || null,
+      telefono_contacto: telefono || null,
+      email_pedidos: correoPedidos
+    };
+
+    btnGuardar.disabled = true;
+    btnGuardar.textContent = kioscoActual ? "Guardando..." : "Creando...";
+
+    var operacion;
+    if (kioscoActual) {
+      operacion = sb.from("kioscos").update(payload).eq("id", kioscoActual.id).select().single();
+    } else {
+      payload.dueno_id = usuarioActual.id;
+      operacion = sb.from("kioscos").insert(payload).select().single();
+    }
+
+    operacion.then(function (resultado) {
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = kioscoActual ? "Guardar cambios" : "Crear kiosco";
+
+      if (resultado.error) {
+        mostrarMensajeFormulario(traducirErrorGuardado(resultado.error), "error");
+        return;
+      }
+
+      kioscoActual = resultado.data;
+      mostrarPanel();
+    }).catch(function () {
+      btnGuardar.disabled = false;
+      btnGuardar.textContent = kioscoActual ? "Guardar cambios" : "Crear kiosco";
+      mostrarMensajeFormulario("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+
+  function cargarKiosco() {
+    sb.from("kioscos").select("*").eq("dueno_id", usuarioActual.id).maybeSingle().then(function (resultado) {
+      if (resultado.error) {
+        mostrarError("No se pudo cargar tu información. Intenta de nuevo.");
+        return;
+      }
+
+      if (resultado.data) {
+        kioscoActual = resultado.data;
+        mostrarPanel();
+      } else {
+        kioscoActual = null;
+        mostrarFormularioCreacion();
+      }
+    }).catch(function () {
+      mostrarError("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  sb.auth.getSession().then(function (resultado) {
+    var session = resultado.data && resultado.data.session;
+    if (!session) {
+      window.location.href = "/login";
+      return;
+    }
+    usuarioActual = session.user;
+    cargarKiosco();
+  }).catch(function () {
+    mostrarError("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+  });
+})();
+</script>
+
+</body>
+</html>

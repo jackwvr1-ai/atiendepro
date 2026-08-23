@@ -82,7 +82,9 @@ label {
 
 input[type="email"],
 input[type="password"],
-input[type="text"] {
+input[type="text"],
+input[type="tel"],
+textarea {
   min-height: 48px;
   padding: 12px 14px;
   border: 1.5px solid var(--borde);
@@ -93,9 +95,16 @@ input[type="text"] {
   outline: none;
   transition: border-color 0.15s ease;
   width: 100%;
+  font-family: inherit;
 }
 
-input:focus {
+textarea {
+  resize: vertical;
+  min-height: 72px;
+}
+
+input:focus,
+textarea:focus {
   border-color: var(--negro);
 }
 
@@ -120,6 +129,23 @@ button[type="submit"]:disabled {
   opacity: 0.65;
   cursor: default;
   transform: none;
+}
+
+.boton-secundario {
+  min-height: 52px;
+  border: 1.5px solid var(--negro);
+  border-radius: var(--radio-chico);
+  background: var(--fondo);
+  color: var(--negro);
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+  width: 100%;
+}
+
+.boton-secundario:active {
+  transform: scale(0.98);
 }
 
 .mensaje {
@@ -155,4 +181,91 @@ button[type="submit"]:disabled {
 .pie a:hover,
 .pie a:active {
   text-decoration: underline;
+}
+
+.envoltorio {
+  width: 100%;
+  max-width: 400px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 4px;
+}
+
+.topbar .marca {
+  font-weight: 800;
+  font-size: 1.1rem;
+  color: var(--negro);
+}
+
+.salir {
+  background: none;
+  border: none;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+  cursor: pointer;
+  padding: 6px 4px;
+}
+
+.salir:hover,
+.salir:active {
+  color: var(--negro);
+  text-decoration: underline;
+}
+
+.titulo {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 800;
+  color: var(--negro);
+  margin: 0 0 6px;
+}
+
+.ayuda-slug {
+  margin: 6px 2px 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+.ayuda-slug strong {
+  color: var(--texto);
+  word-break: break-all;
+}
+
+.campo-enlace {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 24px;
+}
+
+.enlace-publico {
+  display: block;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  background: #fafafa;
+  color: var(--negro);
+  font-weight: 600;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.enlace-publico:hover,
+.enlace-publico:active {
+  border-color: var(--negro);
+}
+
+.nota {
+  text-align: center;
+  color: var(--texto-suave);
+  margin: 0 0 24px;
+  font-size: 0.92rem;
 }
