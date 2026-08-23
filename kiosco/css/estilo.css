@@ -269,3 +269,248 @@ button[type="submit"]:disabled {
   margin: 0 0 24px;
   font-size: 0.92rem;
 }
+
+.tabs {
+  display: flex;
+  gap: 4px;
+  padding: 4px;
+  background: #f5f5f5;
+  border-radius: var(--radio-chico);
+}
+
+.tab {
+  flex: 1;
+  min-height: 44px;
+  border: none;
+  border-radius: 9px;
+  background: transparent;
+  color: var(--texto-suave);
+  font-weight: 700;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.tab.activo {
+  background: var(--negro);
+  color: #fff;
+}
+
+.bloque-seccion {
+  margin-bottom: 28px;
+}
+
+.bloque-seccion:last-child {
+  margin-bottom: 0;
+}
+
+.encabezado-bloque {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.subtitulo-seccion {
+  font-size: 1.05rem;
+  font-weight: 800;
+  color: var(--negro);
+  margin: 0;
+}
+
+.boton-chico {
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1.5px solid var(--negro);
+  border-radius: var(--radio-chico);
+  background: var(--fondo);
+  color: var(--negro);
+  font-weight: 700;
+  font-size: 0.88rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.1s ease;
+}
+
+.boton-chico:active {
+  transform: scale(0.96);
+}
+
+.nota-lista {
+  text-align: left;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  margin: 0;
+  line-height: 1.4;
+}
+
+.fila-categoria {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 12px 2px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.fila-categoria:last-child {
+  border-bottom: none;
+}
+
+.nombre-categoria {
+  font-weight: 600;
+  color: var(--texto);
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
+.acciones-categoria {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.link-accion {
+  background: none;
+  border: none;
+  padding: 6px 2px;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.link-accion:active {
+  color: var(--negro);
+}
+
+.link-eliminar {
+  color: var(--error-texto);
+}
+
+.link-eliminar:active {
+  color: var(--error-texto);
+  opacity: 0.7;
+}
+
+.titulo-grupo {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+  margin: 20px 0 8px;
+}
+
+.grupo-productos:first-child .titulo-grupo {
+  margin-top: 0;
+}
+
+.fila-producto {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.fila-producto:last-child {
+  border-bottom: none;
+}
+
+.info-producto {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nombre-precio {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nombre-producto {
+  font-weight: 700;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+.precio-producto {
+  color: var(--texto-suave);
+  font-size: 0.92rem;
+}
+
+.acciones-producto {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.boton-disponibilidad {
+  width: 100%;
+  min-height: 52px;
+  border-radius: var(--radio-chico);
+  border: 1.5px solid transparent;
+  font-weight: 800;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.boton-disponibilidad:active {
+  transform: scale(0.98);
+}
+
+.boton-disponibilidad:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+.boton-disponibilidad.disponible {
+  background: var(--exito-fondo);
+  color: var(--exito-texto);
+}
+
+.boton-disponibilidad.agotado {
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+
+.boton-peligro {
+  min-height: 52px;
+  width: 100%;
+  border: 1.5px solid var(--error-texto);
+  border-radius: var(--radio-chico);
+  background: var(--fondo);
+  color: var(--error-texto);
+  font-weight: 700;
+  font-size: 1.02rem;
+  cursor: pointer;
+  margin-top: 12px;
+  transition: transform 0.1s ease;
+}
+
+.boton-peligro:active {
+  transform: scale(0.98);
+}
+
+select {
+  min-height: 48px;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  font-size: 16px;
+  color: var(--texto);
+  background: var(--fondo);
+  outline: none;
+  width: 100%;
+  font-family: inherit;
+}
+
+select:focus {
+  border-color: var(--negro);
+}

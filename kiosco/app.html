@@ -15,6 +15,11 @@
     <button type="button" id="btnSalir" class="salir">Cerrar sesión</button>
   </div>
 
+  <div class="tabs" id="tabsSecciones" hidden>
+    <button type="button" class="tab" id="tabMiKiosco" data-tab="kiosco">Mi kiosco</button>
+    <button type="button" class="tab" id="tabProductos" data-tab="productos">Productos</button>
+  </div>
+
   <div class="tarjeta" id="tarjetaFormulario" hidden>
     <h1 class="titulo" id="tituloFormulario">Crea tu kiosco</h1>
     <p class="subtitulo" id="subtituloFormulario">Cuéntanos lo básico. Podrás agregar productos después.</p>
@@ -71,6 +76,82 @@
     <button type="button" id="btnReintentar">Reintentar</button>
   </div>
 
+  <div class="tarjeta" id="tarjetaProductos" hidden>
+    <h1 class="titulo">Productos</h1>
+
+    <div class="bloque-seccion">
+      <div class="encabezado-bloque">
+        <h2 class="subtitulo-seccion">Categorías</h2>
+        <button type="button" id="btnNuevaCategoria" class="boton-chico">+ Agregar</button>
+      </div>
+      <div id="listaCategorias"></div>
+    </div>
+
+    <div class="bloque-seccion">
+      <div class="encabezado-bloque">
+        <h2 class="subtitulo-seccion">Productos</h2>
+        <button type="button" id="btnNuevoProducto" class="boton-chico">+ Agregar</button>
+      </div>
+      <div id="listaProductos"></div>
+    </div>
+  </div>
+
+  <div class="tarjeta" id="tarjetaErrorProductos" hidden>
+    <p class="subtitulo" id="textoErrorProductos">No se pudo cargar tu información. Intenta de nuevo.</p>
+    <button type="button" id="btnReintentarProductos" class="boton-secundario">Reintentar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaFormCategoria" hidden>
+    <h1 class="titulo" id="tituloFormCategoria">Nueva categoría</h1>
+
+    <form id="formCategoria" novalidate>
+      <div class="campo">
+        <label for="nombreCategoria">Nombre</label>
+        <input type="text" id="nombreCategoria" name="nombreCategoria" placeholder="Panes" maxlength="60" required>
+      </div>
+
+      <div id="mensajeFormCategoria" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardarCategoria">Crear categoría</button>
+    </form>
+    <button type="button" id="btnEliminarCategoria" class="boton-peligro" hidden>Eliminar categoría</button>
+    <button type="button" id="btnCancelarCategoria" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaFormProducto" hidden>
+    <h1 class="titulo" id="tituloFormProducto">Nuevo producto</h1>
+
+    <form id="formProducto" novalidate>
+      <div class="campo">
+        <label for="nombreProducto">Nombre</label>
+        <input type="text" id="nombreProducto" name="nombreProducto" placeholder="Galletas de avena" maxlength="80" required>
+      </div>
+
+      <div class="campo">
+        <label for="precioProducto">Precio</label>
+        <input type="text" inputmode="decimal" id="precioProducto" name="precioProducto" placeholder="0.00" required>
+      </div>
+
+      <div class="campo">
+        <label for="descripcionProducto">Descripción (opcional)</label>
+        <textarea id="descripcionProducto" name="descripcionProducto" placeholder="Ingredientes, tamaño, etc." maxlength="300" rows="3"></textarea>
+      </div>
+
+      <div class="campo">
+        <label for="categoriaProducto">Categoría (opcional)</label>
+        <select id="categoriaProducto" name="categoriaProducto">
+          <option value="">Sin categoría</option>
+        </select>
+      </div>
+
+      <div id="mensajeFormProducto" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardarProducto">Crear producto</button>
+    </form>
+    <button type="button" id="btnEliminarProducto" class="boton-peligro" hidden>Eliminar producto</button>
+    <button type="button" id="btnCancelarProducto" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -100,6 +181,17 @@
   var kioscoActual = null;
   var slugEditadoManual = false;
 
+  var seccionActiva = "kiosco";
+  var categoriasActuales = [];
+  var productosActuales = [];
+  var productosCargados = false;
+  var categoriaEditando = null;
+  var productoEditando = null;
+
+  var tabsSecciones = document.getElementById("tabsSecciones");
+  var tabMiKiosco = document.getElementById("tabMiKiosco");
+  var tabProductos = document.getElementById("tabProductos");
+
   var tarjetaFormulario = document.getElementById("tarjetaFormulario");
   var tarjetaPanel = document.getElementById("tarjetaPanel");
   var tarjetaError = document.getElementById("tarjetaError");
@@ -126,10 +218,45 @@
   var btnSalir = document.getElementById("btnSalir");
   var btnReintentar = document.getElementById("btnReintentar");
 
+  var tarjetaProductos = document.getElementById("tarjetaProductos");
+  var listaCategorias = document.getElementById("listaCategorias");
+  var listaProductos = document.getElementById("listaProductos");
+  var btnNuevaCategoria = document.getElementById("btnNuevaCategoria");
+  var btnNuevoProducto = document.getElementById("btnNuevoProducto");
+
+  var tarjetaErrorProductos = document.getElementById("tarjetaErrorProductos");
+  var textoErrorProductos = document.getElementById("textoErrorProductos");
+  var btnReintentarProductos = document.getElementById("btnReintentarProductos");
+
+  var tarjetaFormCategoria = document.getElementById("tarjetaFormCategoria");
+  var tituloFormCategoria = document.getElementById("tituloFormCategoria");
+  var formCategoria = document.getElementById("formCategoria");
+  var campoNombreCategoria = document.getElementById("nombreCategoria");
+  var mensajeFormCategoria = document.getElementById("mensajeFormCategoria");
+  var btnGuardarCategoria = document.getElementById("btnGuardarCategoria");
+  var btnEliminarCategoria = document.getElementById("btnEliminarCategoria");
+  var btnCancelarCategoria = document.getElementById("btnCancelarCategoria");
+
+  var tarjetaFormProducto = document.getElementById("tarjetaFormProducto");
+  var tituloFormProducto = document.getElementById("tituloFormProducto");
+  var formProducto = document.getElementById("formProducto");
+  var campoNombreProducto = document.getElementById("nombreProducto");
+  var campoPrecioProducto = document.getElementById("precioProducto");
+  var campoDescripcionProducto = document.getElementById("descripcionProducto");
+  var campoCategoriaProducto = document.getElementById("categoriaProducto");
+  var mensajeFormProducto = document.getElementById("mensajeFormProducto");
+  var btnGuardarProducto = document.getElementById("btnGuardarProducto");
+  var btnEliminarProducto = document.getElementById("btnEliminarProducto");
+  var btnCancelarProducto = document.getElementById("btnCancelarProducto");
+
   function ocultarTodo() {
     tarjetaFormulario.hidden = true;
     tarjetaPanel.hidden = true;
     tarjetaError.hidden = true;
+    tarjetaProductos.hidden = true;
+    tarjetaErrorProductos.hidden = true;
+    tarjetaFormCategoria.hidden = true;
+    tarjetaFormProducto.hidden = true;
   }
 
   function mostrarError(texto) {
@@ -138,10 +265,14 @@
     tarjetaError.hidden = false;
   }
 
+  function mostrarMensajeEnCaja(caja, texto, tipo) {
+    caja.textContent = texto;
+    caja.className = "mensaje " + tipo;
+    caja.hidden = false;
+  }
+
   function mostrarMensajeFormulario(texto, tipo) {
-    mensajeFormulario.textContent = texto;
-    mensajeFormulario.className = "mensaje " + tipo;
-    mensajeFormulario.hidden = false;
+    mostrarMensajeEnCaja(mensajeFormulario, texto, tipo);
   }
 
   function generarSlug(texto) {
@@ -218,6 +349,25 @@
     panelEnlace.href = "https://" + direccion;
     tarjetaPanel.hidden = false;
   }
+
+  function setSeccionActiva(nombre) {
+    seccionActiva = nombre;
+    tabMiKiosco.classList.toggle("activo", nombre === "kiosco");
+    tabProductos.classList.toggle("activo", nombre === "productos");
+    if (nombre === "kiosco") {
+      mostrarPanel();
+    } else {
+      mostrarListaProductos();
+    }
+  }
+
+  tabMiKiosco.addEventListener("click", function () {
+    setSeccionActiva("kiosco");
+  });
+
+  tabProductos.addEventListener("click", function () {
+    setSeccionActiva("productos");
+  });
 
   btnEditar.addEventListener("click", mostrarFormularioEdicion);
 
@@ -316,13 +466,461 @@
       }
 
       kioscoActual = resultado.data;
-      mostrarPanel();
+      tabsSecciones.hidden = false;
+      setSeccionActiva("kiosco");
     }).catch(function () {
       btnGuardar.disabled = false;
       btnGuardar.textContent = kioscoActual ? "Guardar cambios" : "Crear kiosco";
       mostrarMensajeFormulario("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
     });
   });
+
+  // ---- Productos y categorías ----
+
+  function mostrarErrorProductos(texto) {
+    ocultarTodo();
+    textoErrorProductos.textContent = texto || "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    tarjetaErrorProductos.hidden = false;
+  }
+
+  function cargarProductosYCategorias() {
+    ocultarTodo();
+    Promise.all([
+      sb.from("kiosco_categorias").select("*").eq("kiosco_id", kioscoActual.id).order("orden", { ascending: true }),
+      sb.from("kiosco_productos").select("*").eq("kiosco_id", kioscoActual.id).order("orden", { ascending: true })
+    ]).then(function (resultados) {
+      var resCategorias = resultados[0];
+      var resProductos = resultados[1];
+      if (resCategorias.error || resProductos.error) {
+        mostrarErrorProductos("No se pudo cargar tu información. Intenta de nuevo.");
+        return;
+      }
+      categoriasActuales = resCategorias.data || [];
+      productosActuales = resProductos.data || [];
+      productosCargados = true;
+      if (seccionActiva === "productos") {
+        mostrarListaProductos();
+      }
+    }).catch(function () {
+      mostrarErrorProductos("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  btnReintentarProductos.addEventListener("click", function () {
+    cargarProductosYCategorias();
+  });
+
+  function mostrarListaProductos() {
+    if (!productosCargados) {
+      cargarProductosYCategorias();
+      return;
+    }
+    ocultarTodo();
+    renderCategorias();
+    renderProductos();
+    tarjetaProductos.hidden = false;
+  }
+
+  function renderCategorias() {
+    listaCategorias.innerHTML = "";
+
+    if (categoriasActuales.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "nota-lista";
+      vacio.textContent = "Todavía no tienes categorías. Puedes crear productos sin categoría.";
+      listaCategorias.appendChild(vacio);
+      return;
+    }
+
+    categoriasActuales.forEach(function (categoria) {
+      var fila = document.createElement("div");
+      fila.className = "fila-categoria";
+
+      var nombre = document.createElement("span");
+      nombre.className = "nombre-categoria";
+      nombre.textContent = categoria.nombre;
+
+      var acciones = document.createElement("div");
+      acciones.className = "acciones-categoria";
+
+      var btnEditarCat = document.createElement("button");
+      btnEditarCat.type = "button";
+      btnEditarCat.className = "link-accion";
+      btnEditarCat.textContent = "Editar";
+      btnEditarCat.addEventListener("click", function () {
+        mostrarFormCategoria(categoria);
+      });
+
+      var btnEliminarCat = document.createElement("button");
+      btnEliminarCat.type = "button";
+      btnEliminarCat.className = "link-accion link-eliminar";
+      btnEliminarCat.textContent = "Eliminar";
+      btnEliminarCat.addEventListener("click", function () {
+        eliminarCategoria(categoria);
+      });
+
+      acciones.appendChild(btnEditarCat);
+      acciones.appendChild(btnEliminarCat);
+      fila.appendChild(nombre);
+      fila.appendChild(acciones);
+      listaCategorias.appendChild(fila);
+    });
+  }
+
+  function agruparProductosPorCategoria() {
+    var grupos = [];
+
+    categoriasActuales.forEach(function (categoria) {
+      var productos = productosActuales.filter(function (p) {
+        return p.categoria_id === categoria.id;
+      });
+      if (productos.length > 0) {
+        grupos.push({ nombre: categoria.nombre, productos: productos });
+      }
+    });
+
+    var sinCategoria = productosActuales.filter(function (p) {
+      return !p.categoria_id;
+    });
+    if (sinCategoria.length > 0) {
+      grupos.push({ nombre: "Sin categoría", productos: sinCategoria });
+    }
+
+    return grupos;
+  }
+
+  function actualizarBotonDisponibilidad(boton, agotado) {
+    if (agotado) {
+      boton.className = "boton-disponibilidad agotado";
+      boton.textContent = "Agotado";
+    } else {
+      boton.className = "boton-disponibilidad disponible";
+      boton.textContent = "Disponible";
+    }
+  }
+
+  function alternarAgotado(producto, boton) {
+    var nuevoValor = !producto.agotado;
+    boton.disabled = true;
+    sb.from("kiosco_productos").update({ agotado: nuevoValor }).eq("id", producto.id).select().single().then(function (resultado) {
+      boton.disabled = false;
+      if (resultado.error) {
+        alert("No se pudo actualizar. Intenta de nuevo.");
+        return;
+      }
+      producto.agotado = resultado.data.agotado;
+      actualizarBotonDisponibilidad(boton, producto.agotado);
+    }).catch(function () {
+      boton.disabled = false;
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  function crearFilaProducto(producto) {
+    var fila = document.createElement("div");
+    fila.className = "fila-producto";
+
+    var info = document.createElement("div");
+    info.className = "info-producto";
+
+    var nombrePrecio = document.createElement("div");
+    nombrePrecio.className = "nombre-precio";
+
+    var nombre = document.createElement("span");
+    nombre.className = "nombre-producto";
+    nombre.textContent = producto.nombre;
+
+    var precio = document.createElement("span");
+    precio.className = "precio-producto";
+    precio.textContent = "$" + Number(producto.precio).toFixed(2);
+
+    nombrePrecio.appendChild(nombre);
+    nombrePrecio.appendChild(precio);
+
+    var acciones = document.createElement("div");
+    acciones.className = "acciones-producto";
+
+    var btnEditarProd = document.createElement("button");
+    btnEditarProd.type = "button";
+    btnEditarProd.className = "link-accion";
+    btnEditarProd.textContent = "Editar";
+    btnEditarProd.addEventListener("click", function () {
+      mostrarFormProducto(producto);
+    });
+
+    var btnEliminarProd = document.createElement("button");
+    btnEliminarProd.type = "button";
+    btnEliminarProd.className = "link-accion link-eliminar";
+    btnEliminarProd.textContent = "Eliminar";
+    btnEliminarProd.addEventListener("click", function () {
+      eliminarProducto(producto);
+    });
+
+    acciones.appendChild(btnEditarProd);
+    acciones.appendChild(btnEliminarProd);
+
+    info.appendChild(nombrePrecio);
+    info.appendChild(acciones);
+
+    var botonDisponibilidad = document.createElement("button");
+    botonDisponibilidad.type = "button";
+    actualizarBotonDisponibilidad(botonDisponibilidad, producto.agotado);
+    botonDisponibilidad.addEventListener("click", function () {
+      alternarAgotado(producto, botonDisponibilidad);
+    });
+
+    fila.appendChild(info);
+    fila.appendChild(botonDisponibilidad);
+    return fila;
+  }
+
+  function renderProductos() {
+    listaProductos.innerHTML = "";
+
+    if (productosActuales.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "nota-lista";
+      vacio.textContent = "Todavía no tienes productos.";
+      listaProductos.appendChild(vacio);
+      return;
+    }
+
+    var grupos = agruparProductosPorCategoria();
+    grupos.forEach(function (grupo) {
+      var bloque = document.createElement("div");
+      bloque.className = "grupo-productos";
+
+      var titulo = document.createElement("h3");
+      titulo.className = "titulo-grupo";
+      titulo.textContent = grupo.nombre;
+      bloque.appendChild(titulo);
+
+      grupo.productos.forEach(function (producto) {
+        bloque.appendChild(crearFilaProducto(producto));
+      });
+
+      listaProductos.appendChild(bloque);
+    });
+  }
+
+  // ---- Formulario de categoría ----
+
+  function mostrarFormCategoria(categoria) {
+    ocultarTodo();
+    categoriaEditando = categoria || null;
+    tituloFormCategoria.textContent = categoria ? "Editar categoría" : "Nueva categoría";
+    btnGuardarCategoria.textContent = categoria ? "Guardar cambios" : "Crear categoría";
+    btnEliminarCategoria.hidden = !categoria;
+    mensajeFormCategoria.hidden = true;
+    campoNombreCategoria.value = categoria ? categoria.nombre : "";
+    tarjetaFormCategoria.hidden = false;
+  }
+
+  btnNuevaCategoria.addEventListener("click", function () {
+    mostrarFormCategoria(null);
+  });
+
+  btnCancelarCategoria.addEventListener("click", mostrarListaProductos);
+
+  formCategoria.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+
+    var nombre = campoNombreCategoria.value.trim();
+    if (!nombre) {
+      mostrarMensajeEnCaja(mensajeFormCategoria, "Escribe el nombre de la categoría.", "error");
+      return;
+    }
+
+    btnGuardarCategoria.disabled = true;
+    btnGuardarCategoria.textContent = categoriaEditando ? "Guardando..." : "Creando...";
+
+    var operacion;
+    if (categoriaEditando) {
+      operacion = sb.from("kiosco_categorias").update({ nombre: nombre }).eq("id", categoriaEditando.id).select().single();
+    } else {
+      operacion = sb.from("kiosco_categorias").insert({
+        kiosco_id: kioscoActual.id,
+        nombre: nombre,
+        orden: categoriasActuales.length
+      }).select().single();
+    }
+
+    operacion.then(function (resultado) {
+      btnGuardarCategoria.disabled = false;
+      btnGuardarCategoria.textContent = categoriaEditando ? "Guardar cambios" : "Crear categoría";
+
+      if (resultado.error) {
+        mostrarMensajeEnCaja(mensajeFormCategoria, "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        return;
+      }
+
+      if (categoriaEditando) {
+        var indice = categoriasActuales.findIndex(function (c) { return c.id === resultado.data.id; });
+        if (indice !== -1) categoriasActuales[indice] = resultado.data;
+      } else {
+        categoriasActuales.push(resultado.data);
+      }
+
+      mostrarListaProductos();
+    }).catch(function () {
+      btnGuardarCategoria.disabled = false;
+      btnGuardarCategoria.textContent = categoriaEditando ? "Guardar cambios" : "Crear categoría";
+      mostrarMensajeEnCaja(mensajeFormCategoria, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+
+  btnEliminarCategoria.addEventListener("click", function () {
+    if (categoriaEditando) {
+      eliminarCategoria(categoriaEditando);
+    }
+  });
+
+  function eliminarCategoria(categoria) {
+    var confirmado = window.confirm("¿Eliminar la categoría \"" + categoria.nombre + "\"? Sus productos no se borrarán, quedarán sin categoría.");
+    if (!confirmado) return;
+
+    sb.from("kiosco_categorias").delete().eq("id", categoria.id).then(function (resultado) {
+      if (resultado.error) {
+        alert("No se pudo eliminar. Intenta de nuevo.");
+        return;
+      }
+      categoriasActuales = categoriasActuales.filter(function (c) { return c.id !== categoria.id; });
+      productosActuales.forEach(function (p) {
+        if (p.categoria_id === categoria.id) p.categoria_id = null;
+      });
+      mostrarListaProductos();
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  // ---- Formulario de producto ----
+
+  function actualizarSelectCategorias(seleccionActual) {
+    campoCategoriaProducto.innerHTML = "";
+
+    var opcionVacia = document.createElement("option");
+    opcionVacia.value = "";
+    opcionVacia.textContent = "Sin categoría";
+    campoCategoriaProducto.appendChild(opcionVacia);
+
+    categoriasActuales.forEach(function (categoria) {
+      var opcion = document.createElement("option");
+      opcion.value = categoria.id;
+      opcion.textContent = categoria.nombre;
+      campoCategoriaProducto.appendChild(opcion);
+    });
+
+    campoCategoriaProducto.value = seleccionActual || "";
+  }
+
+  function mostrarFormProducto(producto) {
+    ocultarTodo();
+    productoEditando = producto || null;
+    tituloFormProducto.textContent = producto ? "Editar producto" : "Nuevo producto";
+    btnGuardarProducto.textContent = producto ? "Guardar cambios" : "Crear producto";
+    btnEliminarProducto.hidden = !producto;
+    mensajeFormProducto.hidden = true;
+
+    campoNombreProducto.value = producto ? producto.nombre : "";
+    campoPrecioProducto.value = producto ? String(producto.precio) : "";
+    campoDescripcionProducto.value = producto ? (producto.descripcion || "") : "";
+    actualizarSelectCategorias(producto ? producto.categoria_id : "");
+
+    tarjetaFormProducto.hidden = false;
+  }
+
+  btnNuevoProducto.addEventListener("click", function () {
+    mostrarFormProducto(null);
+  });
+
+  btnCancelarProducto.addEventListener("click", mostrarListaProductos);
+
+  formProducto.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+
+    var nombre = campoNombreProducto.value.trim();
+    var precioTexto = campoPrecioProducto.value.trim().replace(",", ".");
+    var descripcion = campoDescripcionProducto.value.trim();
+    var categoriaId = campoCategoriaProducto.value || null;
+
+    if (!nombre) {
+      mostrarMensajeEnCaja(mensajeFormProducto, "Escribe el nombre del producto.", "error");
+      return;
+    }
+
+    var precio = Number(precioTexto);
+    if (!precioTexto || isNaN(precio) || precio <= 0) {
+      mostrarMensajeEnCaja(mensajeFormProducto, "Escribe un precio válido.", "error");
+      return;
+    }
+
+    var payload = {
+      nombre: nombre,
+      precio: precio,
+      descripcion: descripcion || null,
+      categoria_id: categoriaId
+    };
+
+    btnGuardarProducto.disabled = true;
+    btnGuardarProducto.textContent = productoEditando ? "Guardando..." : "Creando...";
+
+    var operacion;
+    if (productoEditando) {
+      operacion = sb.from("kiosco_productos").update(payload).eq("id", productoEditando.id).select().single();
+    } else {
+      payload.kiosco_id = kioscoActual.id;
+      payload.orden = productosActuales.length;
+      operacion = sb.from("kiosco_productos").insert(payload).select().single();
+    }
+
+    operacion.then(function (resultado) {
+      btnGuardarProducto.disabled = false;
+      btnGuardarProducto.textContent = productoEditando ? "Guardar cambios" : "Crear producto";
+
+      if (resultado.error) {
+        mostrarMensajeEnCaja(mensajeFormProducto, "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        return;
+      }
+
+      if (productoEditando) {
+        var indice = productosActuales.findIndex(function (p) { return p.id === resultado.data.id; });
+        if (indice !== -1) productosActuales[indice] = resultado.data;
+      } else {
+        productosActuales.push(resultado.data);
+      }
+
+      mostrarListaProductos();
+    }).catch(function () {
+      btnGuardarProducto.disabled = false;
+      btnGuardarProducto.textContent = productoEditando ? "Guardar cambios" : "Crear producto";
+      mostrarMensajeEnCaja(mensajeFormProducto, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+
+  btnEliminarProducto.addEventListener("click", function () {
+    if (productoEditando) {
+      eliminarProducto(productoEditando);
+    }
+  });
+
+  function eliminarProducto(producto) {
+    var confirmado = window.confirm("¿Eliminar \"" + producto.nombre + "\"? Esta acción no se puede deshacer.");
+    if (!confirmado) return;
+
+    sb.from("kiosco_productos").delete().eq("id", producto.id).then(function (resultado) {
+      if (resultado.error) {
+        alert("No se pudo eliminar. Intenta de nuevo.");
+        return;
+      }
+      productosActuales = productosActuales.filter(function (p) { return p.id !== producto.id; });
+      mostrarListaProductos();
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  // ---- Arranque ----
 
   function cargarKiosco() {
     sb.from("kioscos").select("*").eq("dueno_id", usuarioActual.id).maybeSingle().then(function (resultado) {
@@ -333,9 +931,11 @@
 
       if (resultado.data) {
         kioscoActual = resultado.data;
-        mostrarPanel();
+        tabsSecciones.hidden = false;
+        setSeccionActiva("kiosco");
       } else {
         kioscoActual = null;
+        tabsSecciones.hidden = true;
         mostrarFormularioCreacion();
       }
     }).catch(function () {
