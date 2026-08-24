@@ -36,17 +36,13 @@
   <p class="pie">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
 </div>
 
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 (function () {
   "use strict";
 
   var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
   var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
-
-  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: { storageKey: "kiosco-auth" }
-  });
+  var URL_REGISTRO = SUPABASE_URL + "/functions/v1/registro-kiosco";
 
   var form = document.getElementById("formRegistro");
   var mensaje = document.getElementById("mensaje");
@@ -56,24 +52,6 @@
     mensaje.textContent = texto;
     mensaje.className = "mensaje " + tipo;
     mensaje.hidden = false;
-  }
-
-  function traducirError(error) {
-    var msg = (error && error.message) || "";
-
-    if (msg.indexOf("already registered") !== -1 || msg.indexOf("already exists") !== -1) {
-      return "Ya existe una cuenta con este correo. Intenta iniciar sesión.";
-    }
-    if (msg.indexOf("Password should be at least") !== -1) {
-      return "La contraseña debe tener al menos 6 caracteres.";
-    }
-    if (msg.indexOf("valid email") !== -1 || msg.indexOf("Unable to validate") !== -1) {
-      return "Ese correo no parece válido. Revísalo e intenta de nuevo.";
-    }
-    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
-      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
-    }
-    return "Algo salió mal. Intenta de nuevo en un momento.";
   }
 
   form.addEventListener("submit", function (evento) {
@@ -96,23 +74,27 @@
     boton.disabled = true;
     boton.textContent = "Creando cuenta...";
 
-    sb.auth.signUp({
-      email: correo,
-      password: clave,
-      options: {
-        emailRedirectTo: "https://kiosco.atiendepro.net/login"
-      }
-    }).then(function (resultado) {
+    fetch(URL_REGISTRO, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON,
+        "Authorization": "Bearer " + SUPABASE_ANON
+      },
+      body: JSON.stringify({ email: correo, password: clave })
+    }).then(function (respuesta) {
+      return respuesta.json();
+    }).then(function (datos) {
       boton.disabled = false;
       boton.textContent = "Crear cuenta";
 
-      if (resultado.error) {
-        mostrarMensaje(traducirError(resultado.error), "error");
+      if (!datos || !datos.ok) {
+        mostrarMensaje((datos && datos.mensaje) || "Algo salió mal. Intenta de nuevo en un momento.", "error");
         return;
       }
 
       form.hidden = true;
-      mostrarMensaje("Listo. Revisa tu correo y confirma tu cuenta para poder entrar.", "exito");
+      mostrarMensaje(datos.mensaje, "exito");
     }).catch(function () {
       boton.disabled = false;
       boton.textContent = "Crear cuenta";
