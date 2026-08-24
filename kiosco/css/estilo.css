@@ -187,6 +187,85 @@ button[type="submit"]:disabled {
   text-decoration: underline;
 }
 
+/* ---- Confirmación de correo ---- */
+
+.icono-sobre {
+  display: block;
+  margin: 0 auto 20px;
+  color: var(--negro);
+}
+
+.texto-info {
+  text-align: center;
+  color: var(--texto-suave);
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.correo-destacado {
+  text-align: center;
+  color: var(--negro);
+  font-weight: 800;
+  margin: 0 0 14px;
+  font-size: 1rem;
+  word-break: break-all;
+}
+
+.separador {
+  height: 1px;
+  border: none;
+  background: var(--borde);
+  margin: 24px 0 20px;
+}
+
+.texto-secundario {
+  text-align: center;
+  color: var(--texto);
+  font-weight: 700;
+  margin: 0 0 14px;
+  font-size: 0.95rem;
+}
+
+.texto-chico {
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 0.82rem;
+  line-height: 1.4;
+  margin: 12px 0 0;
+}
+
+.boton-primario {
+  min-height: 52px;
+  width: 100%;
+  border: none;
+  border-radius: var(--radio-chico);
+  background: var(--negro);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.boton-primario:active {
+  transform: scale(0.98);
+}
+
+.boton-primario:disabled {
+  opacity: 0.65;
+  cursor: default;
+  transform: none;
+}
+
+.insignia-exito {
+  text-align: center;
+  color: var(--exito-texto);
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin: 0 0 12px;
+}
+
 .envoltorio {
   width: 100%;
   max-width: 400px;

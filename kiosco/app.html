@@ -168,6 +168,13 @@
     <button type="button" id="btnReintentar">Reintentar</button>
   </div>
 
+  <div class="tarjeta" id="tarjetaBienvenida" hidden>
+    <p class="insignia-exito">✓ Correo confirmado</p>
+    <h1 class="titulo">Tu cuenta está lista.</h1>
+    <p class="subtitulo">Ahora crea tu primer kiosco y empieza a agregar tus productos.</p>
+    <button type="button" id="btnCrearKioscoBienvenida" class="boton-primario">Crear mi kiosco →</button>
+  </div>
+
   <div class="tarjeta" id="tarjetaProductos" hidden>
     <h1 class="titulo">Productos</h1>
 
@@ -350,7 +357,7 @@
   var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
 
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: { storageKey: "kiosco-auth" }
+    auth: { storageKey: "kiosco-auth", detectSessionInUrl: true, persistSession: true }
   });
 
   var SLUGS_RESERVADOS = [
@@ -386,6 +393,8 @@
   var tarjetaPanel = document.getElementById("tarjetaPanel");
   var tarjetaError = document.getElementById("tarjetaError");
   var textoError = document.getElementById("textoError");
+  var tarjetaBienvenida = document.getElementById("tarjetaBienvenida");
+  var btnCrearKioscoBienvenida = document.getElementById("btnCrearKioscoBienvenida");
 
   var tituloFormulario = document.getElementById("tituloFormulario");
   var subtituloFormulario = document.getElementById("subtituloFormulario");
@@ -526,6 +535,7 @@
     tarjetaFormulario.hidden = true;
     tarjetaPanel.hidden = true;
     tarjetaError.hidden = true;
+    tarjetaBienvenida.hidden = true;
     tarjetaProductos.hidden = true;
     tarjetaErrorProductos.hidden = true;
     tarjetaFormCategoria.hidden = true;
@@ -581,6 +591,15 @@
     slugEditadoManual = true;
     campoSlug.value = campoSlug.value.toLowerCase().replace(/[^a-z0-9-]/g, "");
     actualizarPreviaSlug();
+  });
+
+  function mostrarBienvenida() {
+    ocultarTodo();
+    tarjetaBienvenida.hidden = false;
+  }
+
+  btnCrearKioscoBienvenida.addEventListener("click", function () {
+    mostrarFormularioCreacion();
   });
 
   function mostrarFormularioCreacion() {
@@ -2495,7 +2514,7 @@
       } else {
         kioscoActual = null;
         tabsSecciones.hidden = true;
-        mostrarFormularioCreacion();
+        mostrarBienvenida();
       }
     }).catch(function () {
       mostrarError("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
@@ -2505,7 +2524,12 @@
   sb.auth.getSession().then(function (resultado) {
     var session = resultado.data && resultado.data.session;
     if (!session) {
-      window.location.href = "/login";
+      var mensajeLogin = window.location.hash.indexOf("access_token") !== -1
+        ? "Tu correo está confirmado. Inicia sesión para continuar."
+        : "";
+      window.location.href = mensajeLogin
+        ? "/login?mensaje=" + encodeURIComponent(mensajeLogin)
+        : "/login";
       return;
     }
     usuarioActual = session.user;

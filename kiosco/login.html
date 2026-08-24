@@ -54,6 +54,12 @@
     mensaje.hidden = false;
   }
 
+  var parametros = new URLSearchParams(window.location.search);
+  var mensajeUrl = parametros.get("mensaje");
+  if (mensajeUrl) {
+    mostrarMensaje(mensajeUrl, "exito");
+  }
+
   function traducirError(error) {
     var msg = (error && error.message) || "";
 

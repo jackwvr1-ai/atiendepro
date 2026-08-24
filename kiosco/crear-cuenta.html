@@ -10,30 +10,56 @@
 
 <div class="tarjeta">
   <p class="logo">Kiosco</p>
-  <p class="subtitulo">Sube tus productos, comparte tu enlace y recibe pedidos.</p>
 
-  <form id="formRegistro" novalidate>
-    <div class="campo">
-      <label for="correo">Correo</label>
-      <input type="email" id="correo" name="correo" placeholder="tu@correo.com" autocomplete="email" required>
-    </div>
+  <div id="vistaRegistro">
+    <p class="subtitulo">Sube tus productos, comparte tu enlace y recibe pedidos.</p>
 
-    <div class="campo">
-      <label for="clave">Contraseña</label>
-      <input type="password" id="clave" name="clave" placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6" required>
-    </div>
+    <form id="formRegistro" novalidate>
+      <div class="campo">
+        <label for="correo">Correo</label>
+        <input type="email" id="correo" name="correo" placeholder="tu@correo.com" autocomplete="email" required>
+      </div>
 
-    <div class="campo">
-      <label for="clave2">Confirma tu contraseña</label>
-      <input type="password" id="clave2" name="clave2" placeholder="Repite tu contraseña" autocomplete="new-password" required>
-    </div>
+      <div class="campo">
+        <label for="clave">Contraseña</label>
+        <input type="password" id="clave" name="clave" placeholder="Mínimo 6 caracteres" autocomplete="new-password" minlength="6" required>
+      </div>
 
-    <div id="mensaje" class="mensaje" hidden></div>
+      <div class="campo">
+        <label for="clave2">Confirma tu contraseña</label>
+        <input type="password" id="clave2" name="clave2" placeholder="Repite tu contraseña" autocomplete="new-password" required>
+      </div>
 
-    <button type="submit" id="btnRegistro">Crear cuenta</button>
-  </form>
+      <div id="mensaje" class="mensaje" hidden></div>
 
-  <p class="pie">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
+      <button type="submit" id="btnRegistro">Crear cuenta</button>
+    </form>
+
+    <p class="pie">¿Ya tienes cuenta? <a href="/login">Inicia sesión</a></p>
+  </div>
+
+  <div id="vistaCorreo" hidden>
+    <svg class="icono-sobre" width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <rect x="2" y="4" width="20" height="16" rx="2"></rect>
+      <path d="m2 7 10 6 10-6"></path>
+    </svg>
+
+    <h1 class="titulo">Revisa tu correo</h1>
+    <p class="texto-info">Te enviamos un enlace de confirmación a:</p>
+    <p class="correo-destacado" id="correoEnviado"></p>
+    <p class="texto-info">Haz clic en el enlace para confirmar tu correo y seguir creando tu kiosco.</p>
+
+    <hr class="separador">
+
+    <p class="texto-secundario">¿No recibiste el correo?</p>
+
+    <div id="mensajeReenvio" class="mensaje" hidden></div>
+
+    <button type="button" id="btnReenviar" class="boton-secundario">Reenviar correo</button>
+    <p class="texto-chico">Puede tardar unos segundos. Revisa también Spam o Promociones.</p>
+
+    <p class="pie"><a href="#" id="enlaceCambiarCorreo">¿Usaste otro correo? Cambiar correo</a></p>
+  </div>
 </div>
 
 <script>
@@ -43,10 +69,28 @@
   var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
   var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
   var URL_REGISTRO = SUPABASE_URL + "/functions/v1/registro-kiosco";
+  var URL_REENVIO = SUPABASE_URL + "/auth/v1/resend";
+
+  // Debe ser idéntico al redirectTo que usa la función registro-kiosco.
+  var DESTINO_CONFIRMACION = "https://kiosco.atiendepro.net/app";
+
+  var SEGUNDOS_ESPERA = 60;
 
   var form = document.getElementById("formRegistro");
   var mensaje = document.getElementById("mensaje");
   var boton = document.getElementById("btnRegistro");
+  var campoCorreo = document.getElementById("correo");
+
+  var vistaRegistro = document.getElementById("vistaRegistro");
+  var vistaCorreo = document.getElementById("vistaCorreo");
+  var correoEnviado = document.getElementById("correoEnviado");
+  var btnReenviar = document.getElementById("btnReenviar");
+  var mensajeReenvio = document.getElementById("mensajeReenvio");
+  var enlaceCambiarCorreo = document.getElementById("enlaceCambiarCorreo");
+
+  var correoRegistrado = "";
+  var temporizador = null;
+  var segundosRestantes = 0;
 
   function mostrarMensaje(texto, tipo) {
     mensaje.textContent = texto;
@@ -54,11 +98,104 @@
     mensaje.hidden = false;
   }
 
+  function mostrarMensajeReenvio(texto, tipo) {
+    mensajeReenvio.textContent = texto;
+    mensajeReenvio.className = "mensaje " + tipo;
+    mensajeReenvio.hidden = false;
+  }
+
+  function detenerTemporizador() {
+    if (temporizador) {
+      clearInterval(temporizador);
+      temporizador = null;
+    }
+  }
+
+  function actualizarTextoBoton() {
+    btnReenviar.textContent = "Puedes reenviar en " + segundosRestantes + "s";
+  }
+
+  function iniciarCuentaRegresiva() {
+    segundosRestantes = SEGUNDOS_ESPERA;
+    btnReenviar.disabled = true;
+    actualizarTextoBoton();
+
+    detenerTemporizador();
+    temporizador = setInterval(function () {
+      segundosRestantes -= 1;
+      if (segundosRestantes <= 0) {
+        detenerTemporizador();
+        btnReenviar.disabled = false;
+        btnReenviar.textContent = "Reenviar correo";
+        return;
+      }
+      actualizarTextoBoton();
+    }, 1000);
+  }
+
+  function mostrarVistaCorreo(correo) {
+    correoRegistrado = correo;
+    correoEnviado.textContent = correo;
+    mensajeReenvio.hidden = true;
+    detenerTemporizador();
+    btnReenviar.disabled = false;
+    btnReenviar.textContent = "Reenviar correo";
+
+    vistaRegistro.hidden = true;
+    vistaCorreo.hidden = false;
+  }
+
+  function volverAFormulario() {
+    detenerTemporizador();
+    vistaCorreo.hidden = true;
+    vistaRegistro.hidden = false;
+
+    mensaje.hidden = true;
+    campoCorreo.value = correoRegistrado;
+    campoCorreo.focus();
+  }
+
+  enlaceCambiarCorreo.addEventListener("click", function (evento) {
+    evento.preventDefault();
+    volverAFormulario();
+  });
+
+  btnReenviar.addEventListener("click", function () {
+    detenerTemporizador();
+    btnReenviar.disabled = true;
+    btnReenviar.textContent = "Enviando…";
+    mensajeReenvio.hidden = true;
+
+    fetch(URL_REENVIO, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON,
+        "Authorization": "Bearer " + SUPABASE_ANON
+      },
+      body: JSON.stringify({
+        type: "signup",
+        email: correoRegistrado,
+        options: { emailRedirectTo: DESTINO_CONFIRMACION }
+      })
+    }).then(function (respuesta) {
+      if (!respuesta.ok) {
+        throw new Error("reenvio-fallo");
+      }
+      mostrarMensajeReenvio("Te enviamos un nuevo correo de confirmación.", "exito");
+      iniciarCuentaRegresiva();
+    }).catch(function () {
+      btnReenviar.disabled = false;
+      btnReenviar.textContent = "Reenviar correo";
+      mostrarMensajeReenvio("No se pudo reenviar. Espera un momento e intenta de nuevo.", "error");
+    });
+  });
+
   form.addEventListener("submit", function (evento) {
     evento.preventDefault();
     mensaje.hidden = true;
 
-    var correo = document.getElementById("correo").value.trim();
+    var correo = campoCorreo.value.trim();
     var clave = document.getElementById("clave").value;
     var clave2 = document.getElementById("clave2").value;
 
@@ -93,8 +230,7 @@
         return;
       }
 
-      form.hidden = true;
-      mostrarMensaje(datos.mensaje, "exito");
+      mostrarVistaCorreo(correo);
     }).catch(function () {
       boton.disabled = false;
       boton.textContent = "Crear cuenta";
