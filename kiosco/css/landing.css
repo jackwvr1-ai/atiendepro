@@ -1,0 +1,203 @@
+/* Landing de Kiosco: blanco y negro, simple, mobile-first. */
+
+:root {
+  --fondo: #ffffff;
+  --texto: #111111;
+  --texto-suave: #666666;
+  --negro: #111111;
+  --borde: #e5e5e5;
+  --radio: 18px;
+  --radio-chico: 12px;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html, body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+.marca {
+  text-align: center;
+  padding: 20px 16px 0;
+  font-size: 1.2rem;
+  font-weight: 800;
+  color: var(--negro);
+}
+
+.hero {
+  padding: 20px 20px 28px;
+  max-width: 480px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+.hero h1 {
+  font-size: 1.7rem;
+  line-height: 1.25;
+  font-weight: 800;
+  color: var(--negro);
+  margin: 0 0 12px;
+}
+
+.hero p {
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--texto-suave);
+  margin: 0 0 24px;
+}
+
+.boton-primario {
+  display: block;
+  width: 100%;
+  min-height: 54px;
+  line-height: 54px;
+  border: none;
+  border-radius: var(--radio-chico);
+  background: var(--negro);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  text-decoration: none;
+  transition: transform 0.1s ease, opacity 0.15s ease;
+}
+
+.boton-primario:active {
+  transform: scale(0.98);
+}
+
+.enlace-secundario {
+  display: block;
+  margin-top: 16px;
+  font-size: 0.92rem;
+  color: var(--texto-suave);
+  text-decoration: none;
+}
+
+.enlace-secundario:hover,
+.enlace-secundario:active {
+  color: var(--negro);
+  text-decoration: underline;
+}
+
+section {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 32px 20px;
+  border-top: 1px solid var(--borde);
+}
+
+.titulo-seccion {
+  font-size: 0.82rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+  margin: 0 0 20px;
+  text-align: center;
+}
+
+.pasos {
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.paso {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.icono-paso {
+  flex-shrink: 0;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: #f5f5f5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--negro);
+}
+
+.icono-paso svg {
+  width: 24px;
+  height: 24px;
+}
+
+.texto-paso h2 {
+  font-size: 1.02rem;
+  font-weight: 700;
+  color: var(--negro);
+  margin: 4px 0 4px;
+}
+
+.texto-paso p {
+  font-size: 0.92rem;
+  line-height: 1.45;
+  color: var(--texto-suave);
+  margin: 0;
+}
+
+.para-quien {
+  text-align: center;
+}
+
+.para-quien p {
+  font-size: 0.98rem;
+  line-height: 1.55;
+  color: var(--texto);
+  margin: 0;
+}
+
+.nota-app {
+  text-align: center;
+}
+
+.nota-app p {
+  font-size: 0.92rem;
+  line-height: 1.5;
+  color: var(--texto-suave);
+  margin: 0;
+}
+
+footer {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 24px 20px 32px;
+  text-align: center;
+}
+
+footer a {
+  color: var(--texto-suave);
+  text-decoration: none;
+  font-size: 0.85rem;
+}
+
+footer a:hover,
+footer a:active {
+  color: var(--negro);
+  text-decoration: underline;
+}
+
+@media (min-width: 560px) {
+  .hero h1 {
+    font-size: 2rem;
+  }
+
+  .boton-primario {
+    width: auto;
+    padding: 0 40px;
+    margin: 0 auto;
+  }
+}
