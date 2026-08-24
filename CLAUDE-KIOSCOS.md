@@ -80,8 +80,9 @@ del repositorio. Nada de React, Vue, Tailwind ni empaquetadores.
 
 ## 4. Direcciones públicas
 
-Kiosco vive en su propio subdominio, servido por un **segundo sitio de Netlify**
-conectado al mismo repositorio con carpeta base `kiosco/`.
+Kiosco ya está **en producción** en `kiosco.atiendepro.net`, servido por un
+**segundo sitio de Netlify** conectado al mismo repositorio, desde la rama
+`feature/kiosks`, con carpeta base `kiosco/`.
 
 | Dirección | Archivo |
 |---|---|

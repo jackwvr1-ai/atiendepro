@@ -735,6 +735,62 @@ select:focus {
   color: var(--error-texto);
 }
 
+/* ---- Compartir ---- */
+
+.bloque-compartir {
+  border: 1.5px solid var(--negro);
+  border-radius: var(--radio);
+  padding: 18px 14px;
+  background: #fafafa;
+}
+
+.campo-enlace-compartir {
+  margin-bottom: 14px;
+}
+
+.mensaje.error .texto-aviso {
+  margin: 0 0 12px;
+}
+
+.fila-botones-compartir {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.fila-botones-compartir .boton-secundario {
+  margin-top: 0;
+}
+
+.fila-botones-compartir:last-child {
+  margin-bottom: 0;
+}
+
+.boton-secundario.confirmado {
+  background: var(--negro);
+  color: #fff;
+}
+
+.caja-qr {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  margin-bottom: 14px;
+  background: #ffffff;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+}
+
+.caja-qr canvas {
+  display: block;
+  width: 100%;
+  max-width: 260px;
+  aspect-ratio: 1 / 1;
+  height: auto;
+  flex-shrink: 0;
+}
+
 /* ---- Selector de tema ---- */
 
 .opciones-tema {

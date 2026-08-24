@@ -63,13 +63,36 @@
     <h1 class="titulo" id="panelNombre">Tu kiosco</h1>
     <p class="nota" id="panelEstado">Aún no está publicado.</p>
 
-    <div class="campo-enlace">
-      <label>Enlace público</label>
-      <a id="panelEnlace" href="#" target="_blank" rel="noopener" class="enlace-publico">kiosco.atiendepro.net/tu-direccion</a>
-    </div>
-
     <button type="button" id="btnPublicar" class="boton-secundario">Publicar kiosco</button>
     <button type="button" id="btnEditar" class="boton-secundario" style="margin-top: 12px;">Editar datos</button>
+
+    <div class="bloque-seccion bloque-compartir">
+      <h2 class="subtitulo-seccion">Compartir mi kiosco</h2>
+
+      <div id="avisoNoPublicado" class="mensaje error" hidden>
+        <p class="texto-aviso">Tu kiosco todavía no está publicado. El enlace y el código QR no funcionarán hasta que lo publiques.</p>
+        <button type="button" id="btnPublicarDesdeCompartir" class="boton-secundario">Publicar kiosco</button>
+      </div>
+
+      <div class="campo-enlace campo-enlace-compartir">
+        <label>Enlace público</label>
+        <a id="panelEnlace" href="#" target="_blank" rel="noopener" class="enlace-publico">kiosco.atiendepro.net/tu-direccion</a>
+      </div>
+
+      <div class="fila-botones-compartir">
+        <button type="button" id="btnCopiarEnlace" class="boton-secundario">Copiar enlace</button>
+        <button type="button" id="btnCompartirEnlace" class="boton-secundario">Compartir</button>
+      </div>
+
+      <div class="caja-qr">
+        <canvas id="canvasQR" width="1000" height="1000" aria-label="Código QR de tu kiosco"></canvas>
+      </div>
+
+      <div class="fila-botones-compartir">
+        <button type="button" id="btnDescargarQR" class="boton-secundario">Descargar QR</button>
+        <button type="button" id="btnCompartirQR" class="boton-secundario" hidden>Compartir QR</button>
+      </div>
+    </div>
 
     <div class="bloque-seccion bloque-imagen">
       <h2 class="subtitulo-seccion">Logo</h2>
@@ -234,6 +257,7 @@
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 <script>
 (function () {
   "use strict";
@@ -297,6 +321,14 @@
   var panelEnlace = document.getElementById("panelEnlace");
   var btnEditar = document.getElementById("btnEditar");
   var btnPublicar = document.getElementById("btnPublicar");
+
+  var avisoNoPublicado = document.getElementById("avisoNoPublicado");
+  var btnPublicarDesdeCompartir = document.getElementById("btnPublicarDesdeCompartir");
+  var btnCopiarEnlace = document.getElementById("btnCopiarEnlace");
+  var btnCompartirEnlace = document.getElementById("btnCompartirEnlace");
+  var canvasQR = document.getElementById("canvasQR");
+  var btnDescargarQR = document.getElementById("btnDescargarQR");
+  var btnCompartirQR = document.getElementById("btnCompartirQR");
 
   var btnSalir = document.getElementById("btnSalir");
   var btnReintentar = document.getElementById("btnReintentar");
@@ -463,8 +495,155 @@
     btnPublicar.disabled = false;
     btnPublicar.textContent = kioscoActual.publicado ? "Despublicar kiosco" : "Publicar kiosco";
     actualizarPreviaImagenes();
+    actualizarCompartir();
     tarjetaPanel.hidden = false;
   }
+
+  // ---- Compartir ----
+
+  var urlQRGenerado = null;
+
+  var puedeCompartirArchivos = false;
+  try {
+    puedeCompartirArchivos = !!(navigator.share && navigator.canShare);
+  } catch (e) {
+    puedeCompartirArchivos = false;
+  }
+  btnCompartirQR.hidden = !puedeCompartirArchivos;
+
+  function urlKioscoActual() {
+    return "https://kiosco.atiendepro.net/" + kioscoActual.slug;
+  }
+
+  function nombreArchivoQR() {
+    return "qr-" + (kioscoActual.slug || "kiosco") + ".png";
+  }
+
+  function generarQR(url) {
+    if (typeof QRCode === "undefined" || url === urlQRGenerado) return;
+    QRCode.toCanvas(canvasQR, url, {
+      errorCorrectionLevel: "H",
+      margin: 2,
+      width: 1000,
+      color: { dark: "#111111", light: "#ffffff" }
+    }, function (error) {
+      if (!error) {
+        urlQRGenerado = url;
+        // La librería fija ancho y alto como estilo en línea al dibujar;
+        // lo quitamos para que el tamaño en pantalla lo controle el CSS.
+        canvasQR.style.removeProperty("width");
+        canvasQR.style.removeProperty("height");
+      }
+    });
+  }
+
+  function actualizarCompartir() {
+    if (!kioscoActual) return;
+    avisoNoPublicado.hidden = !!kioscoActual.publicado;
+    generarQR(urlKioscoActual());
+  }
+
+  function mostrarConfirmacionBoton(boton, textoOriginal, textoConfirmado) {
+    boton.textContent = textoConfirmado;
+    boton.classList.add("confirmado");
+    setTimeout(function () {
+      boton.textContent = textoOriginal;
+      boton.classList.remove("confirmado");
+    }, 1800);
+  }
+
+  function copiarEnlaceActual() {
+    var url = urlKioscoActual();
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      return navigator.clipboard.writeText(url);
+    }
+    return new Promise(function (resolve, reject) {
+      try {
+        var textarea = document.createElement("textarea");
+        textarea.value = url;
+        textarea.style.position = "fixed";
+        textarea.style.opacity = "0";
+        document.body.appendChild(textarea);
+        textarea.focus();
+        textarea.select();
+        var exito = document.execCommand("copy");
+        document.body.removeChild(textarea);
+        if (exito) {
+          resolve();
+        } else {
+          reject(new Error("No se pudo copiar"));
+        }
+      } catch (err) {
+        reject(err);
+      }
+    });
+  }
+
+  btnCopiarEnlace.addEventListener("click", function () {
+    copiarEnlaceActual().then(function () {
+      mostrarConfirmacionBoton(btnCopiarEnlace, "Copiar enlace", "¡Enlace copiado!");
+    }).catch(function () {
+      alert("No se pudo copiar el enlace. Cópialo manualmente: " + urlKioscoActual());
+    });
+  });
+
+  btnCompartirEnlace.addEventListener("click", function () {
+    if (navigator.share) {
+      navigator.share({
+        title: kioscoActual.nombre,
+        text: "Mira mi kiosco: " + kioscoActual.nombre,
+        url: urlKioscoActual()
+      }).catch(function () {});
+      return;
+    }
+    copiarEnlaceActual().then(function () {
+      mostrarConfirmacionBoton(btnCompartirEnlace, "Compartir", "¡Enlace copiado!");
+    }).catch(function () {
+      alert("No se pudo copiar el enlace. Cópialo manualmente: " + urlKioscoActual());
+    });
+  });
+
+  btnPublicarDesdeCompartir.addEventListener("click", function () {
+    btnPublicar.click();
+  });
+
+  btnDescargarQR.addEventListener("click", function () {
+    canvasQR.toBlob(function (blob) {
+      if (!blob) {
+        alert("No se pudo generar el código QR. Intenta de nuevo.");
+        return;
+      }
+      var url = URL.createObjectURL(blob);
+      var enlaceDescarga = document.createElement("a");
+      enlaceDescarga.href = url;
+      enlaceDescarga.download = nombreArchivoQR();
+      document.body.appendChild(enlaceDescarga);
+      enlaceDescarga.click();
+      document.body.removeChild(enlaceDescarga);
+      setTimeout(function () {
+        URL.revokeObjectURL(url);
+      }, 2000);
+    }, "image/png");
+  });
+
+  btnCompartirQR.addEventListener("click", function () {
+    canvasQR.toBlob(function (blob) {
+      if (!blob) return;
+      var archivo;
+      try {
+        archivo = new File([blob], nombreArchivoQR(), { type: "image/png" });
+      } catch (e) {
+        return;
+      }
+      if (navigator.canShare && navigator.canShare({ files: [archivo] })) {
+        navigator.share({
+          files: [archivo],
+          title: kioscoActual.nombre,
+          text: "Código QR de mi kiosco"
+        }).catch(function () {});
+      }
+    }, "image/png");
+  });
 
   // ---- Logo, portada y tema ----
 
