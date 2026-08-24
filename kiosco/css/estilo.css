@@ -425,7 +425,17 @@ button[type="submit"]:disabled {
   border-bottom: none;
 }
 
-.info-producto {
+.fila-opcion {
+  padding: 10px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.fila-opcion:last-child {
+  border-bottom: none;
+}
+
+.info-producto,
+.info-opcion {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
@@ -433,25 +443,34 @@ button[type="submit"]:disabled {
   margin-bottom: 10px;
 }
 
-.nombre-precio {
+.nombre-precio,
+.nombre-precio-opcion {
   display: flex;
   flex-direction: column;
   gap: 2px;
   min-width: 0;
 }
 
-.nombre-producto {
+.nombre-producto,
+.nombre-opcion {
   font-weight: 700;
   color: var(--texto);
   overflow-wrap: anywhere;
 }
 
-.precio-producto {
+.nombre-opcion.no-disponible {
+  color: var(--texto-suave);
+  text-decoration: line-through;
+}
+
+.precio-producto,
+.precio-opcion {
   color: var(--texto-suave);
   font-size: 0.92rem;
 }
 
-.acciones-producto {
+.acciones-producto,
+.acciones-opcion {
   display: flex;
   gap: 12px;
   flex-shrink: 0;
@@ -966,4 +985,78 @@ select:focus {
 
 .circulo-color.activo .marca-color {
   opacity: 1;
+}
+
+/* ---- Grupos y opciones de producto ---- */
+
+.grupo-opciones {
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  padding: 14px;
+  margin-bottom: 16px;
+}
+
+.grupo-opciones:last-child {
+  margin-bottom: 0;
+}
+
+.encabezado-grupo {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.info-grupo {
+  min-width: 0;
+}
+
+.nombre-grupo {
+  font-weight: 800;
+  color: var(--negro);
+  margin: 0 0 2px;
+  overflow-wrap: anywhere;
+}
+
+.meta-grupo {
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+  margin: 0;
+}
+
+.acciones-grupo {
+  display: flex;
+  gap: 14px;
+  flex-shrink: 0;
+}
+
+.lista-opciones {
+  margin-top: 10px;
+}
+
+/* ---- Casilla de verificación ---- */
+
+.campo-checkbox {
+  flex-direction: row;
+}
+
+.etiqueta-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 6px 0;
+  font-weight: 600;
+  font-size: 0.92rem;
+  color: var(--texto);
+  cursor: pointer;
+  line-height: 1.4;
+}
+
+.etiqueta-checkbox input[type="checkbox"] {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  margin: 1px 0 0;
+  accent-color: var(--negro);
 }

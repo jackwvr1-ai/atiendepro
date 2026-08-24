@@ -250,8 +250,78 @@
 
       <button type="submit" id="btnGuardarProducto">Crear producto</button>
     </form>
+    <button type="button" id="btnGestionarOpciones" class="boton-secundario" style="margin-top: 12px;" hidden>Variantes y extras</button>
     <button type="button" id="btnEliminarProducto" class="boton-peligro" hidden>Eliminar producto</button>
     <button type="button" id="btnCancelarProducto" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaGrupos" hidden>
+    <h1 class="titulo" id="tituloGrupos">Opciones</h1>
+    <p class="nota">Agrega tamaños, sabores o extras que el cliente pueda elegir antes de agregar este producto.</p>
+    <div id="listaGrupos"></div>
+    <button type="button" id="btnNuevoGrupo" class="boton-secundario" style="margin-top: 8px;">+ Agregar grupo</button>
+    <button type="button" id="btnVolverProducto" class="boton-secundario" style="margin-top: 12px;">Volver al producto</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaFormGrupo" hidden>
+    <h1 class="titulo" id="tituloFormGrupo">Nuevo grupo</h1>
+
+    <form id="formGrupo" novalidate>
+      <div class="campo">
+        <label for="nombreGrupo">Nombre</label>
+        <input type="text" id="nombreGrupo" name="nombreGrupo" placeholder="Tamaño" maxlength="60" required>
+      </div>
+
+      <div class="campo">
+        <label for="tipoGrupo">Tipo</label>
+        <select id="tipoGrupo" name="tipoGrupo">
+          <option value="unica">El cliente elige una opción</option>
+          <option value="multiple">El cliente puede elegir varias</option>
+        </select>
+      </div>
+
+      <div class="campo campo-checkbox">
+        <label class="etiqueta-checkbox">
+          <input type="checkbox" id="obligatorioGrupo" name="obligatorioGrupo">
+          Obligatorio: el cliente debe elegir antes de agregar el producto
+        </label>
+      </div>
+
+      <div id="mensajeFormGrupo" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardarGrupo">Crear grupo</button>
+    </form>
+    <button type="button" id="btnEliminarGrupo" class="boton-peligro" hidden>Eliminar grupo</button>
+    <button type="button" id="btnCancelarGrupo" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaFormOpcion" hidden>
+    <h1 class="titulo" id="tituloFormOpcion">Nueva opción</h1>
+
+    <form id="formOpcion" novalidate>
+      <div class="campo">
+        <label for="nombreOpcion">Nombre</label>
+        <input type="text" id="nombreOpcion" name="nombreOpcion" placeholder="Chocolate" maxlength="60" required>
+      </div>
+
+      <div class="campo">
+        <label for="precioExtraOpcion">Precio extra</label>
+        <input type="text" inputmode="decimal" id="precioExtraOpcion" name="precioExtraOpcion" placeholder="0.00" required>
+      </div>
+
+      <div class="campo campo-checkbox">
+        <label class="etiqueta-checkbox">
+          <input type="checkbox" id="disponibleOpcion" name="disponibleOpcion" checked>
+          Disponible
+        </label>
+      </div>
+
+      <div id="mensajeFormOpcion" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardarOpcion">Crear opción</button>
+    </form>
+    <button type="button" id="btnEliminarOpcion" class="boton-peligro" hidden>Eliminar opción</button>
+    <button type="button" id="btnCancelarOpcion" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
   </div>
 
 </div>
@@ -389,8 +459,43 @@
   var campoCategoriaProducto = document.getElementById("categoriaProducto");
   var mensajeFormProducto = document.getElementById("mensajeFormProducto");
   var btnGuardarProducto = document.getElementById("btnGuardarProducto");
+  var btnGestionarOpciones = document.getElementById("btnGestionarOpciones");
   var btnEliminarProducto = document.getElementById("btnEliminarProducto");
   var btnCancelarProducto = document.getElementById("btnCancelarProducto");
+
+  var tarjetaGrupos = document.getElementById("tarjetaGrupos");
+  var tituloGrupos = document.getElementById("tituloGrupos");
+  var listaGrupos = document.getElementById("listaGrupos");
+  var btnNuevoGrupo = document.getElementById("btnNuevoGrupo");
+  var btnVolverProducto = document.getElementById("btnVolverProducto");
+
+  var tarjetaFormGrupo = document.getElementById("tarjetaFormGrupo");
+  var tituloFormGrupo = document.getElementById("tituloFormGrupo");
+  var formGrupo = document.getElementById("formGrupo");
+  var campoNombreGrupo = document.getElementById("nombreGrupo");
+  var campoTipoGrupo = document.getElementById("tipoGrupo");
+  var campoObligatorioGrupo = document.getElementById("obligatorioGrupo");
+  var mensajeFormGrupo = document.getElementById("mensajeFormGrupo");
+  var btnGuardarGrupo = document.getElementById("btnGuardarGrupo");
+  var btnEliminarGrupo = document.getElementById("btnEliminarGrupo");
+  var btnCancelarGrupo = document.getElementById("btnCancelarGrupo");
+
+  var tarjetaFormOpcion = document.getElementById("tarjetaFormOpcion");
+  var tituloFormOpcion = document.getElementById("tituloFormOpcion");
+  var formOpcion = document.getElementById("formOpcion");
+  var campoNombreOpcion = document.getElementById("nombreOpcion");
+  var campoPrecioExtraOpcion = document.getElementById("precioExtraOpcion");
+  var campoDisponibleOpcion = document.getElementById("disponibleOpcion");
+  var mensajeFormOpcion = document.getElementById("mensajeFormOpcion");
+  var btnGuardarOpcion = document.getElementById("btnGuardarOpcion");
+  var btnEliminarOpcion = document.getElementById("btnEliminarOpcion");
+  var btnCancelarOpcion = document.getElementById("btnCancelarOpcion");
+
+  var productoGruposActual = null;
+  var gruposActuales = [];
+  var grupoEditando = null;
+  var grupoParaOpcion = null;
+  var opcionEditando = null;
 
   function ocultarTodo() {
     tarjetaFormulario.hidden = true;
@@ -402,6 +507,9 @@
     tarjetaFormProducto.hidden = true;
     tarjetaPedidos.hidden = true;
     tarjetaErrorPedidos.hidden = true;
+    tarjetaGrupos.hidden = true;
+    tarjetaFormGrupo.hidden = true;
+    tarjetaFormOpcion.hidden = true;
   }
 
   function mostrarError(texto) {
@@ -1447,6 +1555,7 @@
     productoEditando = producto || null;
     tituloFormProducto.textContent = producto ? "Editar producto" : "Nuevo producto";
     btnGuardarProducto.textContent = producto ? "Guardar cambios" : "Crear producto";
+    btnGestionarOpciones.hidden = !producto;
     btnEliminarProducto.hidden = !producto;
     mensajeFormProducto.hidden = true;
 
@@ -1543,6 +1652,414 @@
       }
       productosActuales = productosActuales.filter(function (p) { return p.id !== producto.id; });
       mostrarListaProductos();
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  // ---- Grupos y opciones de producto ----
+
+  btnGestionarOpciones.addEventListener("click", function () {
+    if (productoEditando) mostrarGrupos(productoEditando);
+  });
+
+  function mostrarGrupos(producto) {
+    ocultarTodo();
+    productoGruposActual = producto;
+    tituloGrupos.textContent = "Opciones — " + producto.nombre;
+    listaGrupos.innerHTML = "";
+    var cargando = document.createElement("p");
+    cargando.className = "nota-lista";
+    cargando.textContent = "Cargando...";
+    listaGrupos.appendChild(cargando);
+    tarjetaGrupos.hidden = false;
+    cargarGrupos();
+  }
+
+  function cargarGrupos() {
+    sb.from("kiosco_grupos_opciones")
+      .select("*, kiosco_opciones(*)")
+      .eq("producto_id", productoGruposActual.id)
+      .order("orden", { ascending: true })
+      .order("orden", { ascending: true, foreignTable: "kiosco_opciones" })
+      .then(function (resultado) {
+        listaGrupos.innerHTML = "";
+        if (resultado.error) {
+          var error = document.createElement("p");
+          error.className = "nota-lista";
+          error.textContent = "No se pudo cargar. Intenta de nuevo.";
+          listaGrupos.appendChild(error);
+          var reintentar = document.createElement("button");
+          reintentar.type = "button";
+          reintentar.className = "boton-secundario";
+          reintentar.textContent = "Reintentar";
+          reintentar.addEventListener("click", cargarGrupos);
+          listaGrupos.appendChild(reintentar);
+          return;
+        }
+        gruposActuales = resultado.data || [];
+        renderGrupos();
+      }).catch(function () {
+        listaGrupos.innerHTML = "";
+        var error = document.createElement("p");
+        error.className = "nota-lista";
+        error.textContent = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+        listaGrupos.appendChild(error);
+      });
+  }
+
+  function renderGrupos() {
+    listaGrupos.innerHTML = "";
+
+    if (gruposActuales.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "nota-lista";
+      vacio.textContent = "Todavía no tienes grupos de opciones para este producto.";
+      listaGrupos.appendChild(vacio);
+      return;
+    }
+
+    gruposActuales.forEach(function (grupo) {
+      listaGrupos.appendChild(crearBloqueGrupo(grupo));
+    });
+  }
+
+  function actualizarBotonDisponibleOpcion(boton, disponible) {
+    if (disponible) {
+      boton.className = "boton-disponibilidad disponible";
+      boton.textContent = "Disponible";
+    } else {
+      boton.className = "boton-disponibilidad agotado";
+      boton.textContent = "No disponible";
+    }
+  }
+
+  function alternarDisponibleOpcion(opcion, boton, elementoNombre) {
+    var nuevoValor = !opcion.disponible;
+    boton.disabled = true;
+    sb.from("kiosco_opciones").update({ disponible: nuevoValor }).eq("id", opcion.id).select().single().then(function (resultado) {
+      boton.disabled = false;
+      if (resultado.error) {
+        alert("No se pudo actualizar. Intenta de nuevo.");
+        return;
+      }
+      opcion.disponible = resultado.data.disponible;
+      actualizarBotonDisponibleOpcion(boton, opcion.disponible);
+      elementoNombre.className = "nombre-opcion" + (opcion.disponible ? "" : " no-disponible");
+    }).catch(function () {
+      boton.disabled = false;
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  function crearFilaOpcion(grupo, opcion) {
+    var fila = document.createElement("div");
+    fila.className = "fila-opcion";
+
+    var info = document.createElement("div");
+    info.className = "info-opcion";
+
+    var nombrePrecio = document.createElement("div");
+    nombrePrecio.className = "nombre-precio-opcion";
+
+    var nombre = document.createElement("span");
+    nombre.className = "nombre-opcion" + (opcion.disponible ? "" : " no-disponible");
+    nombre.textContent = opcion.nombre;
+
+    var precio = document.createElement("span");
+    precio.className = "precio-opcion";
+    var extra = Number(opcion.precio_extra);
+    precio.textContent = extra > 0 ? "+ $" + extra.toFixed(2) : "Sin costo extra";
+
+    nombrePrecio.appendChild(nombre);
+    nombrePrecio.appendChild(precio);
+
+    var acciones = document.createElement("div");
+    acciones.className = "acciones-opcion";
+
+    var btnEditarOp = document.createElement("button");
+    btnEditarOp.type = "button";
+    btnEditarOp.className = "link-accion";
+    btnEditarOp.textContent = "Editar";
+    btnEditarOp.addEventListener("click", function () {
+      mostrarFormOpcion(grupo, opcion);
+    });
+
+    var btnEliminarOp = document.createElement("button");
+    btnEliminarOp.type = "button";
+    btnEliminarOp.className = "link-accion link-eliminar";
+    btnEliminarOp.textContent = "Eliminar";
+    btnEliminarOp.addEventListener("click", function () {
+      eliminarOpcion(opcion);
+    });
+
+    acciones.appendChild(btnEditarOp);
+    acciones.appendChild(btnEliminarOp);
+
+    info.appendChild(nombrePrecio);
+    info.appendChild(acciones);
+
+    var botonDisponible = document.createElement("button");
+    botonDisponible.type = "button";
+    actualizarBotonDisponibleOpcion(botonDisponible, opcion.disponible);
+    botonDisponible.addEventListener("click", function () {
+      alternarDisponibleOpcion(opcion, botonDisponible, nombre);
+    });
+
+    fila.appendChild(info);
+    fila.appendChild(botonDisponible);
+    return fila;
+  }
+
+  function crearBloqueGrupo(grupo) {
+    var bloque = document.createElement("div");
+    bloque.className = "grupo-opciones";
+
+    var encabezado = document.createElement("div");
+    encabezado.className = "encabezado-grupo";
+
+    var info = document.createElement("div");
+    info.className = "info-grupo";
+
+    var nombre = document.createElement("p");
+    nombre.className = "nombre-grupo";
+    nombre.textContent = grupo.nombre;
+
+    var meta = document.createElement("p");
+    meta.className = "meta-grupo";
+    var partes = [grupo.tipo === "multiple" ? "El cliente elige varias" : "El cliente elige una"];
+    if (grupo.obligatorio) partes.push("Obligatorio");
+    meta.textContent = partes.join(" · ");
+
+    info.appendChild(nombre);
+    info.appendChild(meta);
+
+    var acciones = document.createElement("div");
+    acciones.className = "acciones-grupo";
+
+    var btnEditarG = document.createElement("button");
+    btnEditarG.type = "button";
+    btnEditarG.className = "link-accion";
+    btnEditarG.textContent = "Editar";
+    btnEditarG.addEventListener("click", function () {
+      mostrarFormGrupo(grupo);
+    });
+
+    var btnEliminarG = document.createElement("button");
+    btnEliminarG.type = "button";
+    btnEliminarG.className = "link-accion link-eliminar";
+    btnEliminarG.textContent = "Eliminar";
+    btnEliminarG.addEventListener("click", function () {
+      eliminarGrupo(grupo);
+    });
+
+    acciones.appendChild(btnEditarG);
+    acciones.appendChild(btnEliminarG);
+
+    encabezado.appendChild(info);
+    encabezado.appendChild(acciones);
+    bloque.appendChild(encabezado);
+
+    var listaOp = document.createElement("div");
+    listaOp.className = "lista-opciones";
+    var opciones = grupo.kiosco_opciones || [];
+    if (opciones.length === 0) {
+      var vacioOp = document.createElement("p");
+      vacioOp.className = "nota-lista";
+      vacioOp.textContent = "Sin opciones todavía.";
+      listaOp.appendChild(vacioOp);
+    } else {
+      opciones.forEach(function (opcion) {
+        listaOp.appendChild(crearFilaOpcion(grupo, opcion));
+      });
+    }
+    bloque.appendChild(listaOp);
+
+    var btnAgregarOp = document.createElement("button");
+    btnAgregarOp.type = "button";
+    btnAgregarOp.className = "boton-chico";
+    btnAgregarOp.style.width = "100%";
+    btnAgregarOp.style.marginTop = "10px";
+    btnAgregarOp.textContent = "+ Agregar opción";
+    btnAgregarOp.addEventListener("click", function () {
+      mostrarFormOpcion(grupo, null);
+    });
+    bloque.appendChild(btnAgregarOp);
+
+    return bloque;
+  }
+
+  btnNuevoGrupo.addEventListener("click", function () {
+    mostrarFormGrupo(null);
+  });
+
+  btnVolverProducto.addEventListener("click", function () {
+    mostrarFormProducto(productoGruposActual);
+  });
+
+  function mostrarFormGrupo(grupo) {
+    ocultarTodo();
+    grupoEditando = grupo || null;
+    tituloFormGrupo.textContent = grupo ? "Editar grupo" : "Nuevo grupo";
+    btnGuardarGrupo.textContent = grupo ? "Guardar cambios" : "Crear grupo";
+    btnEliminarGrupo.hidden = !grupo;
+    mensajeFormGrupo.hidden = true;
+    campoNombreGrupo.value = grupo ? grupo.nombre : "";
+    campoTipoGrupo.value = grupo && grupo.tipo === "multiple" ? "multiple" : "unica";
+    campoObligatorioGrupo.checked = grupo ? !!grupo.obligatorio : false;
+    tarjetaFormGrupo.hidden = false;
+  }
+
+  btnCancelarGrupo.addEventListener("click", function () {
+    mostrarGrupos(productoGruposActual);
+  });
+
+  formGrupo.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+
+    var nombre = campoNombreGrupo.value.trim();
+    if (!nombre) {
+      mostrarMensajeEnCaja(mensajeFormGrupo, "Escribe el nombre del grupo.", "error");
+      return;
+    }
+    var tipo = campoTipoGrupo.value === "multiple" ? "multiple" : "unica";
+    var obligatorio = campoObligatorioGrupo.checked;
+
+    btnGuardarGrupo.disabled = true;
+    btnGuardarGrupo.textContent = grupoEditando ? "Guardando..." : "Creando...";
+
+    var operacion;
+    if (grupoEditando) {
+      operacion = sb.from("kiosco_grupos_opciones").update({ nombre: nombre, tipo: tipo, obligatorio: obligatorio }).eq("id", grupoEditando.id).select().single();
+    } else {
+      operacion = sb.from("kiosco_grupos_opciones").insert({
+        producto_id: productoGruposActual.id,
+        nombre: nombre,
+        tipo: tipo,
+        obligatorio: obligatorio,
+        orden: gruposActuales.length
+      }).select().single();
+    }
+
+    operacion.then(function (resultado) {
+      btnGuardarGrupo.disabled = false;
+      btnGuardarGrupo.textContent = grupoEditando ? "Guardar cambios" : "Crear grupo";
+
+      if (resultado.error) {
+        mostrarMensajeEnCaja(mensajeFormGrupo, "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        return;
+      }
+
+      mostrarGrupos(productoGruposActual);
+    }).catch(function () {
+      btnGuardarGrupo.disabled = false;
+      btnGuardarGrupo.textContent = grupoEditando ? "Guardar cambios" : "Crear grupo";
+      mostrarMensajeEnCaja(mensajeFormGrupo, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+
+  btnEliminarGrupo.addEventListener("click", function () {
+    if (grupoEditando) eliminarGrupo(grupoEditando);
+  });
+
+  function eliminarGrupo(grupo) {
+    var confirmado = window.confirm("¿Eliminar el grupo \"" + grupo.nombre + "\"? Se eliminarán también sus opciones.");
+    if (!confirmado) return;
+
+    sb.from("kiosco_grupos_opciones").delete().eq("id", grupo.id).then(function (resultado) {
+      if (resultado.error) {
+        alert("No se pudo eliminar. Intenta de nuevo.");
+        return;
+      }
+      mostrarGrupos(productoGruposActual);
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  function mostrarFormOpcion(grupo, opcion) {
+    ocultarTodo();
+    grupoParaOpcion = grupo;
+    opcionEditando = opcion || null;
+    tituloFormOpcion.textContent = opcion ? "Editar opción" : "Nueva opción";
+    btnGuardarOpcion.textContent = opcion ? "Guardar cambios" : "Crear opción";
+    btnEliminarOpcion.hidden = !opcion;
+    mensajeFormOpcion.hidden = true;
+    campoNombreOpcion.value = opcion ? opcion.nombre : "";
+    campoPrecioExtraOpcion.value = opcion ? String(opcion.precio_extra) : "0.00";
+    campoDisponibleOpcion.checked = opcion ? !!opcion.disponible : true;
+    tarjetaFormOpcion.hidden = false;
+  }
+
+  btnCancelarOpcion.addEventListener("click", function () {
+    mostrarGrupos(productoGruposActual);
+  });
+
+  formOpcion.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+
+    var nombre = campoNombreOpcion.value.trim();
+    if (!nombre) {
+      mostrarMensajeEnCaja(mensajeFormOpcion, "Escribe el nombre de la opción.", "error");
+      return;
+    }
+
+    var precioTexto = campoPrecioExtraOpcion.value.trim().replace(",", ".");
+    var precioExtra = precioTexto === "" ? 0 : Number(precioTexto);
+    if (isNaN(precioExtra) || precioExtra < 0) {
+      mostrarMensajeEnCaja(mensajeFormOpcion, "Escribe un precio válido. Puede ser 0.", "error");
+      return;
+    }
+    var disponible = campoDisponibleOpcion.checked;
+
+    btnGuardarOpcion.disabled = true;
+    btnGuardarOpcion.textContent = opcionEditando ? "Guardando..." : "Creando...";
+
+    var operacion;
+    if (opcionEditando) {
+      operacion = sb.from("kiosco_opciones").update({ nombre: nombre, precio_extra: precioExtra, disponible: disponible }).eq("id", opcionEditando.id).select().single();
+    } else {
+      var opcionesActuales = grupoParaOpcion.kiosco_opciones || [];
+      operacion = sb.from("kiosco_opciones").insert({
+        grupo_id: grupoParaOpcion.id,
+        nombre: nombre,
+        precio_extra: precioExtra,
+        disponible: disponible,
+        orden: opcionesActuales.length
+      }).select().single();
+    }
+
+    operacion.then(function (resultado) {
+      btnGuardarOpcion.disabled = false;
+      btnGuardarOpcion.textContent = opcionEditando ? "Guardar cambios" : "Crear opción";
+
+      if (resultado.error) {
+        mostrarMensajeEnCaja(mensajeFormOpcion, "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        return;
+      }
+
+      mostrarGrupos(productoGruposActual);
+    }).catch(function () {
+      btnGuardarOpcion.disabled = false;
+      btnGuardarOpcion.textContent = opcionEditando ? "Guardar cambios" : "Crear opción";
+      mostrarMensajeEnCaja(mensajeFormOpcion, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+
+  btnEliminarOpcion.addEventListener("click", function () {
+    if (opcionEditando) eliminarOpcion(opcionEditando);
+  });
+
+  function eliminarOpcion(opcion) {
+    var confirmado = window.confirm("¿Eliminar \"" + opcion.nombre + "\"?");
+    if (!confirmado) return;
+
+    sb.from("kiosco_opciones").delete().eq("id", opcion.id).then(function (resultado) {
+      if (resultado.error) {
+        alert("No se pudo eliminar. Intenta de nuevo.");
+        return;
+      }
+      mostrarGrupos(productoGruposActual);
     }).catch(function () {
       alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
     });
