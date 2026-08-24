@@ -37,20 +37,80 @@
 <div id="carritoOverlay" class="carrito-overlay"></div>
 
 <div id="carritoPanel" class="carrito-panel">
-  <div class="carrito-encabezado">
-    <h2>Tu pedido</h2>
-    <button type="button" id="cerrarCarrito" class="cerrar-carrito" aria-label="Cerrar">✕</button>
-  </div>
 
-  <div class="carrito-lista" id="carritoLista"></div>
-
-  <div class="carrito-pie">
-    <div class="fila-total">
-      <span>Total</span>
-      <span id="totalPie">$0.00</span>
+  <div id="vistaCarrito" class="vista-panel">
+    <div class="carrito-encabezado">
+      <h2>Tu pedido</h2>
+      <button type="button" id="cerrarCarrito" class="cerrar-carrito" aria-label="Cerrar">✕</button>
     </div>
-    <button type="button" id="btnHacerPedido" class="boton-hacer-pedido">Hacer pedido</button>
+
+    <div class="carrito-lista" id="carritoLista"></div>
+
+    <div class="carrito-pie">
+      <div class="fila-total">
+        <span>Total</span>
+        <span id="totalPie">$0.00</span>
+      </div>
+      <button type="button" id="btnHacerPedido" class="boton-hacer-pedido">Hacer pedido</button>
+    </div>
   </div>
+
+  <div id="vistaCheckout" class="vista-panel" hidden>
+    <div class="carrito-encabezado con-volver">
+      <button type="button" id="volverCarrito" class="cerrar-carrito" aria-label="Volver">←</button>
+      <h2>Tus datos</h2>
+      <button type="button" id="cerrarCheckout" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+    </div>
+
+    <form id="formCheckout" class="checkout-cuerpo" novalidate>
+      <div class="campo-checkout">
+        <label for="checkoutNombre">Nombre</label>
+        <input type="text" id="checkoutNombre" name="checkoutNombre" placeholder="Tu nombre" maxlength="80" autocomplete="name" required>
+      </div>
+
+      <div class="campo-checkout">
+        <label for="checkoutTelefono">Teléfono</label>
+        <input type="tel" id="checkoutTelefono" name="checkoutTelefono" placeholder="Tu teléfono" maxlength="30" autocomplete="tel" required>
+      </div>
+
+      <div class="campo-checkout" id="grupoModalidad" hidden>
+        <label>¿Cómo lo quieres?</label>
+        <div class="opciones-modalidad">
+          <button type="button" id="modalidadRecoger" class="boton-modalidad">Recoger</button>
+          <button type="button" id="modalidadEntrega" class="boton-modalidad">A domicilio</button>
+        </div>
+      </div>
+
+      <div class="campo-checkout" id="grupoDireccion" hidden>
+        <label for="checkoutDireccion">Dirección de entrega</label>
+        <textarea id="checkoutDireccion" name="checkoutDireccion" placeholder="Calle, número, referencias..." maxlength="300" rows="2"></textarea>
+      </div>
+
+      <div class="campo-checkout">
+        <label for="checkoutNota">Nota (opcional)</label>
+        <textarea id="checkoutNota" name="checkoutNota" placeholder="Ej. sin cebolla, tocar el timbre..." maxlength="300" rows="2"></textarea>
+      </div>
+
+      <div id="mensajeCheckout" class="mensaje-checkout" hidden></div>
+    </form>
+
+    <div class="carrito-pie">
+      <button type="submit" form="formCheckout" id="btnEnviarPedido" class="boton-hacer-pedido">Enviar pedido</button>
+    </div>
+  </div>
+
+  <div id="vistaConfirmacion" class="vista-panel" hidden>
+    <div class="confirmacion">
+      <div class="icono-confirmacion">✓</div>
+      <h2 class="titulo-confirmacion" id="tituloConfirmacion">Pedido enviado</h2>
+      <p class="numero-confirmacion" id="numeroConfirmacion">Pedido #0</p>
+      <p class="total-confirmacion" id="totalConfirmacion">$0.00</p>
+    </div>
+    <div class="carrito-pie">
+      <button type="button" id="btnCerrarConfirmacion" class="boton-hacer-pedido">Listo</button>
+    </div>
+  </div>
+
 </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -89,6 +149,33 @@
   var carritoLista = document.getElementById("carritoLista");
   var totalPie = document.getElementById("totalPie");
   var btnHacerPedido = document.getElementById("btnHacerPedido");
+
+  var vistaCarrito = document.getElementById("vistaCarrito");
+  var vistaCheckout = document.getElementById("vistaCheckout");
+  var vistaConfirmacion = document.getElementById("vistaConfirmacion");
+
+  var volverCarrito = document.getElementById("volverCarrito");
+  var cerrarCheckout = document.getElementById("cerrarCheckout");
+  var formCheckout = document.getElementById("formCheckout");
+  var checkoutNombre = document.getElementById("checkoutNombre");
+  var checkoutTelefono = document.getElementById("checkoutTelefono");
+  var grupoModalidad = document.getElementById("grupoModalidad");
+  var modalidadRecoger = document.getElementById("modalidadRecoger");
+  var modalidadEntrega = document.getElementById("modalidadEntrega");
+  var grupoDireccion = document.getElementById("grupoDireccion");
+  var checkoutDireccion = document.getElementById("checkoutDireccion");
+  var checkoutNota = document.getElementById("checkoutNota");
+  var mensajeCheckout = document.getElementById("mensajeCheckout");
+  var btnEnviarPedido = document.getElementById("btnEnviarPedido");
+
+  var tituloConfirmacion = document.getElementById("tituloConfirmacion");
+  var numeroConfirmacion = document.getElementById("numeroConfirmacion");
+  var totalConfirmacion = document.getElementById("totalConfirmacion");
+  var btnCerrarConfirmacion = document.getElementById("btnCerrarConfirmacion");
+
+  var URL_CREAR_PEDIDO = SUPABASE_URL + "/functions/v1/crear-pedido-kiosco";
+  var modalidadSeleccionada = "recoger";
+  var enviandoPedido = false;
 
   function mostrarSolo(elemento) {
     estadoCargando.hidden = elemento !== estadoCargando;
@@ -350,13 +437,21 @@
     });
   }
 
+  function mostrarVistaPanel(vista) {
+    vistaCarrito.hidden = vista !== vistaCarrito;
+    vistaCheckout.hidden = vista !== vistaCheckout;
+    vistaConfirmacion.hidden = vista !== vistaConfirmacion;
+  }
+
   function abrirPanelCarrito() {
     renderCarrito();
+    mostrarVistaPanel(vistaCarrito);
     carritoOverlay.classList.add("visible");
     carritoPanel.classList.add("visible");
   }
 
   function cerrarPanelCarrito() {
+    if (enviandoPedido) return;
     carritoOverlay.classList.remove("visible");
     carritoPanel.classList.remove("visible");
   }
@@ -365,8 +460,140 @@
   cerrarCarrito.addEventListener("click", cerrarPanelCarrito);
   carritoOverlay.addEventListener("click", cerrarPanelCarrito);
 
-  // El checkout llega en la siguiente entrega.
-  btnHacerPedido.addEventListener("click", function () {});
+  // ---- Checkout ----
+
+  function mostrarMensajeCheckout(texto, tipo) {
+    mensajeCheckout.textContent = texto;
+    mensajeCheckout.className = "mensaje-checkout " + tipo;
+    mensajeCheckout.hidden = false;
+  }
+
+  function seleccionarModalidad(valor) {
+    modalidadSeleccionada = valor;
+    modalidadRecoger.classList.toggle("activo", valor === "recoger");
+    modalidadEntrega.classList.toggle("activo", valor === "entrega");
+    grupoDireccion.hidden = valor !== "entrega";
+  }
+
+  modalidadRecoger.addEventListener("click", function () {
+    seleccionarModalidad("recoger");
+  });
+
+  modalidadEntrega.addEventListener("click", function () {
+    seleccionarModalidad("entrega");
+  });
+
+  btnHacerPedido.addEventListener("click", function () {
+    mensajeCheckout.hidden = true;
+
+    if (kioscoActual && kioscoActual.pide_direccion) {
+      grupoModalidad.hidden = false;
+      seleccionarModalidad(modalidadSeleccionada);
+    } else {
+      grupoModalidad.hidden = true;
+      grupoDireccion.hidden = true;
+      modalidadSeleccionada = "recoger";
+    }
+
+    mostrarVistaPanel(vistaCheckout);
+  });
+
+  volverCarrito.addEventListener("click", function () {
+    if (enviandoPedido) return;
+    mostrarVistaPanel(vistaCarrito);
+  });
+
+  cerrarCheckout.addEventListener("click", cerrarPanelCarrito);
+
+  function mostrarConfirmacion(datos) {
+    carrito = {};
+    barraCarrito.classList.remove("visible");
+    tituloConfirmacion.textContent = datos.mensaje || "Pedido enviado";
+    numeroConfirmacion.textContent = "Pedido #" + datos.numero;
+    totalConfirmacion.textContent = formatearPrecio(datos.total);
+    mostrarVistaPanel(vistaConfirmacion);
+  }
+
+  btnCerrarConfirmacion.addEventListener("click", function () {
+    formCheckout.reset();
+    seleccionarModalidad("recoger");
+    mostrarVistaPanel(vistaCarrito);
+    cerrarPanelCarrito();
+  });
+
+  formCheckout.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    if (enviandoPedido) return;
+
+    var nombre = checkoutNombre.value.trim();
+    var telefono = checkoutTelefono.value.trim();
+    var nota = checkoutNota.value.trim();
+    var direccion = checkoutDireccion.value.trim();
+    var modalidad = (kioscoActual && kioscoActual.pide_direccion) ? modalidadSeleccionada : "recoger";
+
+    if (!nombre) {
+      mostrarMensajeCheckout("Escribe tu nombre.", "error");
+      return;
+    }
+    if (!telefono) {
+      mostrarMensajeCheckout("Escribe tu teléfono.", "error");
+      return;
+    }
+    if (modalidad === "entrega" && !direccion) {
+      mostrarMensajeCheckout("Escribe la dirección de entrega.", "error");
+      return;
+    }
+
+    var items = Object.keys(carrito).map(function (id) {
+      return { producto_id: id, cantidad: carrito[id], opciones: [] };
+    });
+
+    if (items.length === 0) {
+      mostrarMensajeCheckout("Tu carrito está vacío.", "error");
+      return;
+    }
+
+    enviandoPedido = true;
+    mensajeCheckout.hidden = true;
+    btnEnviarPedido.disabled = true;
+    btnEnviarPedido.textContent = "Enviando...";
+
+    fetch(URL_CREAR_PEDIDO, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "apikey": SUPABASE_ANON,
+        "Authorization": "Bearer " + SUPABASE_ANON
+      },
+      body: JSON.stringify({
+        slug: kioscoActual.slug,
+        cliente_nombre: nombre,
+        cliente_telefono: telefono,
+        direccion: modalidad === "entrega" ? direccion : "",
+        modalidad: modalidad,
+        nota: nota,
+        items: items
+      })
+    }).then(function (respuesta) {
+      return respuesta.json();
+    }).then(function (datos) {
+      enviandoPedido = false;
+      btnEnviarPedido.disabled = false;
+      btnEnviarPedido.textContent = "Enviar pedido";
+
+      if (!datos || !datos.ok) {
+        mostrarMensajeCheckout((datos && datos.mensaje) || "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        return;
+      }
+
+      mostrarConfirmacion(datos);
+    }).catch(function () {
+      enviandoPedido = false;
+      btnEnviarPedido.disabled = false;
+      btnEnviarPedido.textContent = "Enviar pedido";
+      mostrarMensajeCheckout("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
 
   // ---- Carga de datos ----
 

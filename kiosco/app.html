@@ -18,6 +18,7 @@
   <div class="tabs" id="tabsSecciones" hidden>
     <button type="button" class="tab" id="tabMiKiosco" data-tab="kiosco">Mi kiosco</button>
     <button type="button" class="tab" id="tabProductos" data-tab="productos">Productos</button>
+    <button type="button" class="tab" id="tabPedidos" data-tab="pedidos">Pedidos</button>
   </div>
 
   <div class="tarjeta" id="tarjetaFormulario" hidden>
@@ -119,6 +120,16 @@
     <button type="button" id="btnCancelarCategoria" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
   </div>
 
+  <div class="tarjeta" id="tarjetaPedidos" hidden>
+    <h1 class="titulo">Pedidos</h1>
+    <div id="listaPedidos"></div>
+  </div>
+
+  <div class="tarjeta" id="tarjetaErrorPedidos" hidden>
+    <p class="subtitulo" id="textoErrorPedidos">No se pudo cargar tu información. Intenta de nuevo.</p>
+    <button type="button" id="btnReintentarPedidos" class="boton-secundario">Reintentar</button>
+  </div>
+
   <div class="tarjeta" id="tarjetaFormProducto" hidden>
     <h1 class="titulo" id="tituloFormProducto">Nuevo producto</h1>
 
@@ -188,10 +199,13 @@
   var productosCargados = false;
   var categoriaEditando = null;
   var productoEditando = null;
+  var pedidosActuales = [];
+  var pedidosCargados = false;
 
   var tabsSecciones = document.getElementById("tabsSecciones");
   var tabMiKiosco = document.getElementById("tabMiKiosco");
   var tabProductos = document.getElementById("tabProductos");
+  var tabPedidos = document.getElementById("tabPedidos");
 
   var tarjetaFormulario = document.getElementById("tarjetaFormulario");
   var tarjetaPanel = document.getElementById("tarjetaPanel");
@@ -239,6 +253,12 @@
   var btnEliminarCategoria = document.getElementById("btnEliminarCategoria");
   var btnCancelarCategoria = document.getElementById("btnCancelarCategoria");
 
+  var tarjetaPedidos = document.getElementById("tarjetaPedidos");
+  var listaPedidos = document.getElementById("listaPedidos");
+  var tarjetaErrorPedidos = document.getElementById("tarjetaErrorPedidos");
+  var textoErrorPedidos = document.getElementById("textoErrorPedidos");
+  var btnReintentarPedidos = document.getElementById("btnReintentarPedidos");
+
   var tarjetaFormProducto = document.getElementById("tarjetaFormProducto");
   var tituloFormProducto = document.getElementById("tituloFormProducto");
   var formProducto = document.getElementById("formProducto");
@@ -259,6 +279,8 @@
     tarjetaErrorProductos.hidden = true;
     tarjetaFormCategoria.hidden = true;
     tarjetaFormProducto.hidden = true;
+    tarjetaPedidos.hidden = true;
+    tarjetaErrorPedidos.hidden = true;
   }
 
   function mostrarError(texto) {
@@ -379,10 +401,13 @@
     seccionActiva = nombre;
     tabMiKiosco.classList.toggle("activo", nombre === "kiosco");
     tabProductos.classList.toggle("activo", nombre === "productos");
+    tabPedidos.classList.toggle("activo", nombre === "pedidos");
     if (nombre === "kiosco") {
       mostrarPanel();
-    } else {
+    } else if (nombre === "productos") {
       mostrarListaProductos();
+    } else {
+      mostrarListaPedidos();
     }
   }
 
@@ -392,6 +417,10 @@
 
   tabProductos.addEventListener("click", function () {
     setSeccionActiva("productos");
+  });
+
+  tabPedidos.addEventListener("click", function () {
+    setSeccionActiva("pedidos");
   });
 
   btnEditar.addEventListener("click", mostrarFormularioEdicion);
@@ -942,6 +971,201 @@
       mostrarListaProductos();
     }).catch(function () {
       alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  // ---- Pedidos ----
+
+  var NOMBRES_ESTADO = { nuevo: "Nuevo", visto: "Visto", completado: "Completado", cancelado: "Cancelado" };
+
+  function mostrarErrorPedidos(texto) {
+    ocultarTodo();
+    textoErrorPedidos.textContent = texto || "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    tarjetaErrorPedidos.hidden = false;
+  }
+
+  function cargarPedidos() {
+    ocultarTodo();
+    sb.from("kiosco_pedidos")
+      .select("*, kiosco_pedido_items(*)")
+      .eq("kiosco_id", kioscoActual.id)
+      .order("creado_en", { ascending: false })
+      .then(function (resultado) {
+        if (resultado.error) {
+          mostrarErrorPedidos("No se pudo cargar tu información. Intenta de nuevo.");
+          return;
+        }
+        pedidosActuales = resultado.data || [];
+        pedidosCargados = true;
+        if (seccionActiva === "pedidos") {
+          mostrarListaPedidos();
+        }
+      }).catch(function () {
+        mostrarErrorPedidos("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+      });
+  }
+
+  btnReintentarPedidos.addEventListener("click", function () {
+    cargarPedidos();
+  });
+
+  function mostrarListaPedidos() {
+    if (!pedidosCargados) {
+      cargarPedidos();
+      return;
+    }
+    ocultarTodo();
+    renderPedidos();
+    tarjetaPedidos.hidden = false;
+  }
+
+  function formatearHoraPedido(fechaIso) {
+    var fecha = new Date(fechaIso);
+    var ahora = new Date();
+    var hora = fecha.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    if (fecha.toDateString() === ahora.toDateString()) {
+      return hora;
+    }
+    return fecha.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit" }) + " " + hora;
+  }
+
+  function cambiarEstadoPedido(pedido, nuevoEstado, select) {
+    select.disabled = true;
+    sb.from("kiosco_pedidos").update({ estado: nuevoEstado }).eq("id", pedido.id).select().single().then(function (resultado) {
+      select.disabled = false;
+      if (resultado.error) {
+        alert("No se pudo actualizar. Intenta de nuevo.");
+        select.value = pedido.estado;
+        return;
+      }
+      pedido.estado = resultado.data.estado;
+      renderPedidos();
+    }).catch(function () {
+      select.disabled = false;
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+      select.value = pedido.estado;
+    });
+  }
+
+  function crearFilaPedido(pedido) {
+    var fila = document.createElement("div");
+    fila.className = "fila-pedido" + (pedido.estado === "nuevo" ? " pedido-nuevo" : "");
+
+    var encabezado = document.createElement("div");
+    encabezado.className = "encabezado-pedido";
+
+    var numero = document.createElement("span");
+    numero.className = "numero-pedido";
+    numero.textContent = "Pedido #" + pedido.numero;
+    encabezado.appendChild(numero);
+
+    if (pedido.estado === "nuevo") {
+      var insignia = document.createElement("span");
+      insignia.className = "badge-nuevo";
+      insignia.textContent = "Nuevo";
+      encabezado.appendChild(insignia);
+    }
+
+    var hora = document.createElement("span");
+    hora.className = "hora-pedido";
+    hora.textContent = formatearHoraPedido(pedido.creado_en);
+    encabezado.appendChild(hora);
+
+    fila.appendChild(encabezado);
+
+    var cliente = document.createElement("div");
+    cliente.className = "cliente-pedido";
+    var nombreCliente = document.createElement("span");
+    nombreCliente.className = "nombre-cliente";
+    nombreCliente.textContent = pedido.cliente_nombre || "Sin nombre";
+    var telefonoCliente = document.createElement("span");
+    telefonoCliente.className = "telefono-cliente";
+    telefonoCliente.textContent = pedido.cliente_telefono || "";
+    cliente.appendChild(nombreCliente);
+    cliente.appendChild(telefonoCliente);
+    fila.appendChild(cliente);
+
+    var items = document.createElement("div");
+    items.className = "items-pedido";
+    var itemsPedido = pedido.kiosco_pedido_items || [];
+    itemsPedido.forEach(function (item) {
+      var filaItem = document.createElement("div");
+      filaItem.className = "item-pedido";
+      var nombreItem = document.createElement("span");
+      nombreItem.textContent = item.cantidad + "× " + item.nombre_snapshot;
+      var totalItem = document.createElement("span");
+      totalItem.textContent = "$" + Number(item.total).toFixed(2);
+      filaItem.appendChild(nombreItem);
+      filaItem.appendChild(totalItem);
+      items.appendChild(filaItem);
+    });
+    fila.appendChild(items);
+
+    var pie = document.createElement("div");
+    pie.className = "pie-pedido";
+    var modalidad = document.createElement("span");
+    modalidad.className = "modalidad-pedido";
+    modalidad.textContent = pedido.modalidad === "entrega" ? "A domicilio" : "Recoger";
+    var total = document.createElement("span");
+    total.className = "total-pedido";
+    total.textContent = "$" + Number(pedido.total).toFixed(2);
+    pie.appendChild(modalidad);
+    pie.appendChild(total);
+    fila.appendChild(pie);
+
+    if (pedido.modalidad === "entrega" && pedido.direccion) {
+      var direccion = document.createElement("p");
+      direccion.className = "direccion-pedido";
+      direccion.textContent = pedido.direccion;
+      fila.appendChild(direccion);
+    }
+
+    if (pedido.nota) {
+      var nota = document.createElement("p");
+      nota.className = "nota-pedido";
+      nota.textContent = "Nota: " + pedido.nota;
+      fila.appendChild(nota);
+    }
+
+    var estadoBloque = document.createElement("div");
+    estadoBloque.className = "estado-pedido";
+
+    var etiquetaEstado = document.createElement("label");
+    etiquetaEstado.textContent = "Estado";
+    estadoBloque.appendChild(etiquetaEstado);
+
+    var selectEstado = document.createElement("select");
+    selectEstado.className = "select-estado";
+    ["nuevo", "visto", "completado"].forEach(function (valor) {
+      var opcion = document.createElement("option");
+      opcion.value = valor;
+      opcion.textContent = NOMBRES_ESTADO[valor];
+      selectEstado.appendChild(opcion);
+    });
+    selectEstado.value = pedido.estado;
+    selectEstado.addEventListener("change", function () {
+      cambiarEstadoPedido(pedido, selectEstado.value, selectEstado);
+    });
+    estadoBloque.appendChild(selectEstado);
+
+    fila.appendChild(estadoBloque);
+
+    return fila;
+  }
+
+  function renderPedidos() {
+    listaPedidos.innerHTML = "";
+
+    if (pedidosActuales.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "nota-lista";
+      vacio.textContent = "Todavía no has recibido pedidos.";
+      listaPedidos.appendChild(vacio);
+      return;
+    }
+
+    pedidosActuales.forEach(function (pedido) {
+      listaPedidos.appendChild(crearFilaPedido(pedido));
     });
   }
 

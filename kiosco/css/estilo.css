@@ -67,6 +67,10 @@ form {
   gap: 16px;
 }
 
+form[hidden] {
+  display: none;
+}
+
 label {
   font-size: 0.92rem;
   font-weight: 600;
@@ -276,6 +280,10 @@ button[type="submit"]:disabled {
   padding: 4px;
   background: #f5f5f5;
   border-radius: var(--radio-chico);
+}
+
+.tabs[hidden] {
+  display: none;
 }
 
 .tab {
@@ -513,4 +521,137 @@ select {
 
 select:focus {
   border-color: var(--negro);
+}
+
+/* ---- Pedidos ---- */
+
+.fila-pedido {
+  padding: 16px 14px;
+  margin-bottom: 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+}
+
+.fila-pedido:last-child {
+  margin-bottom: 0;
+}
+
+.fila-pedido.pedido-nuevo {
+  border-color: var(--negro);
+}
+
+.encabezado-pedido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+
+.numero-pedido {
+  font-weight: 800;
+  color: var(--negro);
+  font-size: 1rem;
+}
+
+.badge-nuevo {
+  background: var(--negro);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.hora-pedido {
+  margin-left: auto;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+}
+
+.cliente-pedido {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  margin-bottom: 10px;
+}
+
+.nombre-cliente {
+  font-weight: 700;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+.telefono-cliente {
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+}
+
+.items-pedido {
+  border-top: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde);
+  padding: 8px 0;
+  margin-bottom: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.item-pedido {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.92rem;
+  color: var(--texto);
+}
+
+.pie-pedido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.modalidad-pedido {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.total-pedido {
+  font-weight: 800;
+  color: var(--negro);
+  font-size: 1.02rem;
+}
+
+.direccion-pedido,
+.nota-pedido {
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+  margin: 0 0 6px;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.estado-pedido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.estado-pedido label {
+  margin: 0;
+  font-size: 0.85rem;
+  flex-shrink: 0;
+}
+
+.select-estado {
+  width: auto;
+  min-height: 40px;
+  padding: 8px 10px;
+  font-size: 0.9rem;
 }
