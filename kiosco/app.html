@@ -67,7 +67,8 @@
       <a id="panelEnlace" href="#" target="_blank" rel="noopener" class="enlace-publico">kiosco.atiendepro.net/tu-direccion</a>
     </div>
 
-    <button type="button" id="btnEditar" class="boton-secundario">Editar datos</button>
+    <button type="button" id="btnPublicar" class="boton-secundario">Publicar kiosco</button>
+    <button type="button" id="btnEditar" class="boton-secundario" style="margin-top: 12px;">Editar datos</button>
   </div>
 
   <div class="tarjeta" id="tarjetaError" hidden>
@@ -214,6 +215,7 @@
   var panelEstado = document.getElementById("panelEstado");
   var panelEnlace = document.getElementById("panelEnlace");
   var btnEditar = document.getElementById("btnEditar");
+  var btnPublicar = document.getElementById("btnPublicar");
 
   var btnSalir = document.getElementById("btnSalir");
   var btnReintentar = document.getElementById("btnReintentar");
@@ -347,8 +349,31 @@
     var direccion = "kiosco.atiendepro.net/" + kioscoActual.slug;
     panelEnlace.textContent = direccion;
     panelEnlace.href = "https://" + direccion;
+    btnPublicar.disabled = false;
+    btnPublicar.textContent = kioscoActual.publicado ? "Despublicar kiosco" : "Publicar kiosco";
     tarjetaPanel.hidden = false;
   }
+
+  btnPublicar.addEventListener("click", function () {
+    var nuevoValor = !kioscoActual.publicado;
+    btnPublicar.disabled = true;
+    btnPublicar.textContent = nuevoValor ? "Publicando..." : "Despublicando...";
+
+    sb.from("kioscos").update({ publicado: nuevoValor }).eq("id", kioscoActual.id).select().single().then(function (resultado) {
+      if (resultado.error) {
+        alert("No se pudo actualizar. Intenta de nuevo.");
+        btnPublicar.disabled = false;
+        btnPublicar.textContent = kioscoActual.publicado ? "Despublicar kiosco" : "Publicar kiosco";
+        return;
+      }
+      kioscoActual = resultado.data;
+      mostrarPanel();
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+      btnPublicar.disabled = false;
+      btnPublicar.textContent = kioscoActual.publicado ? "Despublicar kiosco" : "Publicar kiosco";
+    });
+  });
 
   function setSeccionActiva(nombre) {
     seccionActiva = nombre;

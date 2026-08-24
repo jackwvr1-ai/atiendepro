@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+<title>Kiosco</title>
+<link rel="stylesheet" href="css/publico.css">
+</head>
+<body>
+
+<div id="estadoCargando" class="estado-pantalla">
+  <p>Cargando...</p>
+</div>
+
+<div id="estadoNoDisponible" class="estado-pantalla" hidden>
+  <div class="icono">🚫</div>
+  <h1>Este kiosco no está disponible</h1>
+  <p>Revisa el enlace o pídele al negocio que te comparta uno nuevo.</p>
+</div>
+
+<div id="contenido" class="envoltorio" hidden>
+
+  <div class="cabecera">
+    <h1 class="nombre-negocio" id="nombreNegocio"></h1>
+    <p class="descripcion-negocio" id="descripcionNegocio" hidden></p>
+  </div>
+
+  <div class="menu" id="menu"></div>
+
+</div>
+
+<button type="button" id="barraCarrito" class="barra-carrito">
+  <span class="cantidad-carrito" id="cantidadCarrito"></span>
+  <span class="total-carrito" id="totalCarrito"></span>
+</button>
+
+<div id="carritoOverlay" class="carrito-overlay"></div>
+
+<div id="carritoPanel" class="carrito-panel">
+  <div class="carrito-encabezado">
+    <h2>Tu pedido</h2>
+    <button type="button" id="cerrarCarrito" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+  </div>
+
+  <div class="carrito-lista" id="carritoLista"></div>
+
+  <div class="carrito-pie">
+    <div class="fila-total">
+      <span>Total</span>
+      <span id="totalPie">$0.00</span>
+    </div>
+    <button type="button" id="btnHacerPedido" class="boton-hacer-pedido">Hacer pedido</button>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { persistSession: false }
+  });
+
+  var COLUMNAS_KIOSCO = "id,nombre,slug,descripcion,logo_url,portada_url,tema,moneda,telefono_contacto,whatsapp,direccion,pide_direccion,publicado";
+
+  var kioscoActual = null;
+  var productosPorId = {};
+  var carrito = {}; // { productoId: cantidad }
+
+  var estadoCargando = document.getElementById("estadoCargando");
+  var estadoNoDisponible = document.getElementById("estadoNoDisponible");
+  var contenido = document.getElementById("contenido");
+
+  var nombreNegocio = document.getElementById("nombreNegocio");
+  var descripcionNegocio = document.getElementById("descripcionNegocio");
+  var menu = document.getElementById("menu");
+
+  var barraCarrito = document.getElementById("barraCarrito");
+  var cantidadCarrito = document.getElementById("cantidadCarrito");
+  var totalCarrito = document.getElementById("totalCarrito");
+
+  var carritoOverlay = document.getElementById("carritoOverlay");
+  var carritoPanel = document.getElementById("carritoPanel");
+  var cerrarCarrito = document.getElementById("cerrarCarrito");
+  var carritoLista = document.getElementById("carritoLista");
+  var totalPie = document.getElementById("totalPie");
+  var btnHacerPedido = document.getElementById("btnHacerPedido");
+
+  function mostrarSolo(elemento) {
+    estadoCargando.hidden = elemento !== estadoCargando;
+    estadoNoDisponible.hidden = elemento !== estadoNoDisponible;
+    contenido.hidden = elemento !== contenido;
+  }
+
+  function formatearPrecio(valor) {
+    return "$" + Number(valor).toFixed(2);
+  }
+
+  function obtenerSlug() {
+    var partes = window.location.pathname.split("/").filter(Boolean);
+    var ultimo = (partes[partes.length - 1] || "").toLowerCase();
+
+    if (!ultimo || ultimo === "ver.html") {
+      var params = new URLSearchParams(window.location.search);
+      return (params.get("slug") || params.get("k") || "").trim().toLowerCase();
+    }
+
+    try {
+      return decodeURIComponent(ultimo).trim().toLowerCase();
+    } catch (e) {
+      return ultimo;
+    }
+  }
+
+  // ---- Menú ----
+
+  function agruparProductosPorCategoria(categorias, productos) {
+    var grupos = [];
+
+    categorias.forEach(function (categoria) {
+      var deLaCategoria = productos.filter(function (p) {
+        return p.categoria_id === categoria.id;
+      });
+      if (deLaCategoria.length > 0) {
+        grupos.push({ nombre: categoria.nombre, productos: deLaCategoria });
+      }
+    });
+
+    var sinCategoria = productos.filter(function (p) {
+      return !p.categoria_id;
+    });
+    if (sinCategoria.length > 0) {
+      grupos.push({ nombre: "Otros", productos: sinCategoria });
+    }
+
+    return grupos;
+  }
+
+  function crearElementoProducto(producto) {
+    var fila = document.createElement("div");
+    fila.className = "producto" + (producto.agotado ? " agotado" : "");
+
+    var info = document.createElement("div");
+    info.className = "info-producto";
+
+    var nombre = document.createElement("p");
+    nombre.className = "nombre-producto";
+    nombre.textContent = producto.nombre;
+    info.appendChild(nombre);
+
+    if (producto.descripcion) {
+      var descripcion = document.createElement("p");
+      descripcion.className = "descripcion-producto";
+      descripcion.textContent = producto.descripcion;
+      info.appendChild(descripcion);
+    }
+
+    var precio = document.createElement("p");
+    precio.className = "precio-producto";
+    precio.textContent = formatearPrecio(producto.precio);
+    info.appendChild(precio);
+
+    fila.appendChild(info);
+
+    if (producto.agotado) {
+      var etiqueta = document.createElement("span");
+      etiqueta.className = "etiqueta-agotado";
+      etiqueta.textContent = "Agotado";
+      fila.appendChild(etiqueta);
+    } else {
+      var boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "boton-agregar";
+      boton.setAttribute("aria-label", "Agregar " + producto.nombre);
+      boton.textContent = "+";
+      boton.addEventListener("click", function () {
+        agregarAlCarrito(producto.id);
+      });
+      fila.appendChild(boton);
+    }
+
+    return fila;
+  }
+
+  function renderMenu(categorias, productos) {
+    menu.innerHTML = "";
+    productosPorId = {};
+    productos.forEach(function (p) {
+      productosPorId[p.id] = p;
+    });
+
+    if (productos.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "menu-vacio";
+      vacio.textContent = "Todavía no hay productos disponibles.";
+      menu.appendChild(vacio);
+      return;
+    }
+
+    var grupos = agruparProductosPorCategoria(categorias, productos);
+    grupos.forEach(function (grupo) {
+      var seccion = document.createElement("div");
+      seccion.className = "categoria";
+
+      var titulo = document.createElement("h2");
+      titulo.className = "titulo-categoria";
+      titulo.textContent = grupo.nombre;
+      seccion.appendChild(titulo);
+
+      grupo.productos.forEach(function (producto) {
+        seccion.appendChild(crearElementoProducto(producto));
+      });
+
+      menu.appendChild(seccion);
+    });
+  }
+
+  // ---- Carrito ----
+
+  function calcularTotales() {
+    var cantidad = 0;
+    var total = 0;
+    Object.keys(carrito).forEach(function (id) {
+      var producto = productosPorId[id];
+      if (!producto) return;
+      cantidad += carrito[id];
+      total += carrito[id] * Number(producto.precio);
+    });
+    return { cantidad: cantidad, total: total };
+  }
+
+  function actualizarBarraCarrito() {
+    var totales = calcularTotales();
+
+    if (totales.cantidad === 0) {
+      barraCarrito.classList.remove("visible");
+      cerrarPanelCarrito();
+      return;
+    }
+
+    barraCarrito.classList.add("visible");
+    cantidadCarrito.textContent = totales.cantidad + (totales.cantidad === 1 ? " artículo" : " artículos");
+    totalCarrito.textContent = formatearPrecio(totales.total);
+    totalPie.textContent = formatearPrecio(totales.total);
+  }
+
+  function agregarAlCarrito(productoId) {
+    var producto = productosPorId[productoId];
+    if (!producto || producto.agotado) return;
+    carrito[productoId] = (carrito[productoId] || 0) + 1;
+    actualizarBarraCarrito();
+  }
+
+  function cambiarCantidad(productoId, delta) {
+    var nueva = (carrito[productoId] || 0) + delta;
+    if (nueva <= 0) {
+      delete carrito[productoId];
+    } else {
+      carrito[productoId] = nueva;
+    }
+    actualizarBarraCarrito();
+    renderCarrito();
+  }
+
+  function quitarDelCarrito(productoId) {
+    delete carrito[productoId];
+    actualizarBarraCarrito();
+    renderCarrito();
+  }
+
+  function crearFilaCarrito(productoId, cantidad) {
+    var producto = productosPorId[productoId];
+    if (!producto) return null;
+
+    var fila = document.createElement("div");
+    fila.className = "fila-carrito";
+
+    var info = document.createElement("div");
+    info.className = "info-fila-carrito";
+
+    var nombre = document.createElement("p");
+    nombre.className = "nombre-fila-carrito";
+    nombre.textContent = producto.nombre;
+    info.appendChild(nombre);
+
+    var subtotal = document.createElement("p");
+    subtotal.className = "subtotal-fila-carrito";
+    subtotal.textContent = formatearPrecio(Number(producto.precio) * cantidad);
+    info.appendChild(subtotal);
+
+    var quitar = document.createElement("button");
+    quitar.type = "button";
+    quitar.className = "quitar-fila-carrito";
+    quitar.textContent = "Quitar";
+    quitar.addEventListener("click", function () {
+      quitarDelCarrito(productoId);
+    });
+    info.appendChild(quitar);
+
+    var contador = document.createElement("div");
+    contador.className = "contador";
+
+    var menos = document.createElement("button");
+    menos.type = "button";
+    menos.textContent = "−";
+    menos.setAttribute("aria-label", "Quitar uno");
+    menos.addEventListener("click", function () {
+      cambiarCantidad(productoId, -1);
+    });
+
+    var numero = document.createElement("span");
+    numero.textContent = cantidad;
+
+    var mas = document.createElement("button");
+    mas.type = "button";
+    mas.textContent = "+";
+    mas.setAttribute("aria-label", "Agregar uno");
+    mas.addEventListener("click", function () {
+      cambiarCantidad(productoId, 1);
+    });
+
+    contador.appendChild(menos);
+    contador.appendChild(numero);
+    contador.appendChild(mas);
+
+    fila.appendChild(info);
+    fila.appendChild(contador);
+    return fila;
+  }
+
+  function renderCarrito() {
+    carritoLista.innerHTML = "";
+    var ids = Object.keys(carrito);
+
+    if (ids.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "carrito-vacio";
+      vacio.textContent = "Tu carrito está vacío.";
+      carritoLista.appendChild(vacio);
+      return;
+    }
+
+    ids.forEach(function (id) {
+      var fila = crearFilaCarrito(id, carrito[id]);
+      if (fila) carritoLista.appendChild(fila);
+    });
+  }
+
+  function abrirPanelCarrito() {
+    renderCarrito();
+    carritoOverlay.classList.add("visible");
+    carritoPanel.classList.add("visible");
+  }
+
+  function cerrarPanelCarrito() {
+    carritoOverlay.classList.remove("visible");
+    carritoPanel.classList.remove("visible");
+  }
+
+  barraCarrito.addEventListener("click", abrirPanelCarrito);
+  cerrarCarrito.addEventListener("click", cerrarPanelCarrito);
+  carritoOverlay.addEventListener("click", cerrarPanelCarrito);
+
+  // El checkout llega en la siguiente entrega.
+  btnHacerPedido.addEventListener("click", function () {});
+
+  // ---- Carga de datos ----
+
+  function cargarKiosco(slug) {
+    sb.from("kioscos")
+      .select(COLUMNAS_KIOSCO)
+      .eq("slug", slug)
+      .eq("publicado", true)
+      .maybeSingle()
+      .then(function (resultado) {
+        if (resultado.error || !resultado.data) {
+          mostrarSolo(estadoNoDisponible);
+          return;
+        }
+
+        kioscoActual = resultado.data;
+        document.title = kioscoActual.nombre;
+        nombreNegocio.textContent = kioscoActual.nombre;
+        if (kioscoActual.descripcion) {
+          descripcionNegocio.textContent = kioscoActual.descripcion;
+          descripcionNegocio.hidden = false;
+        }
+
+        cargarMenu(kioscoActual.id);
+      })
+      .catch(function () {
+        mostrarSolo(estadoNoDisponible);
+      });
+  }
+
+  function cargarMenu(kioscoId) {
+    Promise.all([
+      sb.from("kiosco_categorias").select("id,nombre,orden").eq("kiosco_id", kioscoId).eq("activa", true).order("orden", { ascending: true }),
+      sb.from("kiosco_productos").select("id,categoria_id,nombre,descripcion,precio,activo,agotado,orden").eq("kiosco_id", kioscoId).eq("activo", true).order("orden", { ascending: true })
+    ]).then(function (resultados) {
+      var resCategorias = resultados[0];
+      var resProductos = resultados[1];
+
+      if (resCategorias.error || resProductos.error) {
+        mostrarSolo(estadoNoDisponible);
+        return;
+      }
+
+      renderMenu(resCategorias.data || [], resProductos.data || []);
+      mostrarSolo(contenido);
+    }).catch(function () {
+      mostrarSolo(estadoNoDisponible);
+    });
+  }
+
+  var slug = obtenerSlug();
+  if (!slug) {
+    mostrarSolo(estadoNoDisponible);
+  } else {
+    cargarKiosco(slug);
+  }
+})();
+</script>
+
+</body>
+</html>

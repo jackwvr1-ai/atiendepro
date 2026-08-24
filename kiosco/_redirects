@@ -1,0 +1,7 @@
+/login          /login.html          200
+/crear-cuenta   /crear-cuenta.html   200
+/recuperar      /recuperar.html      200
+/nueva-clave    /nueva-clave.html    200
+/app            /app.html            200
+/app/*          /app.html            200
+/*              /ver.html            200
