@@ -234,6 +234,20 @@
         <input type="text" inputmode="decimal" id="precioProducto" name="precioProducto" placeholder="0.00" required>
       </div>
 
+      <div class="campo bloque-imagen">
+        <label>Foto del producto (opcional)</label>
+        <div class="previsualizacion-producto" id="previaFotoProducto">
+          <img id="imgFotoProducto" alt="" hidden>
+          <span class="marcador-vacio" id="marcadorFotoProducto">Sin foto</span>
+        </div>
+        <input type="file" id="inputFotoProducto" accept="image/*" hidden>
+        <div class="fila-botones-imagen">
+          <button type="button" id="btnSubirFotoProducto" class="boton-secundario boton-imagen">Subir foto</button>
+          <button type="button" id="btnQuitarFotoProducto" class="boton-quitar-imagen" hidden>Quitar</button>
+        </div>
+        <p class="estado-imagen" id="estadoFotoProducto" hidden></p>
+      </div>
+
       <div class="campo">
         <label for="descripcionProducto">Descripción (opcional)</label>
         <textarea id="descripcionProducto" name="descripcionProducto" placeholder="Ingredientes, tamaño, etc." maxlength="300" rows="3"></textarea>
@@ -462,6 +476,17 @@
   var btnGestionarOpciones = document.getElementById("btnGestionarOpciones");
   var btnEliminarProducto = document.getElementById("btnEliminarProducto");
   var btnCancelarProducto = document.getElementById("btnCancelarProducto");
+
+  var previaFotoProducto = document.getElementById("previaFotoProducto");
+  var imgFotoProducto = document.getElementById("imgFotoProducto");
+  var marcadorFotoProducto = document.getElementById("marcadorFotoProducto");
+  var inputFotoProducto = document.getElementById("inputFotoProducto");
+  var btnSubirFotoProducto = document.getElementById("btnSubirFotoProducto");
+  var btnQuitarFotoProducto = document.getElementById("btnQuitarFotoProducto");
+  var estadoFotoProducto = document.getElementById("estadoFotoProducto");
+
+  var archivoFotoPendiente = null;
+  var previewURLPendiente = null;
 
   var tarjetaGrupos = document.getElementById("tarjetaGrupos");
   var tituloGrupos = document.getElementById("tituloGrupos");
@@ -1359,6 +1384,20 @@
     var info = document.createElement("div");
     info.className = "info-producto";
 
+    var miniaturaYNombre = document.createElement("div");
+    miniaturaYNombre.className = "miniatura-y-nombre";
+
+    var miniatura = document.createElement("div");
+    miniatura.className = "miniatura-producto";
+    if (producto.imagen_url) {
+      var imgMiniatura = document.createElement("img");
+      imgMiniatura.src = producto.imagen_url;
+      imgMiniatura.alt = "";
+      imgMiniatura.loading = "lazy";
+      miniatura.appendChild(imgMiniatura);
+    }
+    miniaturaYNombre.appendChild(miniatura);
+
     var nombrePrecio = document.createElement("div");
     nombrePrecio.className = "nombre-precio";
 
@@ -1372,6 +1411,7 @@
 
     nombrePrecio.appendChild(nombre);
     nombrePrecio.appendChild(precio);
+    miniaturaYNombre.appendChild(nombrePrecio);
 
     var acciones = document.createElement("div");
     acciones.className = "acciones-producto";
@@ -1395,7 +1435,7 @@
     acciones.appendChild(btnEditarProd);
     acciones.appendChild(btnEliminarProd);
 
-    info.appendChild(nombrePrecio);
+    info.appendChild(miniaturaYNombre);
     info.appendChild(acciones);
 
     var botonDisponibilidad = document.createElement("button");
@@ -1550,19 +1590,175 @@
     campoCategoriaProducto.value = seleccionActual || "";
   }
 
+  function limpiarFotoPendiente() {
+    archivoFotoPendiente = null;
+    if (previewURLPendiente) {
+      URL.revokeObjectURL(previewURLPendiente);
+      previewURLPendiente = null;
+    }
+  }
+
+  function actualizarPreviaFotoProducto() {
+    if (archivoFotoPendiente) {
+      if (!previewURLPendiente) previewURLPendiente = URL.createObjectURL(archivoFotoPendiente);
+      imgFotoProducto.src = previewURLPendiente;
+      imgFotoProducto.hidden = false;
+      marcadorFotoProducto.hidden = true;
+      btnQuitarFotoProducto.hidden = false;
+      btnSubirFotoProducto.textContent = "Cambiar foto";
+    } else if (productoEditando && productoEditando.imagen_url) {
+      imgFotoProducto.src = productoEditando.imagen_url;
+      imgFotoProducto.hidden = false;
+      marcadorFotoProducto.hidden = true;
+      btnQuitarFotoProducto.hidden = false;
+      btnSubirFotoProducto.textContent = "Cambiar foto";
+    } else {
+      imgFotoProducto.hidden = true;
+      imgFotoProducto.removeAttribute("src");
+      marcadorFotoProducto.hidden = false;
+      btnQuitarFotoProducto.hidden = true;
+      btnSubirFotoProducto.textContent = "Subir foto";
+    }
+  }
+
+  function subirArchivosFotoProducto(producto, file) {
+    var carpetaBase = usuarioActual.id + "/" + kioscoActual.id;
+    var extension = extensionParaTipo(file.type);
+    var nombreArchivo = "producto-" + producto.id;
+    var rutaOriginal = carpetaBase + "/originales/" + nombreArchivo + "-original." + extension;
+    var rutaProcesada = carpetaBase + "/productos/" + nombreArchivo + ".webp";
+
+    return redimensionarImagen(file, 800, 800, 0.82).then(function (blob) {
+      return sb.storage.from("kioscos").upload(rutaOriginal, file, { upsert: true, contentType: file.type }).then(function () {
+        return sb.storage.from("kioscos").upload(rutaProcesada, blob, { upsert: true, contentType: "image/webp" });
+      });
+    }).then(function (resultadoSubida) {
+      if (resultadoSubida.error) {
+        throw new Error("No se pudo subir la imagen. Intenta de nuevo.");
+      }
+      var publicaOriginal = sb.storage.from("kioscos").getPublicUrl(rutaOriginal);
+      var publicaProcesada = sb.storage.from("kioscos").getPublicUrl(rutaProcesada);
+      return {
+        imagen_url: publicaProcesada.data.publicUrl + "?v=" + Date.now(),
+        imagen_original_url: publicaOriginal.data.publicUrl + "?v=" + Date.now()
+      };
+    });
+  }
+
+  function subirFotoProductoExistente(producto, file) {
+    btnSubirFotoProducto.disabled = true;
+    btnQuitarFotoProducto.disabled = true;
+    btnSubirFotoProducto.textContent = "Subiendo...";
+    mostrarEstadoImagen(estadoFotoProducto, "Subiendo, puede tardar un momento en datos móviles...", false);
+
+    subirArchivosFotoProducto(producto, file).then(function (urls) {
+      return sb.from("kiosco_productos").update(urls).eq("id", producto.id).select().single();
+    }).then(function (resultado) {
+      if (resultado.error) {
+        throw new Error("No se pudo guardar. Intenta de nuevo.");
+      }
+      productoEditando = resultado.data;
+      var indice = productosActuales.findIndex(function (p) { return p.id === resultado.data.id; });
+      if (indice !== -1) productosActuales[indice] = resultado.data;
+      btnSubirFotoProducto.disabled = false;
+      btnQuitarFotoProducto.disabled = false;
+      mostrarEstadoImagen(estadoFotoProducto, null);
+      actualizarPreviaFotoProducto();
+    }).catch(function (err) {
+      btnSubirFotoProducto.disabled = false;
+      btnQuitarFotoProducto.disabled = false;
+      actualizarPreviaFotoProducto();
+      var mensaje = (err && err.message) || "No se pudo subir la imagen. Intenta de nuevo.";
+      if (mensaje === "No pudimos leer esa imagen.") {
+        mensaje = "No pudimos leer esa imagen. Prueba con una foto en formato JPG, PNG o WEBP.";
+      }
+      mostrarEstadoImagen(estadoFotoProducto, mensaje, true);
+    });
+  }
+
+  function quitarFotoProducto(producto) {
+    var confirmado = window.confirm("¿Quitar la foto de este producto?");
+    if (!confirmado) return;
+
+    btnSubirFotoProducto.disabled = true;
+    btnQuitarFotoProducto.disabled = true;
+    mostrarEstadoImagen(estadoFotoProducto, null);
+
+    sb.from("kiosco_productos").update({ imagen_url: null, imagen_original_url: null }).eq("id", producto.id).select().single().then(function (resultado) {
+      if (resultado.error) {
+        throw new Error("guardado");
+      }
+      productoEditando = resultado.data;
+      var indice = productosActuales.findIndex(function (p) { return p.id === resultado.data.id; });
+      if (indice !== -1) productosActuales[indice] = resultado.data;
+      btnSubirFotoProducto.disabled = false;
+      btnQuitarFotoProducto.disabled = false;
+      actualizarPreviaFotoProducto();
+
+      var carpetaBase = usuarioActual.id + "/" + kioscoActual.id;
+      var nombreArchivo = "producto-" + producto.id;
+      sb.storage.from("kioscos").remove([carpetaBase + "/productos/" + nombreArchivo + ".webp"]).catch(function () {});
+    }).catch(function () {
+      btnSubirFotoProducto.disabled = false;
+      btnQuitarFotoProducto.disabled = false;
+      mostrarEstadoImagen(estadoFotoProducto, "No se pudo quitar la foto. Intenta de nuevo.", true);
+    });
+  }
+
+  btnSubirFotoProducto.addEventListener("click", function () {
+    inputFotoProducto.click();
+  });
+
+  inputFotoProducto.addEventListener("change", function () {
+    var file = inputFotoProducto.files && inputFotoProducto.files[0];
+    inputFotoProducto.value = "";
+    if (!file) return;
+
+    var error = validarArchivoImagen(file);
+    if (error) {
+      mostrarEstadoImagen(estadoFotoProducto, error, true);
+      return;
+    }
+
+    if (productoEditando) {
+      subirFotoProductoExistente(productoEditando, file);
+    } else {
+      archivoFotoPendiente = file;
+      mostrarEstadoImagen(estadoFotoProducto, null);
+      actualizarPreviaFotoProducto();
+    }
+  });
+
+  btnQuitarFotoProducto.addEventListener("click", function () {
+    if (archivoFotoPendiente) {
+      limpiarFotoPendiente();
+      mostrarEstadoImagen(estadoFotoProducto, null);
+      actualizarPreviaFotoProducto();
+      return;
+    }
+    if (productoEditando && productoEditando.imagen_url) {
+      quitarFotoProducto(productoEditando);
+    }
+  });
+
   function mostrarFormProducto(producto) {
     ocultarTodo();
     productoEditando = producto || null;
+    limpiarFotoPendiente();
     tituloFormProducto.textContent = producto ? "Editar producto" : "Nuevo producto";
     btnGuardarProducto.textContent = producto ? "Guardar cambios" : "Crear producto";
     btnGestionarOpciones.hidden = !producto;
     btnEliminarProducto.hidden = !producto;
     mensajeFormProducto.hidden = true;
+    estadoFotoProducto.hidden = true;
+    btnSubirFotoProducto.disabled = false;
+    btnQuitarFotoProducto.disabled = false;
 
     campoNombreProducto.value = producto ? producto.nombre : "";
     campoPrecioProducto.value = producto ? String(producto.precio) : "";
     campoDescripcionProducto.value = producto ? (producto.descripcion || "") : "";
     actualizarSelectCategorias(producto ? producto.categoria_id : "");
+    actualizarPreviaFotoProducto();
 
     tarjetaFormProducto.hidden = false;
   }
@@ -1571,7 +1767,10 @@
     mostrarFormProducto(null);
   });
 
-  btnCancelarProducto.addEventListener("click", mostrarListaProductos);
+  btnCancelarProducto.addEventListener("click", function () {
+    limpiarFotoPendiente();
+    mostrarListaProductos();
+  });
 
   formProducto.addEventListener("submit", function (evento) {
     evento.preventDefault();
@@ -1620,11 +1819,31 @@
         return;
       }
 
+      var productoGuardado = resultado.data;
+      var eraNuevo = !productoEditando;
+
       if (productoEditando) {
-        var indice = productosActuales.findIndex(function (p) { return p.id === resultado.data.id; });
-        if (indice !== -1) productosActuales[indice] = resultado.data;
+        var indice = productosActuales.findIndex(function (p) { return p.id === productoGuardado.id; });
+        if (indice !== -1) productosActuales[indice] = productoGuardado;
       } else {
-        productosActuales.push(resultado.data);
+        productosActuales.push(productoGuardado);
+      }
+
+      if (eraNuevo && archivoFotoPendiente) {
+        var archivo = archivoFotoPendiente;
+        limpiarFotoPendiente();
+        subirArchivosFotoProducto(productoGuardado, archivo).then(function (urls) {
+          return sb.from("kiosco_productos").update(urls).eq("id", productoGuardado.id).select().single();
+        }).then(function (resultadoFoto) {
+          if (!resultadoFoto.error) {
+            var idx = productosActuales.findIndex(function (p) { return p.id === resultadoFoto.data.id; });
+            if (idx !== -1) productosActuales[idx] = resultadoFoto.data;
+          }
+          mostrarListaProductos();
+        }).catch(function () {
+          mostrarListaProductos();
+        });
+        return;
       }
 
       mostrarListaProductos();

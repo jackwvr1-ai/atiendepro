@@ -305,7 +305,44 @@
     var tieneOpciones = (gruposPorProducto[producto.id] || []).length > 0;
 
     var fila = document.createElement("div");
-    fila.className = "producto" + (producto.agotado ? " agotado" : "") + (!producto.agotado && tieneOpciones ? " con-opciones" : "");
+    fila.className = "producto" +
+      (producto.agotado ? " agotado" : "") +
+      (!producto.agotado && tieneOpciones ? " con-opciones" : "");
+
+    var foto = document.createElement("div");
+    foto.className = "foto-producto";
+    if (producto.imagen_url) {
+      var img = document.createElement("img");
+      img.src = producto.imagen_url;
+      img.alt = producto.nombre;
+      img.loading = "lazy";
+      foto.appendChild(img);
+    }
+
+    if (producto.agotado) {
+      var etiqueta = document.createElement("span");
+      etiqueta.className = "etiqueta-agotado";
+      etiqueta.textContent = "Agotado";
+      foto.appendChild(etiqueta);
+    } else if (tieneOpciones) {
+      var flecha = document.createElement("span");
+      flecha.className = "flecha-producto";
+      flecha.setAttribute("aria-hidden", "true");
+      flecha.textContent = "›";
+      foto.appendChild(flecha);
+    } else {
+      var boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "boton-agregar";
+      boton.setAttribute("aria-label", "Agregar " + producto.nombre);
+      boton.textContent = "+";
+      boton.addEventListener("click", function () {
+        agregarAlCarrito(producto.id);
+      });
+      foto.appendChild(boton);
+    }
+
+    fila.appendChild(foto);
 
     var info = document.createElement("div");
     info.className = "info-producto";
@@ -315,13 +352,6 @@
     nombre.textContent = producto.nombre;
     info.appendChild(nombre);
 
-    if (producto.descripcion) {
-      var descripcion = document.createElement("p");
-      descripcion.className = "descripcion-producto";
-      descripcion.textContent = producto.descripcion;
-      info.appendChild(descripcion);
-    }
-
     var precio = document.createElement("p");
     precio.className = "precio-producto";
     precio.textContent = formatearPrecio(producto.precio);
@@ -329,12 +359,7 @@
 
     fila.appendChild(info);
 
-    if (producto.agotado) {
-      var etiqueta = document.createElement("span");
-      etiqueta.className = "etiqueta-agotado";
-      etiqueta.textContent = "Agotado";
-      fila.appendChild(etiqueta);
-    } else if (tieneOpciones) {
+    if (!producto.agotado && tieneOpciones) {
       fila.setAttribute("role", "button");
       fila.setAttribute("tabindex", "0");
       fila.addEventListener("click", function () {
@@ -346,21 +371,6 @@
           abrirPantallaProducto(producto);
         }
       });
-      var flecha = document.createElement("span");
-      flecha.className = "flecha-producto";
-      flecha.setAttribute("aria-hidden", "true");
-      flecha.textContent = "›";
-      fila.appendChild(flecha);
-    } else {
-      var boton = document.createElement("button");
-      boton.type = "button";
-      boton.className = "boton-agregar";
-      boton.setAttribute("aria-label", "Agregar " + producto.nombre);
-      boton.textContent = "+";
-      boton.addEventListener("click", function () {
-        agregarAlCarrito(producto.id);
-      });
-      fila.appendChild(boton);
     }
 
     return fila;
@@ -391,9 +401,12 @@
       titulo.textContent = grupo.nombre;
       seccion.appendChild(titulo);
 
+      var rejilla = document.createElement("div");
+      rejilla.className = "rejilla-productos";
       grupo.productos.forEach(function (producto) {
-        seccion.appendChild(crearElementoProducto(producto));
+        rejilla.appendChild(crearElementoProducto(producto));
       });
+      seccion.appendChild(rejilla);
 
       menu.appendChild(seccion);
     });
@@ -484,6 +497,17 @@
 
     var fila = document.createElement("div");
     fila.className = "fila-carrito";
+
+    if (producto.imagen_url) {
+      var miniatura = document.createElement("div");
+      miniatura.className = "miniatura-carrito";
+      var imgMiniatura = document.createElement("img");
+      imgMiniatura.src = producto.imagen_url;
+      imgMiniatura.alt = "";
+      imgMiniatura.loading = "lazy";
+      miniatura.appendChild(imgMiniatura);
+      fila.appendChild(miniatura);
+    }
 
     var info = document.createElement("div");
     info.className = "info-fila-carrito";
