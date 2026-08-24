@@ -21,8 +21,18 @@
 <div id="contenido" class="envoltorio" hidden>
 
   <div class="cabecera">
-    <h1 class="nombre-negocio" id="nombreNegocio"></h1>
-    <p class="descripcion-negocio" id="descripcionNegocio" hidden></p>
+    <div class="portada-negocio" id="portadaNegocio" hidden>
+      <img id="imgPortadaNegocio" alt="" loading="lazy">
+    </div>
+    <div class="info-cabecera">
+      <div class="logo-negocio" id="logoNegocio" hidden>
+        <img id="imgLogoNegocio" alt="" loading="lazy">
+      </div>
+      <div class="texto-cabecera">
+        <h1 class="nombre-negocio" id="nombreNegocio"></h1>
+        <p class="descripcion-negocio" id="descripcionNegocio" hidden></p>
+      </div>
+    </div>
   </div>
 
   <div class="menu" id="menu"></div>
@@ -125,7 +135,7 @@
     auth: { persistSession: false }
   });
 
-  var COLUMNAS_KIOSCO = "id,nombre,slug,descripcion,logo_url,portada_url,tema,moneda,telefono_contacto,whatsapp,direccion,pide_direccion,publicado";
+  var COLUMNAS_KIOSCO = "id,nombre,slug,descripcion,logo_url,portada_url,tema,color_acento,moneda,telefono_contacto,whatsapp,direccion,pide_direccion,publicado";
 
   var kioscoActual = null;
   var productosPorId = {};
@@ -135,6 +145,10 @@
   var estadoNoDisponible = document.getElementById("estadoNoDisponible");
   var contenido = document.getElementById("contenido");
 
+  var portadaNegocio = document.getElementById("portadaNegocio");
+  var imgPortadaNegocio = document.getElementById("imgPortadaNegocio");
+  var logoNegocio = document.getElementById("logoNegocio");
+  var imgLogoNegocio = document.getElementById("imgLogoNegocio");
   var nombreNegocio = document.getElementById("nombreNegocio");
   var descripcionNegocio = document.getElementById("descripcionNegocio");
   var menu = document.getElementById("menu");
@@ -611,10 +625,25 @@
 
         kioscoActual = resultado.data;
         document.title = kioscoActual.nombre;
+        document.body.setAttribute("data-tema", kioscoActual.tema === "moderno" ? "moderno" : "claro");
+        document.body.setAttribute("data-color", kioscoActual.color_acento || "grafito");
+
         nombreNegocio.textContent = kioscoActual.nombre;
         if (kioscoActual.descripcion) {
           descripcionNegocio.textContent = kioscoActual.descripcion;
           descripcionNegocio.hidden = false;
+        }
+
+        if (kioscoActual.portada_url) {
+          imgPortadaNegocio.src = kioscoActual.portada_url;
+          imgPortadaNegocio.alt = "Portada de " + kioscoActual.nombre;
+          portadaNegocio.hidden = false;
+        }
+
+        if (kioscoActual.logo_url) {
+          imgLogoNegocio.src = kioscoActual.logo_url;
+          imgLogoNegocio.alt = "Logo de " + kioscoActual.nombre;
+          logoNegocio.hidden = false;
         }
 
         cargarMenu(kioscoActual.id);

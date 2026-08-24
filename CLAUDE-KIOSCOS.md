@@ -153,7 +153,9 @@ Lo único compartido es `auth.users`.
 
 ### kioscos
 `id` · `dueno_id` (→ auth.users) · `nombre` · `slug` (único) · `descripcion` ·
-`logo_url` · `portada_url` · `tema` (`claro` \| `moderno`) · `moneda` ·
+`logo_url` · `portada_url` · `tema` (`claro` \| `moderno`) ·
+`color_acento` (`grafito` \| `rojo` \| `naranja` \| `ambar` \| `verde` \|
+`turquesa` \| `azul` \| `violeta` \| `rosa`, por defecto `grafito`) · `moneda` ·
 `telefono_contacto` · `whatsapp` · `direccion` · `email_pedidos` ·
 `pide_direccion` · `publicado` · `creado_en` · `actualizado_en`
 
@@ -284,6 +286,12 @@ llegar más adelante; no es prioridad ahora.
 Dos temas para el kiosco público, nada más: **claro** y **moderno**. Comparten
 exactamente la misma estructura de datos; el tema solo cambia CSS. Jamás dupliques
 contenido por tema.
+
+El color de acento (`kioscos.color_acento`) es una **paleta cerrada de nueve
+colores**, no un selector libre: grafito, rojo, naranja, ámbar, verde,
+turquesa, azul, violeta, rosa. Pinta solo botones y detalles de acción
+(agregar, carrito, botones de acción); nunca fondos grandes ni el texto de
+los productos. El tema sigue mandando sobre fondo, texto y contraste.
 
 ---
 

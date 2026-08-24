@@ -70,6 +70,73 @@
 
     <button type="button" id="btnPublicar" class="boton-secundario">Publicar kiosco</button>
     <button type="button" id="btnEditar" class="boton-secundario" style="margin-top: 12px;">Editar datos</button>
+
+    <div class="bloque-seccion bloque-imagen">
+      <h2 class="subtitulo-seccion">Logo</h2>
+      <div class="previsualizacion-logo" id="previaLogo">
+        <img id="imgLogo" alt="Logo del kiosco" hidden>
+        <span class="marcador-vacio" id="marcadorLogo">Sin logo</span>
+      </div>
+      <input type="file" id="inputLogo" accept="image/*" hidden>
+      <div class="fila-botones-imagen">
+        <button type="button" id="btnSubirLogo" class="boton-secundario boton-imagen">Subir logo</button>
+        <button type="button" id="btnQuitarLogo" class="boton-quitar-imagen" hidden>Quitar</button>
+      </div>
+      <p class="estado-imagen" id="estadoLogo" hidden></p>
+    </div>
+
+    <div class="bloque-seccion bloque-imagen">
+      <h2 class="subtitulo-seccion">Portada</h2>
+      <div class="previsualizacion-portada" id="previaPortada">
+        <img id="imgPortada" alt="Portada del kiosco" hidden>
+        <span class="marcador-vacio" id="marcadorPortada">Sin portada</span>
+      </div>
+      <input type="file" id="inputPortada" accept="image/*" hidden>
+      <div class="fila-botones-imagen">
+        <button type="button" id="btnSubirPortada" class="boton-secundario boton-imagen">Subir portada</button>
+        <button type="button" id="btnQuitarPortada" class="boton-quitar-imagen" hidden>Quitar</button>
+      </div>
+      <p class="estado-imagen" id="estadoPortada" hidden></p>
+    </div>
+
+    <div class="bloque-seccion">
+      <h2 class="subtitulo-seccion">Tema del kiosco</h2>
+      <div class="opciones-tema">
+        <button type="button" class="tarjeta-tema" id="temaClaro" data-tema="claro">
+          <span class="miniatura-tema miniatura-claro" aria-hidden="true">
+            <span class="mini-banner"></span>
+            <span class="mini-logo"></span>
+            <span class="mini-linea mini-linea-1"></span>
+            <span class="mini-linea mini-linea-2"></span>
+          </span>
+          <span class="nombre-tema">Claro</span>
+        </button>
+        <button type="button" class="tarjeta-tema" id="temaModerno" data-tema="moderno">
+          <span class="miniatura-tema miniatura-moderno" aria-hidden="true">
+            <span class="mini-banner"></span>
+            <span class="mini-logo"></span>
+            <span class="mini-linea mini-linea-1"></span>
+            <span class="mini-linea mini-linea-2"></span>
+          </span>
+          <span class="nombre-tema">Moderno</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="bloque-seccion">
+      <h2 class="subtitulo-seccion">Color</h2>
+      <div class="opciones-color" id="opcionesColor">
+        <button type="button" class="circulo-color" data-color="grafito" style="--color-circulo:#52525b" aria-label="Grafito"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="rojo" style="--color-circulo:#ef4444" aria-label="Rojo"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="naranja" style="--color-circulo:#f97316" aria-label="Naranja"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="ambar" style="--color-circulo:#f59e0b" aria-label="Ámbar"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="verde" style="--color-circulo:#22c55e" aria-label="Verde"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="turquesa" style="--color-circulo:#06b6d4" aria-label="Turquesa"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="azul" style="--color-circulo:#3b82f6" aria-label="Azul"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="violeta" style="--color-circulo:#8b5cf6" aria-label="Violeta"><span class="marca-color">✓</span></button>
+        <button type="button" class="circulo-color" data-color="rosa" style="--color-circulo:#ec4899" aria-label="Rosa"><span class="marca-color">✓</span></button>
+      </div>
+    </div>
   </div>
 
   <div class="tarjeta" id="tarjetaError" hidden>
@@ -234,6 +301,28 @@
   var btnSalir = document.getElementById("btnSalir");
   var btnReintentar = document.getElementById("btnReintentar");
 
+  var imgLogo = document.getElementById("imgLogo");
+  var marcadorLogo = document.getElementById("marcadorLogo");
+  var inputLogo = document.getElementById("inputLogo");
+  var btnSubirLogo = document.getElementById("btnSubirLogo");
+  var btnQuitarLogo = document.getElementById("btnQuitarLogo");
+  var estadoLogo = document.getElementById("estadoLogo");
+
+  var imgPortada = document.getElementById("imgPortada");
+  var marcadorPortada = document.getElementById("marcadorPortada");
+  var inputPortada = document.getElementById("inputPortada");
+  var btnSubirPortada = document.getElementById("btnSubirPortada");
+  var btnQuitarPortada = document.getElementById("btnQuitarPortada");
+  var estadoPortada = document.getElementById("estadoPortada");
+
+  var temaClaro = document.getElementById("temaClaro");
+  var temaModerno = document.getElementById("temaModerno");
+
+  var opcionesColor = document.getElementById("opcionesColor");
+  var circulosColor = opcionesColor.querySelectorAll(".circulo-color");
+
+  var TAM_MAX_ARCHIVO = 8 * 1024 * 1024;
+
   var tarjetaProductos = document.getElementById("tarjetaProductos");
   var listaCategorias = document.getElementById("listaCategorias");
   var listaProductos = document.getElementById("listaProductos");
@@ -373,8 +462,314 @@
     panelEnlace.href = "https://" + direccion;
     btnPublicar.disabled = false;
     btnPublicar.textContent = kioscoActual.publicado ? "Despublicar kiosco" : "Publicar kiosco";
+    actualizarPreviaImagenes();
     tarjetaPanel.hidden = false;
   }
+
+  // ---- Logo, portada y tema ----
+
+  function actualizarPreviaImagenes() {
+    if (kioscoActual && kioscoActual.logo_url) {
+      imgLogo.src = kioscoActual.logo_url;
+      imgLogo.hidden = false;
+      marcadorLogo.hidden = true;
+      btnQuitarLogo.hidden = false;
+      btnSubirLogo.textContent = "Cambiar logo";
+    } else {
+      imgLogo.hidden = true;
+      imgLogo.removeAttribute("src");
+      marcadorLogo.hidden = false;
+      btnQuitarLogo.hidden = true;
+      btnSubirLogo.textContent = "Subir logo";
+    }
+
+    if (kioscoActual && kioscoActual.portada_url) {
+      imgPortada.src = kioscoActual.portada_url;
+      imgPortada.hidden = false;
+      marcadorPortada.hidden = true;
+      btnQuitarPortada.hidden = false;
+      btnSubirPortada.textContent = "Cambiar portada";
+    } else {
+      imgPortada.hidden = true;
+      imgPortada.removeAttribute("src");
+      marcadorPortada.hidden = false;
+      btnQuitarPortada.hidden = true;
+      btnSubirPortada.textContent = "Subir portada";
+    }
+
+    var tema = (kioscoActual && kioscoActual.tema) || "claro";
+    temaClaro.classList.toggle("activo", tema === "claro");
+    temaModerno.classList.toggle("activo", tema === "moderno");
+
+    var color = (kioscoActual && kioscoActual.color_acento) || "grafito";
+    circulosColor.forEach(function (circulo) {
+      circulo.classList.toggle("activo", circulo.getAttribute("data-color") === color);
+    });
+  }
+
+  function mostrarEstadoImagen(elemento, texto, esError) {
+    if (!texto) {
+      elemento.hidden = true;
+      return;
+    }
+    elemento.textContent = texto;
+    elemento.className = "estado-imagen" + (esError ? " error" : "");
+    elemento.hidden = false;
+  }
+
+  function extensionParaTipo(tipo) {
+    if (tipo === "image/png") return "png";
+    if (tipo === "image/webp") return "webp";
+    if (tipo === "image/gif") return "gif";
+    if (tipo === "image/heic" || tipo === "image/heif") return "heic";
+    return "jpg";
+  }
+
+  function validarArchivoImagen(file) {
+    if (!file) return "Elige una imagen.";
+    if (file.type.indexOf("image/") !== 0) {
+      return "Ese archivo no es una imagen. Elige una foto.";
+    }
+    if (file.size > TAM_MAX_ARCHIVO) {
+      return "La imagen pesa demasiado. El máximo es 8 MB.";
+    }
+    return null;
+  }
+
+  function redimensionarImagen(file, ancho, alto, calidad) {
+    return new Promise(function (resolve, reject) {
+      var url = URL.createObjectURL(file);
+      var img = new Image();
+
+      img.onload = function () {
+        URL.revokeObjectURL(url);
+        var canvas = document.createElement("canvas");
+        canvas.width = ancho;
+        canvas.height = alto;
+        var ctx = canvas.getContext("2d");
+        var escala = Math.max(ancho / img.width, alto / img.height);
+        var anchoDestino = img.width * escala;
+        var altoDestino = img.height * escala;
+        var x = (ancho - anchoDestino) / 2;
+        var y = (alto - altoDestino) / 2;
+        ctx.drawImage(img, x, y, anchoDestino, altoDestino);
+        canvas.toBlob(function (blob) {
+          if (!blob) {
+            reject(new Error("No pudimos procesar esa imagen."));
+            return;
+          }
+          resolve(blob);
+        }, "image/webp", calidad);
+      };
+
+      img.onerror = function () {
+        URL.revokeObjectURL(url);
+        reject(new Error("No pudimos leer esa imagen."));
+      };
+
+      img.src = url;
+    });
+  }
+
+  function subirImagen(opciones) {
+    var error = validarArchivoImagen(opciones.file);
+    if (error) {
+      mostrarEstadoImagen(opciones.cajaEstado, error, true);
+      return;
+    }
+
+    opciones.botonSubir.disabled = true;
+    opciones.botonQuitar.disabled = true;
+    opciones.botonSubir.textContent = "Subiendo...";
+    mostrarEstadoImagen(opciones.cajaEstado, "Subiendo, puede tardar un momento en datos móviles...", false);
+
+    var carpetaBase = usuarioActual.id + "/" + kioscoActual.id;
+    var extension = extensionParaTipo(opciones.file.type);
+    var rutaOriginal = carpetaBase + "/originales/" + opciones.nombreArchivo + "-original." + extension;
+    var rutaProcesada = carpetaBase + "/" + opciones.carpeta + "/" + opciones.nombreArchivo + ".webp";
+
+    redimensionarImagen(opciones.file, opciones.ancho, opciones.alto, opciones.calidad).then(function (blob) {
+      return sb.storage.from("kioscos").upload(rutaOriginal, opciones.file, { upsert: true, contentType: opciones.file.type }).then(function () {
+        return sb.storage.from("kioscos").upload(rutaProcesada, blob, { upsert: true, contentType: "image/webp" });
+      });
+    }).then(function (resultadoSubida) {
+      if (resultadoSubida.error) {
+        throw new Error("No se pudo subir la imagen. Intenta de nuevo.");
+      }
+      var publica = sb.storage.from("kioscos").getPublicUrl(rutaProcesada);
+      var url = publica.data.publicUrl + "?v=" + Date.now();
+
+      var payload = {};
+      payload[opciones.campoUrl] = url;
+      return sb.from("kioscos").update(payload).eq("id", kioscoActual.id).select().single();
+    }).then(function (resultado) {
+      if (resultado.error) {
+        throw new Error("No se pudo guardar. Intenta de nuevo.");
+      }
+      kioscoActual = resultado.data;
+      opciones.botonSubir.disabled = false;
+      opciones.botonQuitar.disabled = false;
+      mostrarEstadoImagen(opciones.cajaEstado, null);
+      actualizarPreviaImagenes();
+    }).catch(function (err) {
+      opciones.botonSubir.disabled = false;
+      opciones.botonQuitar.disabled = false;
+      opciones.botonSubir.textContent = (kioscoActual && kioscoActual[opciones.campoUrl]) ? opciones.textoCambiar : opciones.textoSubir;
+      var mensaje = (err && err.message) || "No se pudo subir la imagen. Intenta de nuevo.";
+      if (mensaje === "No pudimos leer esa imagen.") {
+        mensaje = "No pudimos leer esa imagen. Prueba con una foto en formato JPG, PNG o WEBP.";
+      }
+      mostrarEstadoImagen(opciones.cajaEstado, mensaje, true);
+    });
+  }
+
+  function quitarImagen(opciones) {
+    var confirmado = window.confirm("¿Quitar " + opciones.nombre + "?");
+    if (!confirmado) return;
+
+    opciones.botonSubir.disabled = true;
+    opciones.botonQuitar.disabled = true;
+    mostrarEstadoImagen(opciones.cajaEstado, null);
+
+    var payload = {};
+    payload[opciones.campoUrl] = null;
+
+    sb.from("kioscos").update(payload).eq("id", kioscoActual.id).select().single().then(function (resultado) {
+      if (resultado.error) {
+        throw new Error("guardado");
+      }
+      kioscoActual = resultado.data;
+      opciones.botonSubir.disabled = false;
+      opciones.botonQuitar.disabled = false;
+      actualizarPreviaImagenes();
+      sb.storage.from("kioscos").remove([opciones.ruta]).catch(function () {});
+    }).catch(function () {
+      opciones.botonSubir.disabled = false;
+      opciones.botonQuitar.disabled = false;
+      mostrarEstadoImagen(opciones.cajaEstado, "No se pudo quitar la imagen. Intenta de nuevo.", true);
+    });
+  }
+
+  btnSubirLogo.addEventListener("click", function () {
+    inputLogo.click();
+  });
+
+  inputLogo.addEventListener("change", function () {
+    var file = inputLogo.files && inputLogo.files[0];
+    inputLogo.value = "";
+    if (!file) return;
+    subirImagen({
+      file: file,
+      carpeta: "logo",
+      nombreArchivo: "logo",
+      ancho: 512,
+      alto: 512,
+      calidad: 0.85,
+      campoUrl: "logo_url",
+      botonSubir: btnSubirLogo,
+      botonQuitar: btnQuitarLogo,
+      cajaEstado: estadoLogo,
+      textoSubir: "Subir logo",
+      textoCambiar: "Cambiar logo"
+    });
+  });
+
+  btnQuitarLogo.addEventListener("click", function () {
+    quitarImagen({
+      campoUrl: "logo_url",
+      ruta: usuarioActual.id + "/" + kioscoActual.id + "/logo/logo.webp",
+      botonSubir: btnSubirLogo,
+      botonQuitar: btnQuitarLogo,
+      cajaEstado: estadoLogo,
+      nombre: "el logo"
+    });
+  });
+
+  btnSubirPortada.addEventListener("click", function () {
+    inputPortada.click();
+  });
+
+  inputPortada.addEventListener("change", function () {
+    var file = inputPortada.files && inputPortada.files[0];
+    inputPortada.value = "";
+    if (!file) return;
+    subirImagen({
+      file: file,
+      carpeta: "portada",
+      nombreArchivo: "portada",
+      ancho: 1200,
+      alto: 600,
+      calidad: 0.82,
+      campoUrl: "portada_url",
+      botonSubir: btnSubirPortada,
+      botonQuitar: btnQuitarPortada,
+      cajaEstado: estadoPortada,
+      textoSubir: "Subir portada",
+      textoCambiar: "Cambiar portada"
+    });
+  });
+
+  btnQuitarPortada.addEventListener("click", function () {
+    quitarImagen({
+      campoUrl: "portada_url",
+      ruta: usuarioActual.id + "/" + kioscoActual.id + "/portada/portada.webp",
+      botonSubir: btnSubirPortada,
+      botonQuitar: btnQuitarPortada,
+      cajaEstado: estadoPortada,
+      nombre: "la portada"
+    });
+  });
+
+  function seleccionarTema(valor) {
+    if (!kioscoActual || kioscoActual.tema === valor) return;
+    temaClaro.disabled = true;
+    temaModerno.disabled = true;
+    sb.from("kioscos").update({ tema: valor }).eq("id", kioscoActual.id).select().single().then(function (resultado) {
+      temaClaro.disabled = false;
+      temaModerno.disabled = false;
+      if (resultado.error) {
+        alert("No se pudo cambiar el tema. Intenta de nuevo.");
+        return;
+      }
+      kioscoActual = resultado.data;
+      actualizarPreviaImagenes();
+    }).catch(function () {
+      temaClaro.disabled = false;
+      temaModerno.disabled = false;
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  temaClaro.addEventListener("click", function () {
+    seleccionarTema("claro");
+  });
+
+  temaModerno.addEventListener("click", function () {
+    seleccionarTema("moderno");
+  });
+
+  function seleccionarColor(valor) {
+    if (!kioscoActual || kioscoActual.color_acento === valor) return;
+    circulosColor.forEach(function (circulo) { circulo.disabled = true; });
+    sb.from("kioscos").update({ color_acento: valor }).eq("id", kioscoActual.id).select().single().then(function (resultado) {
+      circulosColor.forEach(function (circulo) { circulo.disabled = false; });
+      if (resultado.error) {
+        alert("No se pudo cambiar el color. Intenta de nuevo.");
+        return;
+      }
+      kioscoActual = resultado.data;
+      actualizarPreviaImagenes();
+    }).catch(function () {
+      circulosColor.forEach(function (circulo) { circulo.disabled = false; });
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  circulosColor.forEach(function (circulo) {
+    circulo.addEventListener("click", function () {
+      seleccionarColor(circulo.getAttribute("data-color"));
+    });
+  });
 
   btnPublicar.addEventListener("click", function () {
     var nuevoValor = !kioscoActual.publicado;

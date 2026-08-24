@@ -655,3 +655,259 @@ select:focus {
   padding: 8px 10px;
   font-size: 0.9rem;
 }
+
+/* ---- Logo y portada ---- */
+
+.bloque-imagen {
+  margin-bottom: 28px;
+}
+
+.previsualizacion-logo,
+.previsualizacion-portada {
+  overflow: hidden;
+  background: #fafafa;
+  border: 1.5px dashed var(--borde);
+  border-radius: var(--radio-chico);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 12px;
+}
+
+.previsualizacion-logo {
+  width: 96px;
+  height: 96px;
+  border-radius: 50%;
+}
+
+.previsualizacion-portada {
+  width: 100%;
+  aspect-ratio: 2 / 1;
+}
+
+.previsualizacion-logo img,
+.previsualizacion-portada img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.marcador-vacio {
+  color: var(--texto-suave);
+  font-size: 0.8rem;
+  text-align: center;
+  padding: 0 8px;
+}
+
+.fila-botones-imagen {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.boton-imagen {
+  flex: 1;
+}
+
+.boton-quitar-imagen {
+  background: none;
+  border: none;
+  color: var(--error-texto);
+  font-weight: 700;
+  font-size: 0.9rem;
+  cursor: pointer;
+  padding: 8px 4px;
+  flex-shrink: 0;
+}
+
+.boton-quitar-imagen:active {
+  opacity: 0.7;
+}
+
+.estado-imagen {
+  margin: 10px 0 0;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+.estado-imagen.error {
+  color: var(--error-texto);
+}
+
+/* ---- Selector de tema ---- */
+
+.opciones-tema {
+  display: flex;
+  gap: 12px;
+}
+
+.tarjeta-tema {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  padding: 12px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  background: var(--fondo);
+  cursor: pointer;
+  transition: border-color 0.15s ease, transform 0.1s ease;
+}
+
+.tarjeta-tema:active {
+  transform: scale(0.98);
+}
+
+.tarjeta-tema:disabled {
+  opacity: 0.6;
+  cursor: default;
+  transform: none;
+}
+
+.tarjeta-tema.activo {
+  border-color: var(--negro);
+  border-width: 2px;
+}
+
+.miniatura-tema {
+  position: relative;
+  width: 100%;
+  height: 72px;
+  border-radius: 10px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  padding: 8px;
+  gap: 5px;
+}
+
+.miniatura-claro {
+  background: #f5f5f5;
+}
+
+.miniatura-moderno {
+  background: #17131f;
+}
+
+.mini-banner {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 32px;
+}
+
+.miniatura-claro .mini-banner {
+  background: #e5e5e5;
+}
+
+.miniatura-moderno .mini-banner {
+  background: linear-gradient(135deg, #ff5b3a, #7c3aed);
+}
+
+.mini-logo {
+  position: absolute;
+  top: 18px;
+  left: 8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+}
+
+.miniatura-claro .mini-logo {
+  background: #111111;
+}
+
+.miniatura-moderno .mini-logo {
+  background: #ffffff;
+}
+
+.mini-linea {
+  height: 6px;
+  border-radius: 3px;
+}
+
+.mini-linea-1 {
+  width: 70%;
+}
+
+.mini-linea-2 {
+  width: 45%;
+}
+
+.miniatura-claro .mini-linea {
+  background: #bbbbbb;
+}
+
+.miniatura-claro .mini-linea-1 {
+  background: #333333;
+  height: 7px;
+}
+
+.miniatura-moderno .mini-linea {
+  background: #4a4265;
+}
+
+.miniatura-moderno .mini-linea-1 {
+  background: #ffffff;
+  height: 8px;
+}
+
+.nombre-tema {
+  font-weight: 700;
+  font-size: 0.92rem;
+  color: var(--texto);
+}
+
+/* ---- Selector de color ---- */
+
+.opciones-color {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+}
+
+.circulo-color {
+  position: relative;
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: var(--color-circulo);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.1s ease, box-shadow 0.15s ease;
+}
+
+.circulo-color:active {
+  transform: scale(0.94);
+}
+
+.circulo-color:disabled {
+  opacity: 0.7;
+  cursor: default;
+}
+
+.circulo-color.activo {
+  box-shadow: 0 0 0 3px var(--fondo), 0 0 0 5px var(--negro);
+}
+
+.marca-color {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 800;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.55);
+  opacity: 0;
+  transition: opacity 0.1s ease;
+}
+
+.circulo-color.activo .marca-color {
+  opacity: 1;
+}
