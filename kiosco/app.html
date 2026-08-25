@@ -134,6 +134,14 @@
         <button type="button" class="circulo-color" data-color="rosa" style="--color-circulo:#ec4899" aria-label="Rosa"><span class="marca-color">✓</span></button>
       </div>
     </div>
+
+    <div class="bloque-seccion">
+      <div class="encabezado-bloque">
+        <h2 class="subtitulo-seccion">Métodos de pago</h2>
+        <button type="button" id="btnNuevoMetodoPago" class="boton-chico">+ Agregar</button>
+      </div>
+      <div id="listaMetodosPago"></div>
+    </div>
   </div>
 
   <div class="tarjeta" id="tarjetaError" hidden>
@@ -317,6 +325,76 @@
     </form>
     <button type="button" id="btnEliminarOpcion" class="boton-peligro" hidden>Eliminar opción</button>
     <button type="button" id="btnCancelarOpcion" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaTipoMetodoPago" hidden>
+    <h1 class="titulo">Nuevo método de pago</h1>
+    <p class="subtitulo">Elige cómo vas a recibir el pago.</p>
+
+    <div class="lista-tipos-pago">
+      <button type="button" class="boton-tipo-pago" data-tipo="efectivo">Efectivo</button>
+      <button type="button" class="boton-tipo-pago" data-tipo="contra_entrega">Contra entrega</button>
+      <button type="button" class="boton-tipo-pago" data-tipo="transferencia">Transferencia</button>
+      <button type="button" class="boton-tipo-pago" data-tipo="pago_movil">Pago móvil</button>
+      <button type="button" class="boton-tipo-pago" data-tipo="zelle">Zelle</button>
+      <button type="button" class="boton-tipo-pago" data-tipo="otro">Otro</button>
+    </div>
+
+    <button type="button" id="btnCancelarTipoMetodoPago" class="boton-secundario" style="margin-top: 16px;">Cancelar</button>
+  </div>
+
+  <div class="tarjeta" id="tarjetaFormMetodoPago" hidden>
+    <h1 class="titulo" id="tituloFormMetodoPago">Nuevo método de pago</h1>
+
+    <p class="aviso-metodo-pago">Estos datos los verá cualquier persona que abra tu kiosco. Escribe solo lo necesario para que te paguen.</p>
+
+    <form id="formMetodoPago" novalidate>
+      <div class="campo">
+        <label for="nombreMetodoPago">Nombre</label>
+        <input type="text" id="nombreMetodoPago" name="nombreMetodoPago" placeholder="Pago móvil" maxlength="60" required>
+      </div>
+
+      <div class="campo" id="campoBancoMetodoPago" hidden>
+        <label for="bancoMetodoPago">Banco</label>
+        <input type="text" id="bancoMetodoPago" name="bancoMetodoPago" placeholder="Nombre del banco" maxlength="80">
+      </div>
+
+      <div class="campo" id="campoCuentaMetodoPago" hidden>
+        <label for="cuentaMetodoPago">Número de cuenta</label>
+        <input type="text" id="cuentaMetodoPago" name="cuentaMetodoPago" placeholder="Número de cuenta" maxlength="60" inputmode="numeric">
+      </div>
+
+      <div class="campo" id="campoTelefonoMetodoPago" hidden>
+        <label for="telefonoMetodoPago">Teléfono</label>
+        <input type="tel" id="telefonoMetodoPago" name="telefonoMetodoPago" placeholder="Teléfono" maxlength="30">
+      </div>
+
+      <div class="campo" id="campoDocumentoMetodoPago" hidden>
+        <label for="documentoMetodoPago">Documento de identidad</label>
+        <input type="text" id="documentoMetodoPago" name="documentoMetodoPago" placeholder="Cédula o documento" maxlength="40">
+      </div>
+
+      <div class="campo" id="campoCorreoMetodoPago" hidden>
+        <label for="correoMetodoPago">Correo</label>
+        <input type="email" id="correoMetodoPago" name="correoMetodoPago" placeholder="correo@ejemplo.com" maxlength="120">
+      </div>
+
+      <div class="campo" id="campoTitularMetodoPago" hidden>
+        <label for="titularMetodoPago">Titular</label>
+        <input type="text" id="titularMetodoPago" name="titularMetodoPago" placeholder="Nombre del titular" maxlength="80">
+      </div>
+
+      <div class="campo" id="campoInstruccionesMetodoPago" hidden>
+        <label for="instruccionesMetodoPago">Instrucciones (opcional)</label>
+        <textarea id="instruccionesMetodoPago" name="instruccionesMetodoPago" placeholder="Ej. paga al recibir tu pedido" maxlength="300" rows="3"></textarea>
+      </div>
+
+      <div id="mensajeFormMetodoPago" class="mensaje" hidden></div>
+
+      <button type="submit" id="btnGuardarMetodoPago">Crear método</button>
+    </form>
+    <button type="button" id="btnEliminarMetodoPago" class="boton-peligro" hidden>Eliminar método</button>
+    <button type="button" id="btnCancelarMetodoPago" class="boton-secundario" style="margin-top: 12px;">Cancelar</button>
   </div>
 
 </div>
@@ -539,6 +617,69 @@
   var grupoParaOpcion = null;
   var opcionEditando = null;
 
+  var btnNuevoMetodoPago = document.getElementById("btnNuevoMetodoPago");
+  var listaMetodosPago = document.getElementById("listaMetodosPago");
+
+  var tarjetaTipoMetodoPago = document.getElementById("tarjetaTipoMetodoPago");
+  var btnCancelarTipoMetodoPago = document.getElementById("btnCancelarTipoMetodoPago");
+
+  var tarjetaFormMetodoPago = document.getElementById("tarjetaFormMetodoPago");
+  var tituloFormMetodoPago = document.getElementById("tituloFormMetodoPago");
+  var formMetodoPago = document.getElementById("formMetodoPago");
+  var campoNombreMetodoPago = document.getElementById("nombreMetodoPago");
+  var campoBancoMetodoPago = document.getElementById("campoBancoMetodoPago");
+  var campoCuentaMetodoPago = document.getElementById("campoCuentaMetodoPago");
+  var campoTelefonoMetodoPago = document.getElementById("campoTelefonoMetodoPago");
+  var campoDocumentoMetodoPago = document.getElementById("campoDocumentoMetodoPago");
+  var campoCorreoMetodoPago = document.getElementById("campoCorreoMetodoPago");
+  var campoTitularMetodoPago = document.getElementById("campoTitularMetodoPago");
+  var campoInstruccionesMetodoPago = document.getElementById("campoInstruccionesMetodoPago");
+  var campoInstrucciones = document.getElementById("instruccionesMetodoPago");
+  var campoBanco = document.getElementById("bancoMetodoPago");
+  var campoCuenta = document.getElementById("cuentaMetodoPago");
+  var campoTelefonoMetodo = document.getElementById("telefonoMetodoPago");
+  var campoDocumento = document.getElementById("documentoMetodoPago");
+  var campoCorreo = document.getElementById("correoMetodoPago");
+  var campoTitular = document.getElementById("titularMetodoPago");
+  var mensajeFormMetodoPago = document.getElementById("mensajeFormMetodoPago");
+  var btnGuardarMetodoPago = document.getElementById("btnGuardarMetodoPago");
+  var btnEliminarMetodoPago = document.getElementById("btnEliminarMetodoPago");
+  var btnCancelarMetodoPago = document.getElementById("btnCancelarMetodoPago");
+
+  var metodosPagoActuales = [];
+  var metodosPagoCargados = false;
+  var metodoPagoEditando = null;
+  var tipoMetodoPagoNuevo = null;
+
+  var NOMBRES_TIPO_PAGO = {
+    efectivo: "Efectivo",
+    contra_entrega: "Contra entrega",
+    transferencia: "Transferencia",
+    pago_movil: "Pago móvil",
+    zelle: "Zelle",
+    otro: "Otro"
+  };
+
+  var NOMBRES_DEFECTO_TIPO_PAGO = {
+    efectivo: "Efectivo",
+    contra_entrega: "Pago contra entrega",
+    transferencia: "Transferencia bancaria",
+    pago_movil: "Pago móvil",
+    zelle: "Zelle",
+    otro: ""
+  };
+
+  // Qué grupos de campos se muestran para cada tipo. "Nada de un formulario
+  // gigante con todo a la vez": solo aparecen los campos que corresponden.
+  var CAMPOS_POR_TIPO = {
+    efectivo: ["instrucciones"],
+    contra_entrega: ["instrucciones"],
+    transferencia: ["banco", "cuenta", "titular"],
+    pago_movil: ["banco", "telefono", "documento"],
+    zelle: ["correo", "titular"],
+    otro: ["instrucciones"]
+  };
+
   function ocultarTodo() {
     tarjetaFormulario.hidden = true;
     tarjetaPanel.hidden = true;
@@ -553,6 +694,8 @@
     tarjetaGrupos.hidden = true;
     tarjetaFormGrupo.hidden = true;
     tarjetaFormOpcion.hidden = true;
+    tarjetaTipoMetodoPago.hidden = true;
+    tarjetaFormMetodoPago.hidden = true;
   }
 
   function mostrarError(texto) {
@@ -657,6 +800,12 @@
     actualizarPreviaImagenes();
     actualizarCompartir();
     tarjetaPanel.hidden = false;
+
+    if (!metodosPagoCargados) {
+      cargarMetodosPago();
+    } else {
+      renderMetodosPago();
+    }
   }
 
   // ---- Compartir ----
@@ -2373,6 +2522,381 @@
     });
   }
 
+  // ---- Métodos de pago ----
+
+  function cargarMetodosPago() {
+    listaMetodosPago.innerHTML = "";
+    var cargando = document.createElement("p");
+    cargando.className = "nota-lista";
+    cargando.textContent = "Cargando...";
+    listaMetodosPago.appendChild(cargando);
+
+    sb.from("kiosco_metodos_pago").select("*").eq("kiosco_id", kioscoActual.id).order("orden", { ascending: true }).then(function (resultado) {
+      listaMetodosPago.innerHTML = "";
+      if (resultado.error) {
+        var error = document.createElement("p");
+        error.className = "nota-lista";
+        error.textContent = "No se pudo cargar. Intenta de nuevo.";
+        listaMetodosPago.appendChild(error);
+        return;
+      }
+      metodosPagoActuales = resultado.data || [];
+      metodosPagoCargados = true;
+      if (!tarjetaPanel.hidden) renderMetodosPago();
+    }).catch(function () {
+      listaMetodosPago.innerHTML = "";
+      var error = document.createElement("p");
+      error.className = "nota-lista";
+      error.textContent = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+      listaMetodosPago.appendChild(error);
+    });
+  }
+
+  function actualizarBotonActivoMetodoPago(boton, activo) {
+    if (activo) {
+      boton.className = "boton-disponibilidad disponible";
+      boton.textContent = "Activo";
+    } else {
+      boton.className = "boton-disponibilidad agotado";
+      boton.textContent = "Inactivo";
+    }
+  }
+
+  function alternarActivoMetodoPago(metodo, boton) {
+    var nuevoValor = !metodo.activo;
+    boton.disabled = true;
+    sb.from("kiosco_metodos_pago").update({ activo: nuevoValor }).eq("id", metodo.id).select().single().then(function (resultado) {
+      boton.disabled = false;
+      if (resultado.error) {
+        alert("No se pudo actualizar. Intenta de nuevo.");
+        return;
+      }
+      metodo.activo = resultado.data.activo;
+      actualizarBotonActivoMetodoPago(boton, metodo.activo);
+    }).catch(function () {
+      boton.disabled = false;
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  function moverMetodoPago(metodo, direccion) {
+    var indice = metodosPagoActuales.findIndex(function (m) { return m.id === metodo.id; });
+    var nuevoIndice = indice + direccion;
+    if (indice === -1 || nuevoIndice < 0 || nuevoIndice >= metodosPagoActuales.length) return;
+
+    var otro = metodosPagoActuales[nuevoIndice];
+    var ordenPropio = metodo.orden;
+    var ordenOtro = otro.orden;
+
+    Promise.all([
+      sb.from("kiosco_metodos_pago").update({ orden: ordenOtro }).eq("id", metodo.id),
+      sb.from("kiosco_metodos_pago").update({ orden: ordenPropio }).eq("id", otro.id)
+    ]).then(function (resultados) {
+      if (resultados[0].error || resultados[1].error) {
+        alert("No se pudo actualizar el orden. Intenta de nuevo.");
+        return;
+      }
+      metodo.orden = ordenOtro;
+      otro.orden = ordenPropio;
+      metodosPagoActuales[indice] = otro;
+      metodosPagoActuales[nuevoIndice] = metodo;
+      renderMetodosPago();
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
+  function crearFilaMetodoPago(metodo, indice) {
+    var fila = document.createElement("div");
+    fila.className = "fila-metodo-pago";
+
+    var info = document.createElement("div");
+    info.className = "info-metodo-pago";
+
+    var nombreTipo = document.createElement("div");
+    nombreTipo.className = "nombre-tipo-metodo";
+
+    var nombre = document.createElement("span");
+    nombre.className = "nombre-metodo-pago";
+    nombre.textContent = metodo.nombre;
+    nombreTipo.appendChild(nombre);
+
+    var tipo = document.createElement("span");
+    tipo.className = "tipo-metodo-pago";
+    tipo.textContent = NOMBRES_TIPO_PAGO[metodo.tipo] || metodo.tipo;
+    nombreTipo.appendChild(tipo);
+
+    info.appendChild(nombreTipo);
+
+    var acciones = document.createElement("div");
+    acciones.className = "acciones-metodo-pago";
+
+    var btnEditarM = document.createElement("button");
+    btnEditarM.type = "button";
+    btnEditarM.className = "link-accion";
+    btnEditarM.textContent = "Editar";
+    btnEditarM.addEventListener("click", function () {
+      mostrarFormMetodoPago(metodo, metodo.tipo);
+    });
+
+    var btnEliminarM = document.createElement("button");
+    btnEliminarM.type = "button";
+    btnEliminarM.className = "link-accion link-eliminar";
+    btnEliminarM.textContent = "Eliminar";
+    btnEliminarM.addEventListener("click", function () {
+      eliminarMetodoPago(metodo);
+    });
+
+    acciones.appendChild(btnEditarM);
+    acciones.appendChild(btnEliminarM);
+    info.appendChild(acciones);
+
+    fila.appendChild(info);
+
+    var filaBotones = document.createElement("div");
+    filaBotones.className = "fila-botones-metodo-pago";
+
+    var botonActivo = document.createElement("button");
+    botonActivo.type = "button";
+    actualizarBotonActivoMetodoPago(botonActivo, metodo.activo);
+    botonActivo.addEventListener("click", function () {
+      alternarActivoMetodoPago(metodo, botonActivo);
+    });
+    filaBotones.appendChild(botonActivo);
+
+    var flechas = document.createElement("div");
+    flechas.className = "flechas-orden";
+
+    var btnSubir = document.createElement("button");
+    btnSubir.type = "button";
+    btnSubir.className = "boton-flecha";
+    btnSubir.setAttribute("aria-label", "Subir");
+    btnSubir.textContent = "↑";
+    btnSubir.disabled = indice === 0;
+    btnSubir.addEventListener("click", function () {
+      moverMetodoPago(metodo, -1);
+    });
+
+    var btnBajar = document.createElement("button");
+    btnBajar.type = "button";
+    btnBajar.className = "boton-flecha";
+    btnBajar.setAttribute("aria-label", "Bajar");
+    btnBajar.textContent = "↓";
+    btnBajar.disabled = indice === metodosPagoActuales.length - 1;
+    btnBajar.addEventListener("click", function () {
+      moverMetodoPago(metodo, 1);
+    });
+
+    flechas.appendChild(btnSubir);
+    flechas.appendChild(btnBajar);
+    filaBotones.appendChild(flechas);
+
+    fila.appendChild(filaBotones);
+    return fila;
+  }
+
+  function renderMetodosPago() {
+    listaMetodosPago.innerHTML = "";
+
+    if (metodosPagoActuales.length === 0) {
+      var vacio = document.createElement("p");
+      vacio.className = "nota-lista";
+      vacio.textContent = "Todavía no tienes métodos de pago. El kiosco funciona igual mientras tanto: el cliente solo pasa sus datos y hace el pedido.";
+      listaMetodosPago.appendChild(vacio);
+      return;
+    }
+
+    metodosPagoActuales.forEach(function (metodo, indice) {
+      listaMetodosPago.appendChild(crearFilaMetodoPago(metodo, indice));
+    });
+  }
+
+  btnNuevoMetodoPago.addEventListener("click", function () {
+    mostrarTiposMetodoPago();
+  });
+
+  function mostrarTiposMetodoPago() {
+    ocultarTodo();
+    tarjetaTipoMetodoPago.hidden = false;
+  }
+
+  tarjetaTipoMetodoPago.querySelectorAll(".boton-tipo-pago").forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      mostrarFormMetodoPago(null, boton.getAttribute("data-tipo"));
+    });
+  });
+
+  btnCancelarTipoMetodoPago.addEventListener("click", function () {
+    mostrarPanel();
+  });
+
+  function ocultarCamposMetodoPago() {
+    campoBancoMetodoPago.hidden = true;
+    campoCuentaMetodoPago.hidden = true;
+    campoTelefonoMetodoPago.hidden = true;
+    campoDocumentoMetodoPago.hidden = true;
+    campoCorreoMetodoPago.hidden = true;
+    campoTitularMetodoPago.hidden = true;
+    campoInstruccionesMetodoPago.hidden = true;
+  }
+
+  var CAMPO_ELEMENTO_POR_CLAVE = {
+    banco: campoBancoMetodoPago,
+    cuenta: campoCuentaMetodoPago,
+    telefono: campoTelefonoMetodoPago,
+    documento: campoDocumentoMetodoPago,
+    correo: campoCorreoMetodoPago,
+    titular: campoTitularMetodoPago,
+    instrucciones: campoInstruccionesMetodoPago
+  };
+
+  function mostrarFormMetodoPago(metodo, tipo) {
+    ocultarTodo();
+    metodoPagoEditando = metodo || null;
+    tipoMetodoPagoNuevo = tipo;
+
+    tituloFormMetodoPago.textContent = metodo ? "Editar método de pago" : "Nuevo método de pago";
+    btnGuardarMetodoPago.textContent = metodo ? "Guardar cambios" : "Crear método";
+    btnEliminarMetodoPago.hidden = !metodo;
+    mensajeFormMetodoPago.hidden = true;
+
+    var datos = (metodo && metodo.datos) || {};
+    campoNombreMetodoPago.value = metodo ? metodo.nombre : (NOMBRES_DEFECTO_TIPO_PAGO[tipo] || "");
+    campoBanco.value = datos.banco || "";
+    campoCuenta.value = datos.numero_cuenta || "";
+    campoTelefonoMetodo.value = datos.telefono || "";
+    campoDocumento.value = datos.documento || "";
+    campoCorreo.value = datos.correo || "";
+    campoTitular.value = datos.titular || "";
+    campoInstrucciones.value = metodo ? (metodo.instrucciones || "") : "";
+
+    ocultarCamposMetodoPago();
+    var campos = CAMPOS_POR_TIPO[tipo] || [];
+    campos.forEach(function (clave) {
+      var elemento = CAMPO_ELEMENTO_POR_CLAVE[clave];
+      if (elemento) elemento.hidden = false;
+    });
+
+    tarjetaFormMetodoPago.hidden = false;
+  }
+
+  btnCancelarMetodoPago.addEventListener("click", function () {
+    mostrarPanel();
+  });
+
+  formMetodoPago.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+
+    var tipo = metodoPagoEditando ? metodoPagoEditando.tipo : tipoMetodoPagoNuevo;
+    var nombre = campoNombreMetodoPago.value.trim();
+    if (!nombre) {
+      mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el nombre del método.", "error");
+      return;
+    }
+
+    var campos = CAMPOS_POR_TIPO[tipo] || [];
+    var datos = {};
+    var instrucciones = null;
+
+    if (campos.indexOf("banco") !== -1) {
+      var banco = campoBanco.value.trim();
+      if (!banco) { mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el banco.", "error"); return; }
+      datos.banco = banco;
+    }
+    if (campos.indexOf("cuenta") !== -1) {
+      var cuenta = campoCuenta.value.trim();
+      if (!cuenta) { mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el número de cuenta.", "error"); return; }
+      datos.numero_cuenta = cuenta;
+    }
+    if (campos.indexOf("telefono") !== -1) {
+      var telefono = campoTelefonoMetodo.value.trim();
+      if (!telefono) { mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el teléfono.", "error"); return; }
+      datos.telefono = telefono;
+    }
+    if (campos.indexOf("documento") !== -1) {
+      var documento = campoDocumento.value.trim();
+      if (!documento) { mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el documento de identidad.", "error"); return; }
+      datos.documento = documento;
+    }
+    if (campos.indexOf("correo") !== -1) {
+      var correo = campoCorreo.value.trim();
+      if (!correo) { mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el correo.", "error"); return; }
+      datos.correo = correo;
+    }
+    if (campos.indexOf("titular") !== -1) {
+      var titular = campoTitular.value.trim();
+      if (!titular) { mostrarMensajeEnCaja(mensajeFormMetodoPago, "Escribe el nombre del titular.", "error"); return; }
+      datos.titular = titular;
+    }
+    if (campos.indexOf("instrucciones") !== -1) {
+      instrucciones = campoInstrucciones.value.trim() || null;
+    }
+
+    btnGuardarMetodoPago.disabled = true;
+    btnGuardarMetodoPago.textContent = metodoPagoEditando ? "Guardando..." : "Creando...";
+
+    var operacion;
+    if (metodoPagoEditando) {
+      operacion = sb.from("kiosco_metodos_pago").update({
+        nombre: nombre,
+        instrucciones: instrucciones,
+        datos: datos
+      }).eq("id", metodoPagoEditando.id).select().single();
+    } else {
+      operacion = sb.from("kiosco_metodos_pago").insert({
+        kiosco_id: kioscoActual.id,
+        tipo: tipo,
+        nombre: nombre,
+        instrucciones: instrucciones,
+        datos: datos,
+        orden: metodosPagoActuales.length
+      }).select().single();
+    }
+
+    operacion.then(function (resultado) {
+      btnGuardarMetodoPago.disabled = false;
+      btnGuardarMetodoPago.textContent = metodoPagoEditando ? "Guardar cambios" : "Crear método";
+
+      if (resultado.error) {
+        mostrarMensajeEnCaja(mensajeFormMetodoPago, "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        return;
+      }
+
+      if (metodoPagoEditando) {
+        var indice = metodosPagoActuales.findIndex(function (m) { return m.id === resultado.data.id; });
+        if (indice !== -1) metodosPagoActuales[indice] = resultado.data;
+      } else {
+        metodosPagoActuales.push(resultado.data);
+      }
+
+      mostrarPanel();
+    }).catch(function () {
+      btnGuardarMetodoPago.disabled = false;
+      btnGuardarMetodoPago.textContent = metodoPagoEditando ? "Guardar cambios" : "Crear método";
+      mostrarMensajeEnCaja(mensajeFormMetodoPago, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  });
+
+  btnEliminarMetodoPago.addEventListener("click", function () {
+    if (metodoPagoEditando) eliminarMetodoPago(metodoPagoEditando);
+  });
+
+  function eliminarMetodoPago(metodo) {
+    var confirmado = window.confirm("¿Eliminar \"" + metodo.nombre + "\"? Los pedidos ya hechos con este método conservan sus datos.");
+    if (!confirmado) return;
+
+    sb.from("kiosco_metodos_pago").delete().eq("id", metodo.id).then(function (resultado) {
+      if (resultado.error) {
+        alert("No se pudo eliminar. Intenta de nuevo.");
+        return;
+      }
+      metodosPagoActuales = metodosPagoActuales.filter(function (m) { return m.id !== metodo.id; });
+      mostrarPanel();
+    }).catch(function () {
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
+
   // ---- Pedidos ----
 
   var NOMBRES_ESTADO = { nuevo: "Nuevo", visto: "Visto", completado: "Completado", cancelado: "Cancelado" };
@@ -2443,6 +2967,25 @@
       select.disabled = false;
       alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
       select.value = pedido.estado;
+    });
+  }
+
+  function marcarPedidoPagado(pedido, boton) {
+    boton.disabled = true;
+    boton.textContent = "Guardando...";
+    sb.from("kiosco_pedidos").update({ estado_pago: "pagado" }).eq("id", pedido.id).select().single().then(function (resultado) {
+      if (resultado.error) {
+        boton.disabled = false;
+        boton.textContent = "Marcar como pagado";
+        alert("No se pudo actualizar. Intenta de nuevo.");
+        return;
+      }
+      pedido.estado_pago = resultado.data.estado_pago;
+      renderPedidos();
+    }).catch(function () {
+      boton.disabled = false;
+      boton.textContent = "Marcar como pagado";
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
     });
   }
 
@@ -2524,6 +3067,35 @@
       nota.className = "nota-pedido";
       nota.textContent = "Nota: " + pedido.nota;
       fila.appendChild(nota);
+    }
+
+    if (pedido.metodo_pago) {
+      var pago = document.createElement("div");
+      pago.className = "pago-pedido";
+
+      var metodoTexto = document.createElement("span");
+      metodoTexto.className = "metodo-pago-pedido";
+      metodoTexto.textContent = "Pago: " + pedido.metodo_pago.nombre;
+      pago.appendChild(metodoTexto);
+
+      var estadoPagoSpan = document.createElement("span");
+      var pagado = pedido.estado_pago === "pagado";
+      estadoPagoSpan.className = "badge-estado-pago" + (pagado ? " pagado" : "");
+      estadoPagoSpan.textContent = pagado ? "Pagado" : "Pago pendiente";
+      pago.appendChild(estadoPagoSpan);
+
+      fila.appendChild(pago);
+
+      if (!pagado) {
+        var btnMarcarPagado = document.createElement("button");
+        btnMarcarPagado.type = "button";
+        btnMarcarPagado.className = "boton-secundario boton-marcar-pagado";
+        btnMarcarPagado.textContent = "Marcar como pagado";
+        btnMarcarPagado.addEventListener("click", function () {
+          marcarPedidoPagado(pedido, btnMarcarPagado);
+        });
+        fila.appendChild(btnMarcarPagado);
+      }
     }
 
     var estadoBloque = document.createElement("div");

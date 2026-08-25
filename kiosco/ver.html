@@ -123,6 +123,25 @@
     </div>
   </div>
 
+  <div id="vistaPago" class="vista-panel" hidden>
+    <div class="carrito-encabezado con-volver">
+      <button type="button" id="volverPago" class="cerrar-carrito" aria-label="Volver">←</button>
+      <h2>¿Cómo quieres pagar?</h2>
+      <button type="button" id="cerrarPago" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+    </div>
+
+    <div class="checkout-cuerpo" id="listaMetodosPago"></div>
+
+    <div class="carrito-pie">
+      <div class="fila-total">
+        <span>Total</span>
+        <span id="totalPago">$0.00</span>
+      </div>
+      <div id="mensajePago" class="mensaje-checkout" hidden></div>
+      <button type="button" id="btnConfirmarPago" class="boton-hacer-pedido" disabled>Elige un método para continuar</button>
+    </div>
+  </div>
+
   <div id="vistaConfirmacion" class="vista-panel" hidden>
     <div class="confirmacion">
       <div class="icono-confirmacion">✓</div>
@@ -241,6 +260,14 @@
   var mensajeCheckout = document.getElementById("mensajeCheckout");
   var btnEnviarPedido = document.getElementById("btnEnviarPedido");
 
+  var vistaPago = document.getElementById("vistaPago");
+  var volverPago = document.getElementById("volverPago");
+  var cerrarPago = document.getElementById("cerrarPago");
+  var listaMetodosPago = document.getElementById("listaMetodosPago");
+  var totalPago = document.getElementById("totalPago");
+  var mensajePago = document.getElementById("mensajePago");
+  var btnConfirmarPago = document.getElementById("btnConfirmarPago");
+
   var tituloConfirmacion = document.getElementById("tituloConfirmacion");
   var numeroConfirmacion = document.getElementById("numeroConfirmacion");
   var totalConfirmacion = document.getElementById("totalConfirmacion");
@@ -270,6 +297,19 @@
   var URL_CREAR_PEDIDO = SUPABASE_URL + "/functions/v1/crear-pedido-kiosco";
   var modalidadSeleccionada = "recoger";
   var enviandoPedido = false;
+  var cargandoMetodosPago = false;
+  var metodosPagoDisponibles = [];
+  var metodoPagoSeleccionadoId = null;
+  var datosCheckoutPendientes = null;
+
+  var NOMBRES_TIPO_PAGO = {
+    efectivo: "Efectivo",
+    contra_entrega: "Contra entrega",
+    transferencia: "Transferencia",
+    pago_movil: "Pago móvil",
+    zelle: "Zelle",
+    otro: "Otro"
+  };
 
   function mostrarSolo(elemento) {
     estadoCargando.hidden = elemento !== estadoCargando;
@@ -848,6 +888,7 @@
   function mostrarVistaPanel(vista) {
     vistaCarrito.hidden = vista !== vistaCarrito;
     vistaCheckout.hidden = vista !== vistaCheckout;
+    vistaPago.hidden = vista !== vistaPago;
     vistaConfirmacion.hidden = vista !== vistaConfirmacion;
   }
 
@@ -859,7 +900,7 @@
   }
 
   function cerrarPanelCarrito() {
-    if (enviandoPedido) return;
+    if (enviandoPedido || cargandoMetodosPago) return;
     carritoOverlay.classList.remove("visible");
     carritoPanel.classList.remove("visible");
   }
@@ -913,7 +954,7 @@
   });
 
   volverCarrito.addEventListener("click", function () {
-    if (enviandoPedido) return;
+    if (enviandoPedido || cargandoMetodosPago) return;
     mostrarVistaPanel(vistaCarrito);
   });
 
@@ -931,13 +972,16 @@
   btnCerrarConfirmacion.addEventListener("click", function () {
     formCheckout.reset();
     seleccionarModalidad("recoger");
+    metodosPagoDisponibles = [];
+    metodoPagoSeleccionadoId = null;
+    datosCheckoutPendientes = null;
     mostrarVistaPanel(vistaCarrito);
     cerrarPanelCarrito();
   });
 
   formCheckout.addEventListener("submit", function (evento) {
     evento.preventDefault();
-    if (enviandoPedido) return;
+    if (enviandoPedido || cargandoMetodosPago) return;
 
     var nombre = checkoutNombre.value.trim();
     var telefono = checkoutTelefono.value.trim();
@@ -968,10 +1012,187 @@
       return;
     }
 
-    enviandoPedido = true;
+    datosCheckoutPendientes = {
+      cliente_nombre: nombre,
+      cliente_telefono: telefono,
+      direccion: modalidad === "entrega" ? direccion : "",
+      modalidad: modalidad,
+      nota: nota,
+      items: items
+    };
+
+    avanzarAPago();
+  });
+
+  // ---- Paso de pago ----
+
+  function avanzarAPago() {
+    cargandoMetodosPago = true;
     mensajeCheckout.hidden = true;
     btnEnviarPedido.disabled = true;
-    btnEnviarPedido.textContent = "Enviando...";
+    btnEnviarPedido.textContent = "Cargando...";
+
+    sb.from("kiosco_metodos_pago")
+      .select("id,tipo,nombre,instrucciones,datos")
+      .eq("kiosco_id", kioscoActual.id)
+      .eq("activo", true)
+      .order("orden", { ascending: true })
+      .then(function (resultado) {
+        cargandoMetodosPago = false;
+        btnEnviarPedido.disabled = false;
+        btnEnviarPedido.textContent = "Enviar pedido";
+
+        var metodos = (!resultado.error && resultado.data) ? resultado.data : [];
+        if (metodos.length === 0) {
+          enviarPedidoAlServidor(null);
+          return;
+        }
+
+        metodosPagoDisponibles = metodos;
+        metodoPagoSeleccionadoId = null;
+        mostrarVistaPago();
+      })
+      .catch(function () {
+        // Si no se pudieron cargar los métodos, no dejamos al cliente sin poder pedir.
+        cargandoMetodosPago = false;
+        btnEnviarPedido.disabled = false;
+        btnEnviarPedido.textContent = "Enviar pedido";
+        enviarPedidoAlServidor(null);
+      });
+  }
+
+  function detalleCamposMetodoPago(metodo) {
+    var datos = metodo.datos || {};
+    var campos = [];
+    if (metodo.tipo === "transferencia") {
+      if (datos.banco) campos.push(["Banco", datos.banco]);
+      if (datos.numero_cuenta) campos.push(["Número de cuenta", datos.numero_cuenta]);
+      if (datos.titular) campos.push(["Titular", datos.titular]);
+    } else if (metodo.tipo === "pago_movil") {
+      if (datos.banco) campos.push(["Banco", datos.banco]);
+      if (datos.telefono) campos.push(["Teléfono", datos.telefono]);
+      if (datos.documento) campos.push(["Documento", datos.documento]);
+    } else if (metodo.tipo === "zelle") {
+      if (datos.correo) campos.push(["Correo", datos.correo]);
+      if (datos.titular) campos.push(["Titular", datos.titular]);
+    }
+    return campos;
+  }
+
+  function crearDetalleMetodoPago(metodo) {
+    var caja = document.createElement("div");
+    caja.className = "detalle-metodo-pago";
+
+    var campos = detalleCamposMetodoPago(metodo);
+    campos.forEach(function (campo) {
+      var linea = document.createElement("p");
+      var etiqueta = document.createElement("strong");
+      etiqueta.textContent = campo[0] + ": ";
+      linea.appendChild(etiqueta);
+      linea.appendChild(document.createTextNode(campo[1]));
+      caja.appendChild(linea);
+    });
+
+    if (metodo.instrucciones) {
+      var instrucciones = document.createElement("p");
+      instrucciones.textContent = metodo.instrucciones;
+      caja.appendChild(instrucciones);
+    }
+
+    if (campos.length === 0 && !metodo.instrucciones) {
+      return null;
+    }
+    return caja;
+  }
+
+  function seleccionarMetodoPago(id) {
+    metodoPagoSeleccionadoId = id;
+    mensajePago.hidden = true;
+    renderMetodosPago();
+  }
+
+  function renderMetodosPago() {
+    listaMetodosPago.innerHTML = "";
+
+    metodosPagoDisponibles.forEach(function (metodo) {
+      var seleccionado = metodo.id === metodoPagoSeleccionadoId;
+
+      var boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "opcion-detalle" + (seleccionado ? " seleccionada" : "");
+      boton.addEventListener("click", function () {
+        seleccionarMetodoPago(metodo.id);
+      });
+
+      var izquierda = document.createElement("span");
+      izquierda.className = "opcion-detalle-izquierda";
+
+      var marca = document.createElement("span");
+      marca.className = "marca-opcion-detalle";
+      marca.setAttribute("aria-hidden", "true");
+      izquierda.appendChild(marca);
+
+      var nombreSpan = document.createElement("span");
+      nombreSpan.textContent = metodo.nombre;
+      izquierda.appendChild(nombreSpan);
+
+      boton.appendChild(izquierda);
+      listaMetodosPago.appendChild(boton);
+
+      if (seleccionado) {
+        var detalle = crearDetalleMetodoPago(metodo);
+        if (detalle) listaMetodosPago.appendChild(detalle);
+      }
+    });
+
+    btnConfirmarPago.disabled = !metodoPagoSeleccionadoId;
+    btnConfirmarPago.textContent = metodoPagoSeleccionadoId
+      ? "Confirmar pedido"
+      : "Elige un método para continuar";
+  }
+
+  function mostrarVistaPago() {
+    var totales = calcularTotales();
+    totalPago.textContent = formatearPrecio(totales.total);
+    mensajePago.hidden = true;
+    renderMetodosPago();
+    mostrarVistaPanel(vistaPago);
+  }
+
+  volverPago.addEventListener("click", function () {
+    if (enviandoPedido) return;
+    mostrarVistaPanel(vistaCheckout);
+  });
+
+  cerrarPago.addEventListener("click", cerrarPanelCarrito);
+
+  btnConfirmarPago.addEventListener("click", function () {
+    if (enviandoPedido || !metodoPagoSeleccionadoId) return;
+    enviarPedidoAlServidor(metodoPagoSeleccionadoId);
+  });
+
+  function enviarPedidoAlServidor(metodoPagoId) {
+    if (enviandoPedido || !datosCheckoutPendientes) return;
+    enviandoPedido = true;
+
+    var enVistaPago = !vistaPago.hidden;
+    var boton = enVistaPago ? btnConfirmarPago : btnEnviarPedido;
+    var textoOriginal = boton.textContent;
+    boton.disabled = true;
+    boton.textContent = "Enviando...";
+    mensajeCheckout.hidden = true;
+    mensajePago.hidden = true;
+
+    var cuerpo = {
+      slug: kioscoActual.slug,
+      cliente_nombre: datosCheckoutPendientes.cliente_nombre,
+      cliente_telefono: datosCheckoutPendientes.cliente_telefono,
+      direccion: datosCheckoutPendientes.direccion,
+      modalidad: datosCheckoutPendientes.modalidad,
+      nota: datosCheckoutPendientes.nota,
+      items: datosCheckoutPendientes.items
+    };
+    if (metodoPagoId) cuerpo.metodo_pago_id = metodoPagoId;
 
     fetch(URL_CREAR_PEDIDO, {
       method: "POST",
@@ -980,35 +1201,44 @@
         "apikey": SUPABASE_ANON,
         "Authorization": "Bearer " + SUPABASE_ANON
       },
-      body: JSON.stringify({
-        slug: kioscoActual.slug,
-        cliente_nombre: nombre,
-        cliente_telefono: telefono,
-        direccion: modalidad === "entrega" ? direccion : "",
-        modalidad: modalidad,
-        nota: nota,
-        items: items
-      })
+      body: JSON.stringify(cuerpo)
     }).then(function (respuesta) {
       return respuesta.json();
     }).then(function (datos) {
       enviandoPedido = false;
-      btnEnviarPedido.disabled = false;
-      btnEnviarPedido.textContent = "Enviar pedido";
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
 
       if (!datos || !datos.ok) {
-        mostrarMensajeCheckout((datos && datos.mensaje) || "Algo salió mal. Intenta de nuevo en un momento.", "error");
+        var mensajeError = (datos && datos.mensaje) || "Algo salió mal. Intenta de nuevo en un momento.";
+        if (enVistaPago) {
+          mostrarMensajeEnCaja(mensajePago, mensajeError, "error");
+        } else {
+          mostrarMensajeCheckout(mensajeError, "error");
+        }
         return;
       }
 
+      datosCheckoutPendientes = null;
       mostrarConfirmacion(datos);
     }).catch(function () {
       enviandoPedido = false;
-      btnEnviarPedido.disabled = false;
-      btnEnviarPedido.textContent = "Enviar pedido";
-      mostrarMensajeCheckout("No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+      boton.disabled = false;
+      boton.textContent = textoOriginal;
+      var mensajeError = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+      if (enVistaPago) {
+        mostrarMensajeEnCaja(mensajePago, mensajeError, "error");
+      } else {
+        mostrarMensajeCheckout(mensajeError, "error");
+      }
     });
-  });
+  }
+
+  function mostrarMensajeEnCaja(caja, texto, tipo) {
+    caja.textContent = texto;
+    caja.className = "mensaje-checkout " + tipo;
+    caja.hidden = false;
+  }
 
   // ---- Carga de datos ----
 

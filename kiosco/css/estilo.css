@@ -778,6 +778,47 @@ select:focus {
   font-size: 0.9rem;
 }
 
+.pago-pedido {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin: 10px 0 0;
+  padding-top: 10px;
+  border-top: 1px solid var(--borde);
+}
+
+.metodo-pago-pedido {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+.badge-estado-pago {
+  flex-shrink: 0;
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 20px;
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+
+.badge-estado-pago.pagado {
+  background: var(--exito-fondo);
+  color: var(--exito-texto);
+}
+
+.boton-marcar-pagado {
+  width: 100%;
+  min-height: 44px;
+  margin-top: 10px;
+  font-size: 0.92rem;
+}
+
 /* ---- Logo y portada ---- */
 
 .bloque-imagen {
@@ -1140,6 +1181,125 @@ select:focus {
 
 .lista-opciones {
   margin-top: 10px;
+}
+
+/* ---- Métodos de pago ---- */
+
+.fila-metodo-pago {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.fila-metodo-pago:last-child {
+  border-bottom: none;
+}
+
+.info-metodo-pago {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.nombre-tipo-metodo {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nombre-metodo-pago {
+  font-weight: 700;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+.tipo-metodo-pago {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+}
+
+.acciones-metodo-pago {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.fila-botones-metodo-pago {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fila-botones-metodo-pago .boton-disponibilidad {
+  width: auto;
+  flex: 1;
+  min-height: 44px;
+}
+
+.flechas-orden {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.boton-flecha {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio-chico);
+  border: 1.5px solid var(--borde);
+  background: var(--fondo);
+  color: var(--negro);
+  font-size: 1.1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.boton-flecha:active {
+  transform: scale(0.94);
+}
+
+.boton-flecha:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.aviso-metodo-pago {
+  background: var(--gris-claro, #f5f5f5);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+  padding: 12px 14px;
+  font-size: 0.9rem;
+  color: var(--texto);
+  line-height: 1.5;
+  margin: 0 0 20px;
+}
+
+.lista-tipos-pago {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.boton-tipo-pago {
+  min-height: 52px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  background: var(--fondo);
+  color: var(--texto);
+  font-weight: 700;
+  font-size: 1rem;
+  text-align: left;
+  padding: 0 16px;
+  cursor: pointer;
+  transition: transform 0.1s ease, border-color 0.15s ease;
+}
+
+.boton-tipo-pago:active {
+  transform: scale(0.98);
+  border-color: var(--negro);
 }
 
 /* ---- Casilla de verificación ---- */

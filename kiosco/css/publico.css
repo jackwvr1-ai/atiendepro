@@ -802,6 +802,25 @@ body {
   color: var(--error-texto);
 }
 
+.detalle-metodo-pago {
+  margin: -2px 0 14px;
+  padding: 12px 14px;
+  border-radius: var(--radio-chico);
+  background: var(--gris-claro);
+  font-size: 0.9rem;
+  color: var(--texto);
+  line-height: 1.5;
+}
+
+.detalle-metodo-pago p {
+  margin: 0 0 4px;
+  overflow-wrap: anywhere;
+}
+
+.detalle-metodo-pago p:last-child {
+  margin-bottom: 0;
+}
+
 /* ---- Confirmación ---- */
 
 .confirmacion {
