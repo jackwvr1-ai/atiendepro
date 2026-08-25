@@ -346,7 +346,7 @@
   <div class="tarjeta" id="tarjetaFormMetodoPago" hidden>
     <h1 class="titulo" id="tituloFormMetodoPago">Nuevo método de pago</h1>
 
-    <p class="aviso-metodo-pago">Estos datos los verá cualquier persona que abra tu kiosco. Escribe solo lo necesario para que te paguen.</p>
+    <p class="aviso-metodo-pago" id="avisoMetodoPago" hidden>Estos datos los verá cualquier persona que abra tu kiosco. Escribe solo lo necesario para que te paguen.</p>
 
     <form id="formMetodoPago" novalidate>
       <div class="campo">
@@ -387,6 +387,13 @@
       <div class="campo" id="campoInstruccionesMetodoPago" hidden>
         <label for="instruccionesMetodoPago">Instrucciones (opcional)</label>
         <textarea id="instruccionesMetodoPago" name="instruccionesMetodoPago" placeholder="Ej. paga al recibir tu pedido" maxlength="300" rows="3"></textarea>
+      </div>
+
+      <div class="campo campo-checkbox" id="campoPideComprobanteMetodoPago" hidden>
+        <label class="etiqueta-checkbox">
+          <input type="checkbox" id="pideComprobanteMetodoPago" name="pideComprobanteMetodoPago">
+          Pedir comprobante
+        </label>
       </div>
 
       <div id="mensajeFormMetodoPago" class="mensaje" hidden></div>
@@ -625,6 +632,7 @@
 
   var tarjetaFormMetodoPago = document.getElementById("tarjetaFormMetodoPago");
   var tituloFormMetodoPago = document.getElementById("tituloFormMetodoPago");
+  var avisoMetodoPago = document.getElementById("avisoMetodoPago");
   var formMetodoPago = document.getElementById("formMetodoPago");
   var campoNombreMetodoPago = document.getElementById("nombreMetodoPago");
   var campoBancoMetodoPago = document.getElementById("campoBancoMetodoPago");
@@ -641,6 +649,8 @@
   var campoDocumento = document.getElementById("documentoMetodoPago");
   var campoCorreo = document.getElementById("correoMetodoPago");
   var campoTitular = document.getElementById("titularMetodoPago");
+  var campoPideComprobanteMetodoPago = document.getElementById("campoPideComprobanteMetodoPago");
+  var campoPideComprobante = document.getElementById("pideComprobanteMetodoPago");
   var mensajeFormMetodoPago = document.getElementById("mensajeFormMetodoPago");
   var btnGuardarMetodoPago = document.getElementById("btnGuardarMetodoPago");
   var btnEliminarMetodoPago = document.getElementById("btnEliminarMetodoPago");
@@ -679,6 +689,12 @@
     zelle: ["correo", "titular"],
     otro: ["instrucciones"]
   };
+
+  // Efectivo y contra entrega no tienen nada que configurar: se cobran en
+  // persona y se crean directo, sin formulario, sin aviso de datos publicos
+  // y sin la opcion de pedir comprobante. Estos cuatro si tienen algo que
+  // el cliente necesita ver (o, en el caso de comprobante, algo que verificar).
+  var TIPOS_CON_FORMULARIO = ["transferencia", "pago_movil", "zelle", "otro"];
 
   function ocultarTodo() {
     tarjetaFormulario.hidden = true;
@@ -2722,13 +2738,46 @@
 
   tarjetaTipoMetodoPago.querySelectorAll(".boton-tipo-pago").forEach(function (boton) {
     boton.addEventListener("click", function () {
-      mostrarFormMetodoPago(null, boton.getAttribute("data-tipo"));
+      var tipo = boton.getAttribute("data-tipo");
+      if (TIPOS_CON_FORMULARIO.indexOf(tipo) === -1) {
+        crearMetodoPagoDirecto(tipo);
+      } else {
+        mostrarFormMetodoPago(null, tipo);
+      }
     });
   });
 
   btnCancelarTipoMetodoPago.addEventListener("click", function () {
     mostrarPanel();
   });
+
+  function crearMetodoPagoDirecto(tipo) {
+    // Efectivo y contra entrega no tienen nada que configurar: se crean
+    // solos, con el nombre por defecto. El dueno puede editarles el nombre
+    // y agregarles instrucciones despues, desde "Editar".
+    var botones = tarjetaTipoMetodoPago.querySelectorAll(".boton-tipo-pago");
+    botones.forEach(function (b) { b.disabled = true; });
+
+    sb.from("kiosco_metodos_pago").insert({
+      kiosco_id: kioscoActual.id,
+      tipo: tipo,
+      nombre: NOMBRES_DEFECTO_TIPO_PAGO[tipo],
+      instrucciones: null,
+      datos: {},
+      orden: metodosPagoActuales.length
+    }).select().single().then(function (resultado) {
+      botones.forEach(function (b) { b.disabled = false; });
+      if (resultado.error) {
+        alert("No se pudo crear. Intenta de nuevo.");
+        return;
+      }
+      metodosPagoActuales.push(resultado.data);
+      mostrarPanel();
+    }).catch(function () {
+      botones.forEach(function (b) { b.disabled = false; });
+      alert("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+    });
+  }
 
   function ocultarCamposMetodoPago() {
     campoBancoMetodoPago.hidden = true;
@@ -2769,6 +2818,7 @@
     campoCorreo.value = datos.correo || "";
     campoTitular.value = datos.titular || "";
     campoInstrucciones.value = metodo ? (metodo.instrucciones || "") : "";
+    campoPideComprobante.checked = metodo ? !!metodo.pide_comprobante : false;
 
     ocultarCamposMetodoPago();
     var campos = CAMPOS_POR_TIPO[tipo] || [];
@@ -2776,6 +2826,9 @@
       var elemento = CAMPO_ELEMENTO_POR_CLAVE[clave];
       if (elemento) elemento.hidden = false;
     });
+
+    campoPideComprobanteMetodoPago.hidden = TIPOS_CON_FORMULARIO.indexOf(tipo) === -1;
+    avisoMetodoPago.hidden = TIPOS_CON_FORMULARIO.indexOf(tipo) === -1;
 
     tarjetaFormMetodoPago.hidden = false;
   }
@@ -2832,6 +2885,8 @@
       instrucciones = campoInstrucciones.value.trim() || null;
     }
 
+    var pideComprobante = TIPOS_CON_FORMULARIO.indexOf(tipo) !== -1 && campoPideComprobante.checked;
+
     btnGuardarMetodoPago.disabled = true;
     btnGuardarMetodoPago.textContent = metodoPagoEditando ? "Guardando..." : "Creando...";
 
@@ -2840,7 +2895,8 @@
       operacion = sb.from("kiosco_metodos_pago").update({
         nombre: nombre,
         instrucciones: instrucciones,
-        datos: datos
+        datos: datos,
+        pide_comprobante: pideComprobante
       }).eq("id", metodoPagoEditando.id).select().single();
     } else {
       operacion = sb.from("kiosco_metodos_pago").insert({
@@ -2849,6 +2905,7 @@
         nombre: nombre,
         instrucciones: instrucciones,
         datos: datos,
+        pide_comprobante: pideComprobante,
         orden: metodosPagoActuales.length
       }).select().single();
     }
@@ -2989,6 +3046,37 @@
     });
   }
 
+  function mostrarImagenComprobante(pedido, contenedor) {
+    contenedor.innerHTML = "";
+    contenedor.hidden = false;
+
+    var cargando = document.createElement("p");
+    cargando.className = "nota-lista";
+    cargando.textContent = "Cargando...";
+    contenedor.appendChild(cargando);
+
+    sb.storage.from("comprobantes").createSignedUrl(pedido.comprobante_ruta, 60).then(function (resultado) {
+      contenedor.innerHTML = "";
+      if (resultado.error || !resultado.data) {
+        var error = document.createElement("p");
+        error.className = "nota-lista";
+        error.textContent = "No se pudo cargar la imagen. Intenta de nuevo.";
+        contenedor.appendChild(error);
+        return;
+      }
+      var img = document.createElement("img");
+      img.src = resultado.data.signedUrl;
+      img.alt = "Comprobante de pago";
+      contenedor.appendChild(img);
+    }).catch(function () {
+      contenedor.innerHTML = "";
+      var error = document.createElement("p");
+      error.className = "nota-lista";
+      error.textContent = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+      contenedor.appendChild(error);
+    });
+  }
+
   function crearFilaPedido(pedido) {
     var fila = document.createElement("div");
     fila.className = "fila-pedido" + (pedido.estado === "nuevo" ? " pedido-nuevo" : "");
@@ -3095,6 +3183,31 @@
           marcarPedidoPagado(pedido, btnMarcarPagado);
         });
         fila.appendChild(btnMarcarPagado);
+      }
+
+      if (pedido.comprobante_ruta) {
+        var comprobante = document.createElement("div");
+        comprobante.className = "comprobante-pedido";
+
+        var imagenComprobante = document.createElement("div");
+        imagenComprobante.className = "imagen-comprobante";
+        imagenComprobante.hidden = true;
+
+        var btnComprobante = document.createElement("button");
+        btnComprobante.type = "button";
+        btnComprobante.className = "badge-comprobante";
+        btnComprobante.textContent = "Ver comprobante";
+        btnComprobante.addEventListener("click", function () {
+          if (!imagenComprobante.hidden) {
+            imagenComprobante.hidden = true;
+            return;
+          }
+          mostrarImagenComprobante(pedido, imagenComprobante);
+        });
+
+        comprobante.appendChild(btnComprobante);
+        comprobante.appendChild(imagenComprobante);
+        fila.appendChild(comprobante);
       }
     }
 

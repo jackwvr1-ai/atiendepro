@@ -148,6 +148,21 @@
       <h2 class="titulo-confirmacion" id="tituloConfirmacion">Pedido enviado</h2>
       <p class="numero-confirmacion" id="numeroConfirmacion">Pedido #0</p>
       <p class="total-confirmacion" id="totalConfirmacion">$0.00</p>
+
+      <div id="bloqueComprobante" class="bloque-comprobante" hidden>
+        <input type="file" id="inputComprobante" accept="image/*" hidden>
+        <button type="button" id="btnSubirComprobante" class="boton-comprobante">Subir comprobante</button>
+        <p class="nota-comprobante">Opcional. También puedes enviarlo después.</p>
+
+        <div id="progresoComprobante" class="progreso-comprobante" hidden>
+          <div class="barra-progreso-comprobante">
+            <div class="relleno-progreso-comprobante" id="rellenoProgresoComprobante"></div>
+          </div>
+          <p id="textoProgresoComprobante">Preparando imagen...</p>
+        </div>
+
+        <div id="mensajeComprobante" class="mensaje-checkout" hidden></div>
+      </div>
     </div>
     <div class="carrito-pie">
       <button type="button" id="btnCerrarConfirmacion" class="boton-hacer-pedido">Listo</button>
@@ -273,6 +288,14 @@
   var totalConfirmacion = document.getElementById("totalConfirmacion");
   var btnCerrarConfirmacion = document.getElementById("btnCerrarConfirmacion");
 
+  var bloqueComprobante = document.getElementById("bloqueComprobante");
+  var inputComprobante = document.getElementById("inputComprobante");
+  var btnSubirComprobante = document.getElementById("btnSubirComprobante");
+  var progresoComprobante = document.getElementById("progresoComprobante");
+  var rellenoProgresoComprobante = document.getElementById("rellenoProgresoComprobante");
+  var textoProgresoComprobante = document.getElementById("textoProgresoComprobante");
+  var mensajeComprobante = document.getElementById("mensajeComprobante");
+
   var productoOverlay = document.getElementById("productoOverlay");
   var productoPanel = document.getElementById("productoPanel");
   var productoDetalleCuerpo = document.getElementById("productoDetalleCuerpo");
@@ -295,12 +318,18 @@
   var cantidadDetalle = 1;
 
   var URL_CREAR_PEDIDO = SUPABASE_URL + "/functions/v1/crear-pedido-kiosco";
+  var URL_SUBIR_COMPROBANTE = SUPABASE_URL + "/functions/v1/subir-comprobante";
   var modalidadSeleccionada = "recoger";
   var enviandoPedido = false;
   var cargandoMetodosPago = false;
   var metodosPagoDisponibles = [];
   var metodoPagoSeleccionadoId = null;
   var datosCheckoutPendientes = null;
+  var pedidoIdActual = null;
+  var subiendoComprobante = false;
+
+  var TAMANO_MAXIMO_LADO_COMPROBANTE = 1600;
+  var CALIDAD_JPEG_COMPROBANTE = 0.8;
 
   var NOMBRES_TIPO_PAGO = {
     efectivo: "Efectivo",
@@ -966,6 +995,16 @@
     tituloConfirmacion.textContent = datos.mensaje || "Pedido enviado";
     numeroConfirmacion.textContent = "Pedido #" + datos.numero;
     totalConfirmacion.textContent = formatearPrecio(datos.total);
+
+    pedidoIdActual = datos.id || null;
+    var metodoElegido = null;
+    metodosPagoDisponibles.forEach(function (metodo) {
+      if (metodo.id === metodoPagoSeleccionadoId) metodoElegido = metodo;
+    });
+
+    resetearBloqueComprobante();
+    bloqueComprobante.hidden = !(pedidoIdActual && metodoElegido && metodoElegido.pide_comprobante);
+
     mostrarVistaPanel(vistaConfirmacion);
   }
 
@@ -975,6 +1014,7 @@
     metodosPagoDisponibles = [];
     metodoPagoSeleccionadoId = null;
     datosCheckoutPendientes = null;
+    pedidoIdActual = null;
     mostrarVistaPanel(vistaCarrito);
     cerrarPanelCarrito();
   });
@@ -1033,7 +1073,7 @@
     btnEnviarPedido.textContent = "Cargando...";
 
     sb.from("kiosco_metodos_pago")
-      .select("id,tipo,nombre,instrucciones,datos")
+      .select("id,tipo,nombre,instrucciones,datos,pide_comprobante")
       .eq("kiosco_id", kioscoActual.id)
       .eq("activo", true)
       .order("orden", { ascending: true })
@@ -1239,6 +1279,140 @@
     caja.className = "mensaje-checkout " + tipo;
     caja.hidden = false;
   }
+
+  // ---- Comprobante de pago ----
+  // El pedido ya quedo guardado antes de que exista esta opcion. Si el
+  // cliente no sube nada, o falla la subida, el pedido sigue completo.
+
+  function resetearBloqueComprobante() {
+    subiendoComprobante = false;
+    btnSubirComprobante.hidden = false;
+    btnSubirComprobante.disabled = false;
+    btnSubirComprobante.textContent = "Subir comprobante";
+    progresoComprobante.hidden = true;
+    mensajeComprobante.hidden = true;
+    actualizarProgresoComprobante(0);
+  }
+
+  function actualizarProgresoComprobante(porcentaje) {
+    rellenoProgresoComprobante.style.width = porcentaje + "%";
+  }
+
+  function comprimirImagenComprobante(archivo) {
+    return new Promise(function (resolve, reject) {
+      var lector = new FileReader();
+      lector.onerror = function () {
+        reject(new Error("No pudimos leer esa imagen."));
+      };
+      lector.onload = function () {
+        var img = new Image();
+        img.onerror = function () {
+          reject(new Error("No pudimos leer esa imagen."));
+        };
+        img.onload = function () {
+          var ancho = img.naturalWidth;
+          var alto = img.naturalHeight;
+          var ladoMayor = Math.max(ancho, alto);
+
+          if (ladoMayor > TAMANO_MAXIMO_LADO_COMPROBANTE) {
+            var escala = TAMANO_MAXIMO_LADO_COMPROBANTE / ladoMayor;
+            ancho = Math.round(ancho * escala);
+            alto = Math.round(alto * escala);
+          }
+
+          var canvas = document.createElement("canvas");
+          canvas.width = ancho;
+          canvas.height = alto;
+          var contexto = canvas.getContext("2d");
+          contexto.drawImage(img, 0, 0, ancho, alto);
+
+          canvas.toBlob(function (blob) {
+            if (!blob) {
+              reject(new Error("No pudimos preparar la imagen."));
+              return;
+            }
+            resolve(blob);
+          }, "image/jpeg", CALIDAD_JPEG_COMPROBANTE);
+        };
+        img.src = lector.result;
+      };
+      lector.readAsDataURL(archivo);
+    });
+  }
+
+  function subirComprobanteAlServidor(blob) {
+    return new Promise(function (resolve, reject) {
+      var datosFormulario = new FormData();
+      datosFormulario.append("pedido_id", pedidoIdActual);
+      datosFormulario.append("archivo", blob, "comprobante.jpg");
+
+      var xhr = new XMLHttpRequest();
+      xhr.open("POST", URL_SUBIR_COMPROBANTE);
+      xhr.setRequestHeader("apikey", SUPABASE_ANON);
+      xhr.setRequestHeader("Authorization", "Bearer " + SUPABASE_ANON);
+
+      xhr.upload.onprogress = function (evento) {
+        if (evento.lengthComputable) {
+          actualizarProgresoComprobante(Math.round((evento.loaded / evento.total) * 100));
+        }
+      };
+
+      xhr.onload = function () {
+        var datos = null;
+        try { datos = JSON.parse(xhr.responseText); } catch (e) { /* respuesta no es JSON */ }
+
+        if (datos && datos.ok) {
+          resolve(datos);
+        } else {
+          reject(new Error((datos && datos.mensaje) || "Algo salió mal. Intenta de nuevo."));
+        }
+      };
+
+      xhr.onerror = function () {
+        reject(new Error("No se pudo conectar. Revisa tu internet e intenta de nuevo."));
+      };
+
+      xhr.send(datosFormulario);
+    });
+  }
+
+  function iniciarSubidaComprobante(archivo) {
+    subiendoComprobante = true;
+    mensajeComprobante.hidden = true;
+    btnSubirComprobante.hidden = true;
+    progresoComprobante.hidden = false;
+    actualizarProgresoComprobante(0);
+    textoProgresoComprobante.textContent = "Preparando imagen...";
+
+    comprimirImagenComprobante(archivo)
+      .then(function (blob) {
+        textoProgresoComprobante.textContent = "Subiendo...";
+        return subirComprobanteAlServidor(blob);
+      })
+      .then(function () {
+        subiendoComprobante = false;
+        progresoComprobante.hidden = true;
+        mostrarMensajeEnCaja(mensajeComprobante, "Comprobante recibido.", "exito");
+      })
+      .catch(function (error) {
+        subiendoComprobante = false;
+        progresoComprobante.hidden = true;
+        btnSubirComprobante.hidden = false;
+        btnSubirComprobante.textContent = "Reintentar";
+        mostrarMensajeEnCaja(mensajeComprobante, (error && error.message) || "No se pudo subir. Intenta de nuevo.", "error");
+      });
+  }
+
+  btnSubirComprobante.addEventListener("click", function () {
+    if (subiendoComprobante) return;
+    inputComprobante.click();
+  });
+
+  inputComprobante.addEventListener("change", function () {
+    var archivo = inputComprobante.files && inputComprobante.files[0];
+    inputComprobante.value = ""; // permite elegir el mismo archivo otra vez si hay que reintentar
+    if (archivo) iniciarSubidaComprobante(archivo);
+  });
 
   // ---- Carga de datos ----
 
