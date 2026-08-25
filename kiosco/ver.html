@@ -24,14 +24,12 @@
     <div class="portada-negocio" id="portadaNegocio" hidden>
       <img id="imgPortadaNegocio" alt="" loading="lazy">
     </div>
-    <div class="info-cabecera">
-      <div class="logo-negocio" id="logoNegocio" hidden>
-        <img id="imgLogoNegocio" alt="" loading="lazy">
-      </div>
-      <div class="texto-cabecera">
-        <h1 class="nombre-negocio" id="nombreNegocio"></h1>
-        <p class="descripcion-negocio" id="descripcionNegocio" hidden></p>
-      </div>
+    <div class="logo-negocio" id="logoNegocio" hidden>
+      <img id="imgLogoNegocio" alt="" loading="lazy">
+    </div>
+    <div class="texto-cabecera">
+      <h1 class="nombre-negocio" id="nombreNegocio"></h1>
+      <p class="descripcion-negocio" id="descripcionNegocio" hidden></p>
     </div>
   </div>
 
@@ -169,7 +167,12 @@
   var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
 
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
-    auth: { persistSession: false }
+    auth: {
+      storageKey: "kiosco-publico",
+      persistSession: false,
+      autoRefreshToken: false,
+      detectSessionInUrl: false
+    }
   });
 
   var COLUMNAS_KIOSCO = "id,nombre,slug,descripcion,logo_url,portada_url,tema,color_acento,moneda,telefono_contacto,whatsapp,direccion,pide_direccion,publicado";

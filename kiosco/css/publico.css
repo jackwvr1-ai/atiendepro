@@ -80,17 +80,28 @@ body {
   line-height: 1.5;
 }
 
-/* ---- Cabecera del negocio ---- */
+/* ---- Cabecera del negocio ----
+   Se adapta a lo que el negocio subió. El logo flota sobre el borde de la
+   portada cuando hay portada; si no la hay, sube y crece un poco para que
+   la cabecera no se sienta a medio terminar. El nombre y la descripción
+   siempre van debajo, nunca sobre la foto: eso es lo que los mantiene
+   legibles pase lo que pase con la imagen. */
 
 .cabecera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
   border-bottom: 1px solid var(--borde);
+  padding-bottom: 22px;
 }
 
 .portada-negocio {
   width: 100%;
-  height: 140px;
+  height: 120px;
   overflow: hidden;
   background: var(--gris-claro);
+  flex-shrink: 0;
 }
 
 .portada-negocio[hidden] {
@@ -104,21 +115,23 @@ body {
   display: block;
 }
 
-.info-cabecera {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  padding: 20px;
-}
-
 .logo-negocio {
   flex-shrink: 0;
-  width: 56px;
-  height: 56px;
+  width: 80px;
+  height: 80px;
   border-radius: 50%;
   overflow: hidden;
-  background: var(--gris-claro);
-  border: 2px solid var(--fondo);
+  background: #ffffff;
+  margin-top: -48px;
+  box-shadow: 0 0 0 1px var(--borde), 0 0 0 4px var(--fondo), 0 4px 14px rgba(17, 17, 17, 0.18);
+}
+
+/* Sin portada: nada de qué flotar sobre. El logo baja al flujo normal,
+   con más aire arriba, y crece un poco para sostener la cabecera solo. */
+.portada-negocio[hidden] + .logo-negocio {
+  margin-top: 30px;
+  width: 92px;
+  height: 92px;
 }
 
 .logo-negocio[hidden] {
@@ -134,48 +147,43 @@ body {
 
 .texto-cabecera {
   min-width: 0;
-  flex: 1;
+  max-width: 340px;
+  padding: 20px 24px 0;
+}
+
+/* Portada sin logo: el texto sigue la foto directo, sin puente. Un poco
+   más de aire para que no se sienta pegado al corte de la imagen. */
+.portada-negocio:not([hidden]) + .logo-negocio[hidden] + .texto-cabecera {
+  padding-top: 26px;
+}
+
+/* Ni portada ni logo: el bloque de texto es toda la cabecera. Aire
+   generoso arriba para que se sienta una decisión, no un vacío. */
+.portada-negocio[hidden] + .logo-negocio[hidden] + .texto-cabecera {
+  padding-top: 46px;
 }
 
 .nombre-negocio {
-  font-size: 1.6rem;
+  font-size: 1.5rem;
   font-weight: 800;
   color: var(--negro);
   margin: 0 0 6px;
   overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
 }
 
 .descripcion-negocio {
-  font-size: 1rem;
+  font-size: 0.95rem;
   color: var(--texto-suave);
   margin: 0;
   line-height: 1.5;
-}
-
-/* Tema claro: la foto de portada terminaba en un corte seco contra el
-   bloque blanco. Un degradado suave hacia el fondo y el logo montando
-   sobre el borde de la foto hacen que la cabecera se sienta una sola
-   pieza, sin acercarse al tratamiento (más marcado) del tema moderno. */
-
-body[data-tema="claro"] .portada-negocio {
-  position: relative;
-}
-
-body[data-tema="claro"] .portada-negocio::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 34px;
-  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), var(--fondo));
-  pointer-events: none;
-}
-
-body[data-tema="claro"] .portada-negocio:not([hidden]) + .info-cabecera .logo-negocio {
-  margin-top: -20px;
-  position: relative;
-  box-shadow: 0 3px 10px rgba(17, 17, 17, 0.18);
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
 }
 
 /* ---- Menú por categorías ---- */
@@ -935,23 +943,6 @@ body[data-tema="moderno"] .descripcion-negocio,
 body[data-tema="moderno"] .subtotal-fila-carrito,
 body[data-tema="moderno"] .carrito-vacio {
   color: var(--texto-suave);
-}
-
-body[data-tema="moderno"] .portada-negocio {
-  height: 190px;
-}
-
-body[data-tema="moderno"] .info-cabecera {
-  margin-top: -34px;
-  position: relative;
-  align-items: flex-end;
-}
-
-body[data-tema="moderno"] .logo-negocio {
-  width: 76px;
-  height: 76px;
-  border: 3px solid var(--fondo);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
 }
 
 body[data-tema="moderno"] .nombre-negocio {
