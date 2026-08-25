@@ -64,7 +64,7 @@
 
   <div id="vistaCarrito" class="vista-panel">
     <div class="carrito-encabezado">
-      <h2>Tu pedido</h2>
+      <h2>Tu carrito</h2>
       <button type="button" id="cerrarCarrito" class="cerrar-carrito" aria-label="Cerrar">✕</button>
     </div>
 
@@ -677,6 +677,7 @@
   function crearBloqueGrupoDetalle(grupo) {
     var bloque = document.createElement("div");
     bloque.className = "grupo-detalle";
+    bloque.id = "grupo-detalle-" + grupo.id;
 
     var encabezado = document.createElement("div");
     encabezado.className = "encabezado-grupo-detalle";
@@ -703,9 +704,19 @@
       boton.className = "opcion-detalle" + (opcion.disponible ? "" : " no-disponible") + (seleccionada ? " seleccionada" : "");
       boton.disabled = !opcion.disponible;
 
+      var izquierda = document.createElement("span");
+      izquierda.className = "opcion-detalle-izquierda";
+
+      var marca = document.createElement("span");
+      marca.className = "marca-opcion-detalle";
+      marca.setAttribute("aria-hidden", "true");
+      izquierda.appendChild(marca);
+
       var nombreOp = document.createElement("span");
       nombreOp.textContent = opcion.nombre + (opcion.disponible ? "" : " (no disponible)");
-      boton.appendChild(nombreOp);
+      izquierda.appendChild(nombreOp);
+
+      boton.appendChild(izquierda);
 
       var extra = Number(opcion.precio_extra);
       if (extra > 0) {
@@ -817,6 +828,16 @@
         if (el) el.hidden = false;
       });
       mostrarMensajeDetalle("Elige las opciones obligatorias para continuar.", "error");
+
+      var primerFaltante = document.getElementById("grupo-detalle-" + faltantes[0].id);
+      if (primerFaltante) {
+        var prefiereMovimientoReducido = window.matchMedia &&
+          window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        primerFaltante.scrollIntoView({
+          block: "center",
+          behavior: prefiereMovimientoReducido ? "auto" : "smooth"
+        });
+      }
       return;
     }
 
