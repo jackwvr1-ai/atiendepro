@@ -38,8 +38,24 @@
 </div>
 
 <button type="button" id="barraCarrito" class="barra-carrito">
-  <span class="cantidad-carrito" id="cantidadCarrito"></span>
-  <span class="total-carrito" id="totalCarrito"></span>
+  <span class="barra-carrito-info">
+    <svg class="icono-carrito-barra" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"></circle>
+      <circle cx="17" cy="20" r="1.4" fill="currentColor" stroke="none"></circle>
+      <path d="M2.5 3h2l2.3 12.1a2 2 0 0 0 2 1.65h7.9a2 2 0 0 0 2-1.6L20.5 7H6.2"></path>
+    </svg>
+    <span class="resumen-carrito">
+      <span class="cantidad-carrito" id="cantidadCarrito"><span id="cantidadNumero"></span><span class="cantidad-palabra" id="cantidadPalabra"></span></span>
+      <span class="separador-carrito" aria-hidden="true">·</span>
+      <span class="total-carrito" id="totalCarrito"></span>
+    </span>
+  </span>
+  <span class="barra-carrito-accion">
+    <span class="texto-ver-carrito">Ver carrito</span>
+    <svg class="icono-chevron-barra" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+      <path d="M9 6l6 6-6 6"></path>
+    </svg>
+  </span>
 </button>
 
 <div id="carritoOverlay" class="carrito-overlay"></div>
@@ -196,7 +212,8 @@
   var menu = document.getElementById("menu");
 
   var barraCarrito = document.getElementById("barraCarrito");
-  var cantidadCarrito = document.getElementById("cantidadCarrito");
+  var cantidadNumero = document.getElementById("cantidadNumero");
+  var cantidadPalabra = document.getElementById("cantidadPalabra");
   var totalCarrito = document.getElementById("totalCarrito");
 
   var carritoOverlay = document.getElementById("carritoOverlay");
@@ -262,6 +279,10 @@
 
   function formatearPrecio(valor) {
     return "$" + Number(valor).toFixed(2);
+  }
+
+  function formatearPrecioAria(valor) {
+    return Number(valor).toFixed(2).replace(".", ",");
   }
 
   function obtenerSlug() {
@@ -458,15 +479,29 @@
     var totales = calcularTotales();
 
     if (totales.cantidad === 0) {
-      barraCarrito.classList.remove("visible");
+      barraCarrito.classList.remove("visible", "pulso");
       cerrarPanelCarrito();
       return;
     }
 
+    var yaVisible = barraCarrito.classList.contains("visible");
+
     barraCarrito.classList.add("visible");
-    cantidadCarrito.textContent = totales.cantidad + (totales.cantidad === 1 ? " artículo" : " artículos");
+    cantidadNumero.textContent = totales.cantidad;
+    cantidadPalabra.textContent = totales.cantidad === 1 ? " artículo" : " artículos";
     totalCarrito.textContent = formatearPrecio(totales.total);
     totalPie.textContent = formatearPrecio(totales.total);
+    barraCarrito.setAttribute(
+      "aria-label",
+      "Ver carrito, " + totales.cantidad + (totales.cantidad === 1 ? " artículo" : " artículos") +
+        ", total " + formatearPrecioAria(totales.total)
+    );
+
+    if (yaVisible) {
+      barraCarrito.classList.remove("pulso");
+      void barraCarrito.offsetWidth;
+      barraCarrito.classList.add("pulso");
+    }
   }
 
   function agregarAlCarrito(productoId) {
@@ -809,6 +844,12 @@
   }
 
   barraCarrito.addEventListener("click", abrirPanelCarrito);
+
+  barraCarrito.addEventListener("animationend", function (evento) {
+    if (evento.animationName === "pulso-barra-carrito") {
+      barraCarrito.classList.remove("pulso");
+    }
+  });
   cerrarCarrito.addEventListener("click", cerrarPanelCarrito);
   carritoOverlay.addEventListener("click", cerrarPanelCarrito);
 
@@ -859,7 +900,7 @@
 
   function mostrarConfirmacion(datos) {
     carritoLineas = {};
-    barraCarrito.classList.remove("visible");
+    barraCarrito.classList.remove("visible", "pulso");
     tituloConfirmacion.textContent = datos.mensaje || "Pedido enviado";
     numeroConfirmacion.textContent = "Pedido #" + datos.numero;
     totalConfirmacion.textContent = formatearPrecio(datos.total);
