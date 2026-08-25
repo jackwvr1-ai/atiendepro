@@ -63,36 +63,10 @@
     <h1 class="titulo" id="panelNombre">Tu kiosco</h1>
     <p class="nota" id="panelEstado">Aún no está publicado.</p>
 
-    <button type="button" id="btnPublicar" class="boton-secundario">Publicar kiosco</button>
+    <button type="button" id="btnAbrirCompartir" class="boton-primario">Compartir mi kiosco</button>
+    <p class="ayuda-boton-desactivado" id="razonCompartirDesactivado" hidden>Publica tu kiosco para compartirlo.</p>
+    <button type="button" id="btnPublicar" class="boton-secundario" style="margin-top: 12px;">Publicar kiosco</button>
     <button type="button" id="btnEditar" class="boton-secundario" style="margin-top: 12px;">Editar datos</button>
-
-    <div class="bloque-seccion bloque-compartir">
-      <h2 class="subtitulo-seccion">Compartir mi kiosco</h2>
-
-      <div id="avisoNoPublicado" class="mensaje error" hidden>
-        <p class="texto-aviso">Tu kiosco todavía no está publicado. El enlace y el código QR no funcionarán hasta que lo publiques.</p>
-        <button type="button" id="btnPublicarDesdeCompartir" class="boton-secundario">Publicar kiosco</button>
-      </div>
-
-      <div class="campo-enlace campo-enlace-compartir">
-        <label>Enlace público</label>
-        <a id="panelEnlace" href="#" target="_blank" rel="noopener" class="enlace-publico">kiosco.atiendepro.net/tu-direccion</a>
-      </div>
-
-      <div class="fila-botones-compartir">
-        <button type="button" id="btnCopiarEnlace" class="boton-secundario">Copiar enlace</button>
-        <button type="button" id="btnCompartirEnlace" class="boton-secundario">Compartir</button>
-      </div>
-
-      <div class="caja-qr">
-        <canvas id="canvasQR" width="1000" height="1000" aria-label="Código QR de tu kiosco"></canvas>
-      </div>
-
-      <div class="fila-botones-compartir">
-        <button type="button" id="btnDescargarQR" class="boton-secundario">Descargar QR</button>
-        <button type="button" id="btnCompartirQR" class="boton-secundario" hidden>Compartir QR</button>
-      </div>
-    </div>
 
     <div class="bloque-seccion bloque-imagen">
       <h2 class="subtitulo-seccion">Logo</h2>
@@ -347,6 +321,36 @@
 
 </div>
 
+<div class="hoja-overlay" id="hojaCompartirOverlay"></div>
+<div class="hoja-compartir" id="hojaCompartir" role="dialog" aria-modal="true" aria-labelledby="hojaCompartirTitulo">
+  <div class="hoja-asa" id="hojaCompartirAsa"></div>
+  <div class="hoja-encabezado">
+    <h2 id="hojaCompartirTitulo">Compartir mi kiosco</h2>
+    <button type="button" id="btnCerrarCompartir" class="cerrar-hoja" aria-label="Cerrar">✕</button>
+  </div>
+
+  <div class="hoja-cuerpo">
+    <div class="campo-enlace campo-enlace-compartir">
+      <label>Enlace público</label>
+      <a id="panelEnlace" href="#" target="_blank" rel="noopener" class="enlace-publico">kiosco.atiendepro.net/tu-direccion</a>
+    </div>
+
+    <div class="fila-botones-compartir">
+      <button type="button" id="btnCopiarEnlace" class="boton-secundario">Copiar enlace</button>
+      <button type="button" id="btnCompartirEnlace" class="boton-secundario">Compartir</button>
+    </div>
+
+    <div class="caja-qr">
+      <canvas id="canvasQR" width="1000" height="1000" aria-label="Código QR de tu kiosco"></canvas>
+    </div>
+
+    <div class="fila-botones-compartir">
+      <button type="button" id="btnDescargarQR" class="boton-secundario">Descargar QR</button>
+      <button type="button" id="btnCompartirQR" class="boton-secundario" hidden>Compartir QR</button>
+    </div>
+  </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode@1.4.4/build/qrcode.min.js"></script>
 <script>
@@ -415,8 +419,12 @@
   var btnEditar = document.getElementById("btnEditar");
   var btnPublicar = document.getElementById("btnPublicar");
 
-  var avisoNoPublicado = document.getElementById("avisoNoPublicado");
-  var btnPublicarDesdeCompartir = document.getElementById("btnPublicarDesdeCompartir");
+  var btnAbrirCompartir = document.getElementById("btnAbrirCompartir");
+  var razonCompartirDesactivado = document.getElementById("razonCompartirDesactivado");
+  var hojaCompartirOverlay = document.getElementById("hojaCompartirOverlay");
+  var hojaCompartir = document.getElementById("hojaCompartir");
+  var hojaCompartirAsa = document.getElementById("hojaCompartirAsa");
+  var btnCerrarCompartir = document.getElementById("btnCerrarCompartir");
   var btnCopiarEnlace = document.getElementById("btnCopiarEnlace");
   var btnCompartirEnlace = document.getElementById("btnCompartirEnlace");
   var canvasQR = document.getElementById("canvasQR");
@@ -691,9 +699,75 @@
 
   function actualizarCompartir() {
     if (!kioscoActual) return;
-    avisoNoPublicado.hidden = !!kioscoActual.publicado;
-    generarQR(urlKioscoActual());
+    var publicado = !!kioscoActual.publicado;
+    btnAbrirCompartir.disabled = !publicado;
+    razonCompartirDesactivado.hidden = publicado;
   }
+
+  function abrirHojaCompartir() {
+    if (btnAbrirCompartir.disabled) return;
+    generarQR(urlKioscoActual());
+    hojaCompartirOverlay.classList.add("visible");
+    hojaCompartir.classList.add("visible");
+    document.documentElement.classList.add("bloqueo-scroll");
+    document.body.classList.add("bloqueo-scroll");
+    document.addEventListener("keydown", manejarTeclaHojaCompartir);
+  }
+
+  function cerrarHojaCompartir() {
+    hojaCompartirOverlay.classList.remove("visible");
+    hojaCompartir.classList.remove("visible");
+    document.documentElement.classList.remove("bloqueo-scroll");
+    document.body.classList.remove("bloqueo-scroll");
+    document.removeEventListener("keydown", manejarTeclaHojaCompartir);
+  }
+
+  function manejarTeclaHojaCompartir(evento) {
+    if (evento.key === "Escape") {
+      cerrarHojaCompartir();
+    }
+  }
+
+  btnAbrirCompartir.addEventListener("click", abrirHojaCompartir);
+  btnCerrarCompartir.addEventListener("click", cerrarHojaCompartir);
+  hojaCompartirOverlay.addEventListener("click", cerrarHojaCompartir);
+
+  (function () {
+    var arrastreActivo = false;
+    var inicioY = 0;
+    var desplazamiento = 0;
+
+    function moverA(y) {
+      desplazamiento = Math.max(0, y - inicioY);
+      hojaCompartir.style.transform = "translateY(" + desplazamiento + "px)";
+    }
+
+    hojaCompartirAsa.addEventListener("pointerdown", function (evento) {
+      arrastreActivo = true;
+      inicioY = evento.clientY;
+      desplazamiento = 0;
+      hojaCompartir.style.transition = "none";
+      hojaCompartirAsa.setPointerCapture(evento.pointerId);
+    });
+
+    hojaCompartirAsa.addEventListener("pointermove", function (evento) {
+      if (!arrastreActivo) return;
+      moverA(evento.clientY);
+    });
+
+    function terminarArrastre() {
+      if (!arrastreActivo) return;
+      arrastreActivo = false;
+      hojaCompartir.style.transition = "";
+      hojaCompartir.style.transform = "";
+      if (desplazamiento > 90) {
+        cerrarHojaCompartir();
+      }
+    }
+
+    hojaCompartirAsa.addEventListener("pointerup", terminarArrastre);
+    hojaCompartirAsa.addEventListener("pointercancel", terminarArrastre);
+  })();
 
   function mostrarConfirmacionBoton(boton, textoOriginal, textoConfirmado) {
     boton.textContent = textoConfirmado;
@@ -753,10 +827,6 @@
     }).catch(function () {
       alert("No se pudo copiar el enlace. Cópialo manualmente: " + urlKioscoActual());
     });
-  });
-
-  btnPublicarDesdeCompartir.addEventListener("click", function () {
-    btnPublicar.click();
   });
 
   btnDescargarQR.addEventListener("click", function () {
