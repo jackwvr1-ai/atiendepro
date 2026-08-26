@@ -18,6 +18,7 @@
   --radio-chico: 10px;
   --sombra: 0 -6px 20px rgba(17, 17, 17, 0.08);
   --sombra-barra: 0 6px 20px rgba(17, 17, 17, 0.14);
+  --sombra-tarjeta: 0 1px 4px rgba(17, 17, 17, 0.06);
   --alto-barra: 72px; /* 60px de alto + 12px de margen inferior de la barra flotante */
 }
 
@@ -98,6 +99,7 @@ body {
 }
 
 .portada-negocio {
+  position: relative;
   width: 100%;
   height: 120px;
   overflow: hidden;
@@ -116,7 +118,21 @@ body {
   display: block;
 }
 
+/* La portada muere dentro de la página en vez de cortarse en seco. */
+.portada-negocio::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 33%;
+  background: linear-gradient(to bottom, transparent, var(--fondo));
+  pointer-events: none;
+}
+
 .logo-negocio {
+  position: relative;
+  z-index: 1;
   flex-shrink: 0;
   width: 80px;
   height: 80px;
@@ -183,8 +199,151 @@ body {
   line-height: 1.5;
   display: -webkit-box;
   -webkit-box-orient: vertical;
-  -webkit-line-clamp: 3;
+  -webkit-line-clamp: 2;
   overflow: hidden;
+}
+
+.descripcion-negocio.expandible {
+  cursor: pointer;
+}
+
+.descripcion-negocio.expandida {
+  display: block;
+  -webkit-line-clamp: unset;
+  overflow: visible;
+}
+
+/* ---- Barra de confianza ----
+   Solo datos reales del negocio: métodos de pago, entrega, WhatsApp. Si no
+   hay ninguno, el contenedor no aparece. */
+
+.barra-confianza {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 8px 18px;
+  margin-top: 14px;
+}
+
+.barra-confianza[hidden] {
+  display: none;
+}
+
+.dato-confianza {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.icono-confianza {
+  display: flex;
+  flex-shrink: 0;
+}
+
+.icono-confianza svg {
+  width: 16px;
+  height: 16px;
+}
+
+/* ---- Chips de categorías ---- */
+
+.chips-categorias {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+  padding: 16px 20px 0;
+}
+
+.chips-categorias::-webkit-scrollbar {
+  display: none;
+}
+
+.chips-categorias[hidden] {
+  display: none;
+}
+
+.chip-categoria {
+  flex-shrink: 0;
+  white-space: nowrap;
+  border: 1.5px solid var(--borde);
+  border-radius: 999px;
+  background: var(--gris-claro);
+  color: var(--texto-suave);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 9px 16px;
+  cursor: pointer;
+}
+
+.chip-categoria.activo {
+  border-color: var(--acento-fondo);
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+}
+
+/* ---- Tarjetas de métodos de pago ----
+   Van dentro de la cabecera, junto al resto de datos del negocio. A propósito
+   NO son pastillas redondeadas como los chips de categorías de más abajo:
+   rectangulares y en rejilla de dos columnas, para que no se confundan.
+   El borde inferior hace de línea divisoria antes de los chips; al no haber
+   métodos activos el bloque entero se oculta y la línea se va con él. */
+
+.metodos-pago-kiosco {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  padding: 16px 20px 22px;
+  border-bottom: 1px solid var(--borde);
+}
+
+.metodos-pago-kiosco[hidden] {
+  display: none;
+}
+
+.metodo-pago-item.abierta {
+  grid-column: 1 / -1;
+}
+
+.metodo-pago-tarjeta {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid var(--borde);
+  border-radius: var(--radio-chico);
+  background: var(--gris-claro);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.88rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.icono-metodo-pago-tarjeta {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--texto-suave);
+}
+
+.icono-metodo-pago-tarjeta svg {
+  width: 18px;
+  height: 18px;
+}
+
+.nombre-metodo-pago-tarjeta {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* ---- Menú por categorías ---- */
@@ -195,47 +354,86 @@ body {
 
 .categoria {
   margin-top: 26px;
+  scroll-margin-top: 12px;
 }
 
-.titulo-categoria {
-  font-size: 0.8rem;
-  font-weight: 800;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  color: var(--texto-suave);
-  margin: 0 0 12px;
-}
-
-/* Rejilla de dos columnas: con muchos productos, tarjetas grandes obligan
-   a un scroll interminable. Fotos cuadradas y compactas dejan ver varios
-   productos de un vistazo sin perder la foto como protagonista. */
-
-.rejilla-productos {
-  display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 18px 12px;
-}
-
-@media (min-width: 480px) {
-  .rejilla-productos {
-    grid-template-columns: repeat(3, 1fr);
-  }
+/* Cada categoría siguiente lleva su propia línea divisoria; la primera no
+   necesita separarse de nada, los chips de arriba ya marcan el cambio. */
+.categoria + .categoria {
+  padding-top: 26px;
+  border-top: 1px solid var(--borde);
 }
 
 @media (min-width: 720px) {
   .envoltorio {
     max-width: 900px;
   }
+}
 
-  .rejilla-productos {
-    grid-template-columns: repeat(4, 1fr);
-  }
+/* Fila horizontal desplazable en vez de rejilla: se arrastra con el dedo,
+   ancla por tarjeta para no quedar a medio producto, y el ancho fijo deja
+   asomar la siguiente tarjeta por el borde — eso avisa que hay más. */
+
+.rejilla-productos {
+  display: flex;
+  gap: 12px;
+  overflow-x: auto;
+  scroll-snap-type: x mandatory;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.rejilla-productos::-webkit-scrollbar {
+  display: none;
 }
 
 .producto {
+  flex: 0 0 150px;
+  width: 150px;
+  scroll-snap-align: start;
   display: flex;
   flex-direction: column;
   min-width: 0;
+  background: var(--gris-claro);
+  border: 1px solid var(--borde);
+  border-radius: var(--radio);
+  box-shadow: var(--sombra-tarjeta);
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .producto {
+    opacity: 0;
+    transform: translateY(8px);
+    animation: aparecer-producto 0.35s ease forwards;
+  }
+
+  /* Insinuación de movimiento al cargar: un empujón de una sola vez,
+     escalonado entre categorías, para avisar que la fila se desliza.
+     Nunca continuo: si se mueve sola, el cliente puede tocar "agregar"
+     sobre el producto equivocado. */
+  .rejilla-productos.insinuar-desplazamiento {
+    animation: insinuar-carrusel 0.6s ease;
+  }
+}
+
+@keyframes aparecer-producto {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes insinuar-carrusel {
+  0% {
+    transform: translateX(0);
+  }
+  40% {
+    transform: translateX(40px);
+  }
+  100% {
+    transform: translateX(0);
+  }
 }
 
 .foto-producto {
@@ -243,9 +441,8 @@ body {
   width: 100%;
   aspect-ratio: 1 / 1;
   overflow: hidden;
-  border-radius: var(--radio-chico);
+  border-radius: var(--radio) var(--radio) 0 0;
   background: var(--gris-claro);
-  margin-bottom: 8px;
 }
 
 .foto-producto img {
@@ -261,13 +458,14 @@ body {
 
 .info-producto {
   min-width: 0;
+  padding: 10px 12px 12px;
 }
 
 .nombre-producto {
-  font-size: 0.92rem;
-  font-weight: 700;
+  font-size: 0.95rem;
+  font-weight: 600;
   color: var(--texto);
-  margin: 0 0 2px;
+  margin: 0 0 4px;
   line-height: 1.3;
   overflow-wrap: anywhere;
   display: -webkit-box;
@@ -277,8 +475,8 @@ body {
 }
 
 .precio-producto {
-  font-size: 0.86rem;
-  font-weight: 700;
+  font-size: 1.05rem;
+  font-weight: 800;
   color: var(--texto);
   margin: 0;
 }
@@ -351,6 +549,43 @@ body {
   font-size: 0.95rem;
   padding: 24px 0;
   text-align: center;
+}
+
+/* ---- Pie de página ---- */
+
+.pie-kiosco {
+  margin-top: 36px;
+  padding: 28px 24px 8px;
+  border-top: 1px solid var(--borde);
+  text-align: center;
+}
+
+.pie-kiosco[hidden] {
+  display: none;
+}
+
+.pie-nombre {
+  font-size: 0.95rem;
+  font-weight: 700;
+  color: var(--texto);
+  margin: 0 0 4px;
+}
+
+.pie-telefono {
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  margin: 0 0 10px;
+}
+
+.pie-telefono[hidden] {
+  display: none;
+}
+
+.pie-marca {
+  font-size: 0.75rem;
+  color: var(--texto-suave);
+  opacity: 0.7;
+  margin: 0;
 }
 
 /* ---- Barra fija del carrito ---- */
@@ -1132,6 +1367,7 @@ body[data-tema="moderno"] {
   --exito-texto: #5ee495;
   --sombra: 0 -8px 30px rgba(0, 0, 0, 0.55);
   --sombra-barra: 0 6px 24px rgba(0, 0, 0, 0.45);
+  --sombra-tarjeta: none;
 }
 
 body[data-tema="moderno"] .estado-pantalla p,
@@ -1143,22 +1379,6 @@ body[data-tema="moderno"] .carrito-vacio {
 
 body[data-tema="moderno"] .nombre-negocio {
   font-size: 2.1rem;
-}
-
-body[data-tema="moderno"] .titulo-categoria {
-  font-size: 0.85rem;
-}
-
-body[data-tema="moderno"] .foto-producto {
-  border-radius: 14px;
-}
-
-body[data-tema="moderno"] .nombre-producto {
-  font-size: 0.95rem;
-}
-
-body[data-tema="moderno"] .precio-producto {
-  font-size: 0.9rem;
 }
 
 body[data-tema="moderno"] .carrito-panel {
