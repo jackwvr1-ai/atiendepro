@@ -937,11 +937,16 @@
     return { cantidad: cantidad, total: total };
   }
 
+  function sincronizarRellenoCarrito() {
+    document.body.classList.toggle("carrito-con-barra", barraCarrito.classList.contains("visible"));
+  }
+
   function actualizarBarraCarrito() {
     var totales = calcularTotales();
 
     if (totales.cantidad === 0) {
       barraCarrito.classList.remove("visible", "pulso");
+      sincronizarRellenoCarrito();
       cerrarPanelCarrito();
       return;
     }
@@ -949,6 +954,7 @@
     var yaVisible = barraCarrito.classList.contains("visible");
 
     barraCarrito.classList.add("visible");
+    sincronizarRellenoCarrito();
     cantidadNumero.textContent = totales.cantidad;
     cantidadPalabra.textContent = totales.cantidad === 1 ? " artículo" : " artículos";
     totalCarrito.textContent = formatearPrecio(totales.total);
@@ -1385,6 +1391,7 @@
   function mostrarConfirmacion(datos) {
     carritoLineas = {};
     barraCarrito.classList.remove("visible", "pulso");
+    sincronizarRellenoCarrito();
     tituloConfirmacion.textContent = datos.mensaje || "Pedido enviado";
     numeroConfirmacion.textContent = "Pedido #" + datos.numero;
     totalConfirmacion.textContent = formatearPrecio(datos.total);
