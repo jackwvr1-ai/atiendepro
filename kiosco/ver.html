@@ -36,7 +36,18 @@
 
   <div class="metodos-pago-kiosco" id="metodosPagoKiosco" hidden></div>
 
-  <div class="chips-categorias" id="chipsCategorias" hidden></div>
+  <div class="fila-categorias" id="filaCategorias" hidden>
+    <div class="buscador-categoria" id="buscadorCategoria" hidden>
+      <button type="button" id="botonBuscar" class="boton-buscar-icono" aria-label="Buscar producto">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"></circle><path d="M21 21l-4.3-4.3"></path></svg>
+      </button>
+      <input type="search" id="inputBuscarProducto" class="campo-buscar-producto" placeholder="Buscar producto" aria-label="Buscar producto" autocomplete="off" autocorrect="off" spellcheck="false">
+      <button type="button" id="botonCerrarBusqueda" class="boton-cerrar-busqueda" aria-label="Cerrar búsqueda">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"></path></svg>
+      </button>
+    </div>
+    <div class="chips-categorias" id="chipsCategorias"></div>
+  </div>
 
   <div class="menu" id="menu"></div>
 
@@ -243,6 +254,9 @@
   var kioscoActual = null;
   var observadorCategorias = null;
   var productosPorId = {};
+  var productosCargados = [];
+  var gruposActuales = [];
+  var terminoBusqueda = "";
   var gruposPorProducto = {}; // { productoId: [grupo, ...] }, cada grupo trae su kiosco_opciones
   var opcionesPorId = {}; // { opcionId: opcion }
   var carritoLineas = {}; // { clave: { productoId, opcionIds, cantidad } }
@@ -258,6 +272,11 @@
   var nombreNegocio = document.getElementById("nombreNegocio");
   var descripcionNegocio = document.getElementById("descripcionNegocio");
   var barraConfianza = document.getElementById("barraConfianza");
+  var filaCategorias = document.getElementById("filaCategorias");
+  var buscadorCategoria = document.getElementById("buscadorCategoria");
+  var botonBuscar = document.getElementById("botonBuscar");
+  var inputBuscarProducto = document.getElementById("inputBuscarProducto");
+  var botonCerrarBusqueda = document.getElementById("botonCerrarBusqueda");
   var chipsCategorias = document.getElementById("chipsCategorias");
   var metodosPagoKiosco = document.getElementById("metodosPagoKiosco");
   var menu = document.getElementById("menu");
@@ -660,10 +679,7 @@
   function renderChipsCategorias(grupos) {
     chipsCategorias.innerHTML = "";
 
-    if (grupos.length <= 1) {
-      chipsCategorias.hidden = true;
-      return;
-    }
+    if (grupos.length <= 1) return;
 
     grupos.forEach(function (grupo, indice) {
       var chip = document.createElement("button");
@@ -680,14 +696,19 @@
       });
       chipsCategorias.appendChild(chip);
     });
-
-    chipsCategorias.hidden = false;
   }
 
   function marcarChipActivo(idSeccion) {
     var chips = chipsCategorias.querySelectorAll(".chip-categoria");
     chips.forEach(function (chip) {
       chip.classList.toggle("activo", chip.dataset.objetivo === idSeccion);
+    });
+  }
+
+  function desmarcarChips() {
+    var chips = chipsCategorias.querySelectorAll(".chip-categoria");
+    chips.forEach(function (chip) {
+      chip.classList.remove("activo");
     });
   }
 
@@ -711,29 +732,38 @@
     });
   }
 
-  function renderMenu(categorias, productos) {
-    menu.innerHTML = "";
-    productosPorId = {};
-    productos.forEach(function (p) {
-      productosPorId[p.id] = p;
-    });
+  function actualizarVisibilidadFila() {
+    var hayChips = chipsCategorias.children.length > 0;
+    var hayBuscador = !buscadorCategoria.hidden;
+    filaCategorias.hidden = !hayChips && !hayBuscador;
+  }
 
-    if (productos.length === 0) {
-      var vacio = document.createElement("p");
-      vacio.className = "menu-vacio";
-      vacio.textContent = "Todavía no hay productos disponibles.";
-      menu.appendChild(vacio);
-      chipsCategorias.hidden = true;
-      return;
+  // ---- Buscador de productos ----
+
+  function normalizarTexto(texto) {
+    return String(texto)
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .toLowerCase();
+  }
+
+  function coincideBusqueda(producto, termino) {
+    return normalizarTexto(producto.nombre).indexOf(termino) !== -1;
+  }
+
+  function renderVistaCategorias() {
+    if (observadorCategorias) {
+      observadorCategorias.disconnect();
+      observadorCategorias = null;
     }
 
-    var grupos = agruparProductosPorCategoria(categorias, productos);
+    menu.innerHTML = "";
     var contadorProducto = 0;
 
     var prefiereMovimientoReducido = window.matchMedia &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    grupos.forEach(function (grupo, indiceGrupo) {
+    gruposActuales.forEach(function (grupo, indiceGrupo) {
       var seccion = document.createElement("div");
       seccion.className = "categoria";
       seccion.id = "categoria-" + indiceGrupo;
@@ -757,8 +787,115 @@
       }
     });
 
-    renderChipsCategorias(grupos);
-    iniciarObservadorCategorias(grupos);
+    iniciarObservadorCategorias(gruposActuales);
+  }
+
+  function renderVistaBusqueda(termino) {
+    if (observadorCategorias) {
+      observadorCategorias.disconnect();
+      observadorCategorias = null;
+    }
+
+    desmarcarChips();
+    menu.innerHTML = "";
+
+    var resultados = productosCargados.filter(function (producto) {
+      return coincideBusqueda(producto, termino);
+    });
+
+    if (resultados.length === 0) {
+      var vacio = document.createElement("div");
+      vacio.className = "busqueda-vacia";
+
+      var texto = document.createElement("p");
+      texto.textContent = "No encontramos nada con ese nombre.";
+      vacio.appendChild(texto);
+
+      var boton = document.createElement("button");
+      boton.type = "button";
+      boton.className = "boton-borrar-busqueda";
+      boton.textContent = "Borrar búsqueda";
+      boton.addEventListener("click", cerrarBusqueda);
+      vacio.appendChild(boton);
+
+      menu.appendChild(vacio);
+      return;
+    }
+
+    var rejilla = document.createElement("div");
+    rejilla.className = "rejilla-busqueda";
+    resultados.forEach(function (producto, indice) {
+      rejilla.appendChild(crearElementoProducto(producto, indice));
+    });
+    menu.appendChild(rejilla);
+  }
+
+  function abrirBusqueda() {
+    buscadorCategoria.classList.add("activo");
+    inputBuscarProducto.focus();
+    terminoBusqueda = normalizarTexto(inputBuscarProducto.value.trim());
+    renderVistaBusqueda(terminoBusqueda);
+  }
+
+  function cerrarBusqueda() {
+    buscadorCategoria.classList.remove("activo");
+    inputBuscarProducto.value = "";
+    inputBuscarProducto.blur();
+    terminoBusqueda = "";
+    renderVistaCategorias();
+  }
+
+  botonBuscar.addEventListener("click", function () {
+    if (buscadorCategoria.classList.contains("activo")) {
+      inputBuscarProducto.focus();
+      return;
+    }
+    abrirBusqueda();
+  });
+
+  botonCerrarBusqueda.addEventListener("click", cerrarBusqueda);
+
+  inputBuscarProducto.addEventListener("input", function () {
+    terminoBusqueda = normalizarTexto(inputBuscarProducto.value.trim());
+    renderVistaBusqueda(terminoBusqueda);
+  });
+
+  inputBuscarProducto.addEventListener("keydown", function (evento) {
+    if (evento.key === "Escape") {
+      evento.preventDefault();
+      cerrarBusqueda();
+    }
+  });
+
+  function renderMenu(categorias, productos) {
+    productosCargados = productos;
+    productosPorId = {};
+    productos.forEach(function (p) {
+      productosPorId[p.id] = p;
+    });
+
+    buscadorCategoria.classList.remove("activo");
+    inputBuscarProducto.value = "";
+    terminoBusqueda = "";
+
+    if (productos.length === 0) {
+      menu.innerHTML = "";
+      var vacio = document.createElement("p");
+      vacio.className = "menu-vacio";
+      vacio.textContent = "Todavía no hay productos disponibles.";
+      menu.appendChild(vacio);
+      gruposActuales = [];
+      buscadorCategoria.hidden = true;
+      filaCategorias.hidden = true;
+      return;
+    }
+
+    gruposActuales = agruparProductosPorCategoria(categorias, productos);
+    buscadorCategoria.hidden = productos.length < 10;
+
+    renderChipsCategorias(gruposActuales);
+    actualizarVisibilidadFila();
+    renderVistaCategorias();
   }
 
   // ---- Carrito ----

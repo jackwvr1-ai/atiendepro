@@ -254,10 +254,14 @@ a.dato-confianza {
   color: var(--texto-suave);
 }
 
-/* ---- Chips de categorías ---- */
+/* ---- Chips de categorías y buscador ----
+   Ambos viven en la misma fila desplazable. El buscador es un elemento
+   persistente (no se reconstruye al reordenar los chips) para poder
+   animar su ancho sin perder el foco ni el texto escrito. */
 
-.chips-categorias {
+.fila-categorias {
   display: flex;
+  align-items: center;
   gap: 8px;
   overflow-x: auto;
   scrollbar-width: none;
@@ -265,12 +269,16 @@ a.dato-confianza {
   padding: 16px 20px 0;
 }
 
-.chips-categorias::-webkit-scrollbar {
+.fila-categorias::-webkit-scrollbar {
   display: none;
 }
 
-.chips-categorias[hidden] {
+.fila-categorias[hidden] {
   display: none;
+}
+
+.chips-categorias {
+  display: contents;
 }
 
 .chip-categoria {
@@ -291,6 +299,99 @@ a.dato-confianza {
   border-color: var(--acento-fondo);
   background: var(--acento-fondo);
   color: var(--acento-texto);
+}
+
+.buscador-categoria {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  height: 37px;
+  width: 37px;
+  border: 1.5px solid var(--borde);
+  border-radius: 999px;
+  background: var(--gris-claro);
+  overflow: hidden;
+  transition: width 0.22s ease, border-color 0.22s ease;
+}
+
+.buscador-categoria[hidden] {
+  display: none;
+}
+
+.buscador-categoria.activo {
+  width: min(72vw, 280px);
+  border-color: var(--acento-fondo);
+}
+
+.boton-buscar-icono {
+  flex-shrink: 0;
+  width: 37px;
+  height: 35px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--texto-suave);
+  cursor: pointer;
+}
+
+.boton-buscar-icono svg {
+  width: 17px;
+  height: 17px;
+}
+
+.campo-buscar-producto {
+  flex: 1 1 auto;
+  min-width: 0;
+  width: 0;
+  border: none;
+  background: none;
+  outline: none;
+  font-family: inherit;
+  font-size: 0.85rem;
+  color: var(--texto);
+  padding: 0;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.buscador-categoria.activo .campo-buscar-producto {
+  width: auto;
+  opacity: 1;
+}
+
+.campo-buscar-producto::-webkit-search-cancel-button {
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+.boton-cerrar-busqueda {
+  flex-shrink: 0;
+  width: 0;
+  height: 35px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: none;
+  border: none;
+  padding: 0;
+  color: var(--texto-suave);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.buscador-categoria.activo .boton-cerrar-busqueda {
+  width: 30px;
+  opacity: 1;
+}
+
+.boton-cerrar-busqueda svg {
+  width: 15px;
+  height: 15px;
 }
 
 /* ---- Tarjetas de métodos de pago ----
@@ -554,6 +655,44 @@ a.dato-confianza {
   font-size: 0.95rem;
   padding: 24px 0;
   text-align: center;
+}
+
+/* ---- Resultados de búsqueda ----
+   Rejilla de dos columnas: los resultados vienen de categorías distintas,
+   así que no tiene sentido repartirlos en carruseles por categoría. */
+
+.rejilla-busqueda {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.rejilla-busqueda .producto {
+  width: auto;
+  flex: initial;
+}
+
+.busqueda-vacia {
+  text-align: center;
+  padding: 48px 12px;
+}
+
+.busqueda-vacia p {
+  margin: 0 0 18px;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.boton-borrar-busqueda {
+  border: 1.5px solid var(--borde);
+  border-radius: 999px;
+  background: var(--gris-claro);
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
 }
 
 /* ---- Pie de página ---- */
