@@ -133,7 +133,7 @@ body.carrito-con-barra .envoltorio {
   left: 0;
   right: 0;
   bottom: 0;
-  height: 33%;
+  height: 46%;
   background: linear-gradient(to bottom, transparent, var(--fondo));
   pointer-events: none;
 }
@@ -402,6 +402,33 @@ a.dato-confianza {
   height: 15px;
 }
 
+/* ---- Degradado de borde en filas desplazables ----
+   Envuelve cada fila horizontal (categorías, formas de pago, carruseles de
+   producto) para avisar que hay más contenido al lado: un degradado corto
+   del color de fondo pegado al borde derecho. JS decide cuándo mostrarlo
+   (.mostrar-desvanecido) según la posición del scroll, y desaparece solo al
+   llegar al final. Nunca intercepta el toque. */
+
+.envoltura-desvanecida {
+  position: relative;
+}
+
+.borde-desvanecido {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 32px;
+  background: linear-gradient(to right, transparent, var(--fondo));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.15s ease;
+}
+
+.envoltura-desvanecida.mostrar-desvanecido .borde-desvanecido {
+  opacity: 1;
+}
+
 /* ---- Fila de métodos de pago ----
    Viven dentro de la cabecera, en su propia fila horizontal desplazable:
    misma mecánica que los chips de categorías de más abajo (sin barra
@@ -609,6 +636,9 @@ a.dato-confianza {
   color: var(--texto);
   margin: 0 0 4px;
   line-height: 1.3;
+  /* Alto fijo de dos líneas siempre, tenga el nombre una o dos: así el
+     precio cae a la misma altura en toda la fila del carrusel. */
+  height: 2.6em;
   overflow-wrap: anywhere;
   display: -webkit-box;
   -webkit-line-clamp: 2;
