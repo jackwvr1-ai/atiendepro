@@ -249,6 +249,11 @@ body {
   height: 16px;
 }
 
+a.dato-confianza {
+  text-decoration: none;
+  color: var(--texto-suave);
+}
+
 /* ---- Chips de categorías ---- */
 
 .chips-categorias {

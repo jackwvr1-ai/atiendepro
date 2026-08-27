@@ -48,6 +48,21 @@
       </div>
 
       <div class="campo">
+        <label for="direccionNegocio">Dirección (opcional)</label>
+        <input type="text" id="direccionNegocio" name="direccionNegocio" placeholder="Ej. Caja Seca, Estado Zulia" maxlength="200">
+      </div>
+
+      <div class="campo">
+        <label for="whatsapp">WhatsApp (opcional)</label>
+        <input type="tel" id="whatsapp" name="whatsapp" placeholder="Número con código de país" maxlength="30">
+      </div>
+
+      <div class="campo">
+        <label for="encargado">Atiende (opcional)</label>
+        <input type="text" id="encargado" name="encargado" placeholder="Nombre de quien atiende" maxlength="80">
+      </div>
+
+      <div class="campo">
         <label for="correoPedidos">Correo donde recibir los pedidos</label>
         <input type="email" id="correoPedidos" name="correoPedidos" placeholder="tu@correo.com" autocomplete="email" required>
       </div>
@@ -493,6 +508,9 @@
   var previaSlug = document.getElementById("previaSlug");
   var campoDescripcion = document.getElementById("descripcion");
   var campoTelefono = document.getElementById("telefono");
+  var campoDireccionNegocio = document.getElementById("direccionNegocio");
+  var campoWhatsapp = document.getElementById("whatsapp");
+  var campoEncargado = document.getElementById("encargado");
   var campoCorreoPedidos = document.getElementById("correoPedidos");
   var mensajeFormulario = document.getElementById("mensajeFormulario");
   var btnGuardar = document.getElementById("btnGuardar");
@@ -797,6 +815,9 @@
     campoSlug.value = kioscoActual.slug || "";
     campoDescripcion.value = kioscoActual.descripcion || "";
     campoTelefono.value = kioscoActual.telefono_contacto || "";
+    campoDireccionNegocio.value = kioscoActual.direccion || "";
+    campoWhatsapp.value = kioscoActual.whatsapp || "";
+    campoEncargado.value = kioscoActual.encargado || "";
     campoCorreoPedidos.value = kioscoActual.email_pedidos || (usuarioActual && usuarioActual.email) || "";
     slugEditadoManual = true;
     actualizarPreviaSlug();
@@ -1429,6 +1450,9 @@
     var slug = campoSlug.value.trim().toLowerCase();
     var descripcion = campoDescripcion.value.trim();
     var telefono = campoTelefono.value.trim();
+    var direccionNegocio = campoDireccionNegocio.value.trim();
+    var whatsapp = campoWhatsapp.value.trim();
+    var encargado = campoEncargado.value.trim();
     var correoPedidos = campoCorreoPedidos.value.trim();
 
     if (!nombre) {
@@ -1457,6 +1481,9 @@
       slug: slug,
       descripcion: descripcion || null,
       telefono_contacto: telefono || null,
+      direccion: direccionNegocio || null,
+      whatsapp: whatsapp || null,
+      encargado: encargado || null,
       email_pedidos: correoPedidos
     };
 
