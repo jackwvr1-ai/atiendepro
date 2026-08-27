@@ -103,7 +103,7 @@ body.carrito-con-barra .envoltorio {
   align-items: center;
   text-align: center;
   border-bottom: 1px solid var(--borde);
-  padding-bottom: 22px;
+  padding-bottom: 16px;
 }
 
 .portada-negocio {
@@ -231,7 +231,7 @@ body.carrito-con-barra .envoltorio {
   align-items: center;
   justify-content: center;
   gap: 8px 18px;
-  margin-top: 14px;
+  margin-top: 10px;
 }
 
 .barra-confianza[hidden] {
@@ -274,7 +274,7 @@ a.dato-confianza {
   overflow-x: auto;
   scrollbar-width: none;
   -ms-overflow-style: none;
-  padding: 16px 20px 0;
+  padding: 12px 20px 0;
 }
 
 .fila-categorias::-webkit-scrollbar {
@@ -402,44 +402,67 @@ a.dato-confianza {
   height: 15px;
 }
 
-/* ---- Tarjetas de métodos de pago ----
-   Van dentro de la cabecera, junto al resto de datos del negocio. A propósito
-   NO son pastillas redondeadas como los chips de categorías de más abajo:
-   rectangulares y en rejilla de dos columnas, para que no se confundan.
-   El borde inferior hace de línea divisoria antes de los chips; al no haber
-   métodos activos el bloque entero se oculta y la línea se va con él. */
+/* ---- Fila de métodos de pago ----
+   Viven dentro de la cabecera, en su propia fila horizontal desplazable:
+   misma mecánica que los chips de categorías de más abajo (sin barra
+   visible, ancla por tarjeta), pero rectangulares con esquina suave y
+   borde propio, para que a simple vista no se confundan con los chips.
+   La etiqueta "Pagas con" es la señal extra: sin ella el cliente toca un
+   método esperando filtrar productos. El detalle del método elegido no
+   entra en el scroll horizontal: vive debajo, a todo el ancho, y empuja el
+   catálogo hacia abajo sin desordenar el resto de la fila. El borde
+   inferior hace de línea divisoria antes de los chips; al no haber métodos
+   activos el bloque entero se oculta y la línea se va con él. */
 
-.metodos-pago-kiosco {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  padding: 16px 20px 22px;
+.bloque-pago-kiosco {
+  padding: 12px 20px 14px;
   border-bottom: 1px solid var(--borde);
 }
 
-.metodos-pago-kiosco[hidden] {
+.bloque-pago-kiosco[hidden] {
   display: none;
 }
 
-.metodo-pago-item.abierta {
-  grid-column: 1 / -1;
+.etiqueta-pago-kiosco {
+  margin: 0 0 8px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+}
+
+.metodos-pago-kiosco {
+  display: flex;
+  gap: 8px;
+  overflow-x: auto;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.metodos-pago-kiosco::-webkit-scrollbar {
+  display: none;
 }
 
 .metodo-pago-tarjeta {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 12px 14px;
+  gap: 8px;
+  white-space: nowrap;
+  padding: 9px 14px;
   border: 1px solid var(--borde);
   border-radius: var(--radio-chico);
   background: var(--gris-claro);
   color: var(--texto);
   font-family: inherit;
-  font-size: 0.88rem;
+  font-size: 0.85rem;
   font-weight: 600;
-  text-align: left;
   cursor: pointer;
+}
+
+.metodo-pago-tarjeta.activa {
+  border-color: var(--acento-fondo);
 }
 
 .icono-metodo-pago-tarjeta {
@@ -449,15 +472,20 @@ a.dato-confianza {
 }
 
 .icono-metodo-pago-tarjeta svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 
 .nombre-metodo-pago-tarjeta {
   min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+}
+
+.detalle-pago-kiosco-envoltorio:empty {
+  display: none;
+}
+
+.detalle-pago-kiosco-envoltorio .detalle-metodo-pago {
+  margin: 10px 0 0;
 }
 
 /* ---- Menú por categorías ---- */
@@ -467,7 +495,7 @@ a.dato-confianza {
 }
 
 .categoria {
-  margin-top: 26px;
+  margin-top: 16px;
   scroll-margin-top: 12px;
 }
 
