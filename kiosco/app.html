@@ -258,6 +258,22 @@
       </div>
 
       <div class="campo">
+        <label for="detallesProducto">Detalles del producto (opcional)</label>
+        <textarea id="detallesProducto" name="detallesProducto" placeholder="256 GB, titanio natural, usado excelente, batería 92%, incluye cable" maxlength="300" rows="3"></textarea>
+        <p class="ayuda-detalles-producto">Escribe lo que sepas: capacidad, color, estado, medidas, ingredientes… Cuanto más pongas, mejor queda la descripción.</p>
+        <button type="button" id="btnEscribirIA" class="boton-chico boton-escribir-ia">Redactar descripción</button>
+        <p class="ayuda-escribir-ia" id="ayudaEscribirIA" hidden></p>
+        <div class="caja-propuesta-ia" id="cajaPropuestaIA" hidden>
+          <p class="titulo-propuesta-ia">Sugerencia de CarritoGo</p>
+          <p class="texto-propuesta-ia" id="textoPropuestaIA"></p>
+          <div class="fila-acciones-propuesta-ia">
+            <button type="button" id="btnUsarPropuestaIA" class="boton-chico">Usar descripción</button>
+            <button type="button" id="btnOtraPropuestaIA" class="boton-chico">Intentar otra</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="campo">
         <label for="categoriaProducto">Categoría (opcional)</label>
         <select id="categoriaProducto" name="categoriaProducto">
           <option value="">Sin categoría</option>
@@ -459,6 +475,7 @@
 
   var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
   var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+  var URL_DESCRIBIR_PRODUCTO = SUPABASE_URL + "/functions/v1/describir-producto";
 
   var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
     auth: { storageKey: "kiosco-auth", detectSessionInUrl: true, persistSession: true }
@@ -590,12 +607,22 @@
   var campoNombreProducto = document.getElementById("nombreProducto");
   var campoPrecioProducto = document.getElementById("precioProducto");
   var campoDescripcionProducto = document.getElementById("descripcionProducto");
+  var campoDetallesProducto = document.getElementById("detallesProducto");
   var campoCategoriaProducto = document.getElementById("categoriaProducto");
   var mensajeFormProducto = document.getElementById("mensajeFormProducto");
   var btnGuardarProducto = document.getElementById("btnGuardarProducto");
   var btnGestionarOpciones = document.getElementById("btnGestionarOpciones");
   var btnEliminarProducto = document.getElementById("btnEliminarProducto");
   var btnCancelarProducto = document.getElementById("btnCancelarProducto");
+
+  var btnEscribirIA = document.getElementById("btnEscribirIA");
+  var ayudaEscribirIA = document.getElementById("ayudaEscribirIA");
+  var cajaPropuestaIA = document.getElementById("cajaPropuestaIA");
+  var textoPropuestaIA = document.getElementById("textoPropuestaIA");
+  var btnUsarPropuestaIA = document.getElementById("btnUsarPropuestaIA");
+  var btnOtraPropuestaIA = document.getElementById("btnOtraPropuestaIA");
+  var propuestaIAActual = "";
+  var generandoIA = false;
 
   var previaFotoProducto = document.getElementById("previaFotoProducto");
   var imgFotoProducto = document.getElementById("imgFotoProducto");
@@ -2038,11 +2065,145 @@
     campoNombreProducto.value = producto ? producto.nombre : "";
     campoPrecioProducto.value = producto ? String(producto.precio) : "";
     campoDescripcionProducto.value = producto ? (producto.descripcion || "") : "";
+    campoDetallesProducto.value = producto ? (producto.detalles || "") : "";
     actualizarSelectCategorias(producto ? producto.categoria_id : "");
     actualizarPreviaFotoProducto();
 
+    generandoIA = false;
+    propuestaIAActual = "";
+    cajaPropuestaIA.hidden = true;
+    btnEscribirIA.textContent = "Redactar descripción";
+    actualizarEstadoBotonIA();
+
     tarjetaFormProducto.hidden = false;
   }
+
+  function actualizarEstadoBotonIA() {
+    if (generandoIA) return;
+    var tieneNombre = campoNombreProducto.value.trim().length > 0;
+    btnEscribirIA.disabled = !tieneNombre;
+    ayudaEscribirIA.hidden = tieneNombre;
+    if (!tieneNombre) {
+      ayudaEscribirIA.textContent = "Escribe primero el nombre del producto.";
+    }
+  }
+
+  campoNombreProducto.addEventListener("input", actualizarEstadoBotonIA);
+
+  function obtenerVariantesProducto(producto) {
+    if (!producto) return Promise.resolve([]);
+    return sb.from("kiosco_grupos_opciones")
+      .select("nombre, kiosco_opciones(nombre)")
+      .eq("producto_id", producto.id)
+      .then(function (resultado) {
+        if (resultado.error || !resultado.data) return [];
+        var variantes = [];
+        resultado.data.forEach(function (grupo) {
+          (grupo.kiosco_opciones || []).forEach(function (opcion) {
+            if (opcion && opcion.nombre) variantes.push(grupo.nombre + ": " + opcion.nombre);
+          });
+        });
+        return variantes;
+      }).catch(function () { return []; });
+  }
+
+  function pedirDescripcionIA(esOtra) {
+    var nombre = campoNombreProducto.value.trim();
+    if (!nombre || generandoIA) return;
+
+    generandoIA = true;
+    btnEscribirIA.disabled = true;
+    btnUsarPropuestaIA.disabled = true;
+    btnOtraPropuestaIA.disabled = true;
+    if (esOtra) {
+      btnOtraPropuestaIA.textContent = "Escribiendo…";
+    } else {
+      btnEscribirIA.textContent = "Escribiendo…";
+    }
+    mensajeFormProducto.hidden = true;
+
+    obtenerVariantesProducto(productoEditando).then(function (variantes) {
+      return sb.auth.getSession().then(function (resultadoSesion) {
+        var sesion = resultadoSesion && resultadoSesion.data && resultadoSesion.data.session;
+        if (!sesion) throw new Error("sin-sesion");
+
+        var categoriaTexto = "";
+        var opcionCategoria = campoCategoriaProducto.options[campoCategoriaProducto.selectedIndex];
+        if (opcionCategoria && opcionCategoria.value) categoriaTexto = opcionCategoria.textContent;
+
+        var precioTexto = campoPrecioProducto.value.trim().replace(",", ".");
+        var precioNumero = Number(precioTexto);
+
+        var cuerpo = {
+          kiosco_id: kioscoActual.id,
+          nombre: nombre,
+          categoria: categoriaTexto,
+          precio: (precioTexto && !isNaN(precioNumero) && precioNumero > 0) ? precioNumero : null,
+          variantes: variantes,
+          descripcion_actual: campoDescripcionProducto.value.trim(),
+          detalles: campoDetallesProducto.value.trim()
+        };
+
+        return fetch(URL_DESCRIBIR_PRODUCTO, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "apikey": SUPABASE_ANON,
+            "Authorization": "Bearer " + sesion.access_token
+          },
+          body: JSON.stringify(cuerpo)
+        });
+      });
+    }).then(function (respuesta) {
+      return respuesta.json();
+    }).then(function (datos) {
+      generandoIA = false;
+      btnEscribirIA.textContent = "Redactar descripción";
+      actualizarEstadoBotonIA();
+
+      if (!datos || !datos.ok) {
+        btnUsarPropuestaIA.disabled = false;
+        btnOtraPropuestaIA.disabled = false;
+        btnOtraPropuestaIA.textContent = "Intentar otra";
+        var mensajeError = (datos && datos.mensaje) || "No pudimos generar la descripción ahora. Intenta de nuevo en un momento.";
+        mostrarMensajeEnCaja(mensajeFormProducto, mensajeError, "error");
+        return;
+      }
+
+      propuestaIAActual = datos.descripcion;
+      textoPropuestaIA.textContent = propuestaIAActual;
+      cajaPropuestaIA.hidden = false;
+      btnUsarPropuestaIA.disabled = false;
+      btnOtraPropuestaIA.disabled = false;
+      btnOtraPropuestaIA.textContent = "Intentar otra";
+    }).catch(function () {
+      generandoIA = false;
+      btnEscribirIA.textContent = "Redactar descripción";
+      btnUsarPropuestaIA.disabled = false;
+      btnOtraPropuestaIA.disabled = false;
+      btnOtraPropuestaIA.textContent = "Intentar otra";
+      actualizarEstadoBotonIA();
+      mostrarMensajeEnCaja(mensajeFormProducto, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+    });
+  }
+
+  btnEscribirIA.addEventListener("click", function () {
+    pedirDescripcionIA(false);
+  });
+
+  btnOtraPropuestaIA.addEventListener("click", function () {
+    pedirDescripcionIA(true);
+  });
+
+  btnUsarPropuestaIA.addEventListener("click", function () {
+    var actual = campoDescripcionProducto.value.trim();
+    if (actual && actual !== propuestaIAActual) {
+      var confirmado = window.confirm("Esto va a reemplazar la descripción que ya escribiste. ¿Continuar?");
+      if (!confirmado) return;
+    }
+    campoDescripcionProducto.value = propuestaIAActual;
+    cajaPropuestaIA.hidden = true;
+  });
 
   btnNuevoProducto.addEventListener("click", function () {
     mostrarFormProducto(null);
@@ -2059,6 +2220,7 @@
     var nombre = campoNombreProducto.value.trim();
     var precioTexto = campoPrecioProducto.value.trim().replace(",", ".");
     var descripcion = campoDescripcionProducto.value.trim();
+    var detalles = campoDetallesProducto.value.trim();
     var categoriaId = campoCategoriaProducto.value || null;
 
     if (!nombre) {
@@ -2076,6 +2238,7 @@
       nombre: nombre,
       precio: precio,
       descripcion: descripcion || null,
+      detalles: detalles || null,
       categoria_id: categoriaId
     };
 

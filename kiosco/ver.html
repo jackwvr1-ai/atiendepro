@@ -658,6 +658,7 @@
 
   function crearElementoProducto(producto, indice) {
     var tieneOpciones = (gruposPorProducto[producto.id] || []).length > 0;
+    var tocable = !producto.agotado;
 
     var fila = document.createElement("div");
     fila.className = "producto" +
@@ -692,7 +693,8 @@
       boton.className = "boton-agregar";
       boton.setAttribute("aria-label", "Agregar " + producto.nombre);
       boton.textContent = "+";
-      boton.addEventListener("click", function () {
+      boton.addEventListener("click", function (evento) {
+        evento.stopPropagation();
         agregarAlCarrito(producto.id);
       });
       foto.appendChild(boton);
@@ -715,7 +717,7 @@
 
     fila.appendChild(info);
 
-    if (!producto.agotado && tieneOpciones) {
+    if (tocable) {
       fila.setAttribute("role", "button");
       fila.setAttribute("tabindex", "0");
       fila.addEventListener("click", function () {

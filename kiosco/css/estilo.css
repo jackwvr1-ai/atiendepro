@@ -428,6 +428,75 @@ button[type="submit"]:disabled {
   transform: scale(0.96);
 }
 
+.boton-chico:disabled {
+  opacity: 0.55;
+  cursor: default;
+  transform: none;
+}
+
+/* ---- "Redactar descripción" en el formulario de producto ----
+   Botón chico a propósito: es una ayuda opcional, no compite con el botón
+   de Guardar. La propuesta nunca aparece dentro del campo, siempre en su
+   propia caja debajo, y solo pasa al campo si el dueño toca "Usar
+   descripción". */
+
+.ayuda-detalles-producto {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+.boton-escribir-ia {
+  align-self: flex-start;
+  margin-top: 10px;
+}
+
+.ayuda-escribir-ia {
+  margin: 6px 0 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+.ayuda-escribir-ia[hidden] {
+  display: none;
+}
+
+.caja-propuesta-ia {
+  margin-top: 12px;
+  padding: 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-chico);
+  background: #f5f5f5;
+}
+
+.caja-propuesta-ia[hidden] {
+  display: none;
+}
+
+.titulo-propuesta-ia {
+  margin: 0 0 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--texto-suave);
+}
+
+.texto-propuesta-ia {
+  margin: 0 0 12px;
+  font-size: 0.95rem;
+  color: var(--texto);
+  line-height: 1.45;
+}
+
+.fila-acciones-propuesta-ia {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
 .nota-lista {
   text-align: left;
   color: var(--texto-suave);

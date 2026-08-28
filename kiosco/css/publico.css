@@ -672,7 +672,7 @@ a.dato-confianza {
   box-shadow: 0 2px 6px rgba(17, 17, 17, 0.18);
 }
 
-.producto.con-opciones {
+.producto:not(.agotado) {
   cursor: pointer;
 }
 
