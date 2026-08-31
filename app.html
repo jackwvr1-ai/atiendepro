@@ -356,6 +356,7 @@ h1,h2,h3,.brand-name,.kpi-value,.page-title{font-family:'Inter','Inter',sans-ser
 .hidden{display:none !important;}
 
 .app{display:flex; height:100vh; height:100dvh; overflow:hidden;}
+body.con-banner-soporte .app{margin-top:42px; height:calc(100vh - 42px); height:calc(100dvh - 42px);}
 
 /* ---------- Sidebar (escritorio) — BLANCO para negocios ---------- */
 .sidebar{width:248px; background:#fff; color:var(--muted); display:flex; flex-direction:column; flex-shrink:0;
@@ -477,7 +478,7 @@ body.tema-creador .cc-topbar-title{color:#8FA0C0;}
 .btn.sm{padding:5px 10px; font-size:12px;}
 .card{background:var(--card); border:1px solid var(--line); border-radius:14px; box-shadow:0 1px 2px rgba(16,27,45,.04);}
 .card-pad{padding:18px 20px;}
-.card-title{font-size:14px; font-weight:600;}
+.card-title{font-size:12.5px; font-weight:600; text-transform:uppercase; letter-spacing:.04em;}
 .card-head{display:flex; align-items:center; justify-content:space-between; padding:16px 20px 0;}
 .link{color:var(--electric); font-size:12.5px; font-weight:600; cursor:pointer; display:inline-flex; align-items:center; gap:3px; background:none; border:none;}
 
@@ -540,9 +541,9 @@ table.tbl{width:100%; border-collapse:collapse; font-size:13px;}
   border:1px solid var(--line); background:#fff; color:var(--muted);}
 .chip.on{background:var(--navy-900); color:#fff; border-color:var(--navy-900);}
 .dia-chip{display:inline-flex; align-items:center; justify-content:center; min-width:46px; padding:8px 10px;
-  border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--muted); font-size:12.5px;
+  border-radius:999px; border:1px solid var(--line); background:var(--card); color:var(--faint) !important; font-size:12.5px;
   font-weight:600; cursor:pointer; user-select:none;}
-.dia-chip.on{background:var(--navy-900); color:#fff; border-color:var(--navy-900);}
+.dia-chip.on{background:var(--electric-soft); color:var(--electric-deep) !important; border-color:var(--electric); font-weight:700;}
 
 .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
 .field label{font-size:12px; font-weight:600; color:var(--muted);}
@@ -577,6 +578,7 @@ table.tbl{width:100%; border-collapse:collapse; font-size:13px;}
   align-items:flex-start; width:320px; max-width:88vw; box-shadow:0 12px 30px rgba(7,15,31,.35); animation:tin .3s ease; border:1px solid var(--navy-700);}
 @keyframes tin{from{transform:translateX(24px); opacity:0;}to{transform:none; opacity:1;}}
 .toast small{color:#9FB0CC; display:block; margin-top:2px; font-size:11.5px;}
+#btnVolverCreador:hover{background:rgba(255,255,255,.12);}
 .notif-panel{position:absolute; top:46px; right:0; width:330px; max-width:88vw; z-index:70; max-height:380px; overflow-y:auto;
   box-shadow:0 16px 40px rgba(16,27,45,.14);}
 .notif-item{display:flex; gap:11px; padding:12px 16px; border-bottom:1px solid var(--line-soft); font-size:12.5px;}
@@ -1071,6 +1073,20 @@ async function subirReposoKiosko(f){
     if(prev){ prev.style.background = `url('${urlFinal}') center/cover`; prev.textContent=''; }
     toast('Imagen de reposo guardada', 'Se mostrará en el kiosco en reposo.');
   } catch(e){ toast('Error al subir la imagen',''); if(prev) prev.textContent='🖼'; }
+}
+
+/* Quita la imagen de reposo del kiosco (queda sin protector de pantalla) */
+async function quitarReposoKiosko(){
+  if(!negocioActual) return;
+  if(!confirm('¿Quitar la imagen de reposo del kiosco?')) return;
+  try {
+    const { data, error } = await sb.from('negocios').update({ kiosko_reposo_url: null }).eq('id', negocioActual.id).select().single();
+    if(error){ toast('No se pudo quitar', error.message); return; }
+    negocioActual = data;
+    if(negocioPropio) negocioPropio.kiosko_reposo_url = null;
+    render();
+    toast('Imagen de reposo quitada', 'El kiosco ya no mostrará ninguna imagen en reposo.');
+  } catch(e){ toast('Error al quitar la imagen',''); }
 }
 
 /* Sube la foto a Supabase Storage y la guarda en la cuenta del usuario (real, por usuario) */
@@ -1628,7 +1644,7 @@ async function empujarAVapi(){
   } catch(e){
     if(res){ res.style.display='block'; res.textContent = 'Error: ' + e.message; }
   }
-  if(btn){ btn.disabled = false; btn.textContent = '⬆ Empujar a Vapi'; }
+  if(btn){ btn.disabled = false; btn.textContent = 'Empujar a Vapi'; }
 }
 
 async function actualizarSaldoVapi(){
@@ -2432,7 +2448,7 @@ function viewConfig(){
     </div>
     ${bloqueHorario(n)}
     <div class="card card-pad" style="margin-top:16px;">
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">🍳 Pantalla de Cocina</div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">Pantalla de Cocina</div>
       <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">Una pantalla aparte para tus cocineros: solo ven los pedidos, nada más. Ábrela en la tablet de la cocina.</div>
       <div class="grid-2eq" style="gap:16px;">
         <div>
@@ -2451,7 +2467,7 @@ function viewConfig(){
           <div style="padding:14px;background:var(--electric-soft);border-radius:11px;">
             <div style="font-size:12.5px;color:var(--electric-deep);font-weight:600;margin-bottom:8px;">Dirección para la tablet de la cocina:</div>
             <div style="font-family:monospace;font-size:13.5px;background:#fff;padding:9px 12px;border-radius:8px;margin-bottom:10px;word-break:break-all;">atiendepro.net/cocina</div>
-            <button class="btn primary" id="cfgAbrirCocina" style="width:100%;">🖥 Abrir pantalla de cocina</button>
+            <button class="btn primary" id="cfgAbrirCocina" style="width:100%;">Abrir pantalla de cocina</button>
             <div style="font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;">Ábrela en la tablet de la cocina, inicia sesión una vez, y déjala ahí. Los pedidos llegarán solos.</div>
           </div>
         </div>
@@ -2459,7 +2475,7 @@ function viewConfig(){
     </div>
 
     <div class="card card-pad" style="margin-top:16px;">
-      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">🛎 Kiosco de autopedido</div>
+      <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">Kiosco de autopedido</div>
       <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">Pantalla táctil donde tus clientes hacen su pedido solos y cae directo en la cocina. El menú es el mismo que administras arriba.</div>
       <div class="grid-2eq">
         <div>
@@ -2468,13 +2484,14 @@ function viewConfig(){
             <div id="kioReposoPrev" style="width:96px;height:64px;border-radius:11px;background:${n.kiosko_reposo_url?`url('${esc(n.kiosko_reposo_url)}') center/cover`:'var(--electric-soft)'};display:flex;align-items:center;justify-content:center;font-size:24px;cursor:pointer;border:1px solid var(--line);flex-shrink:0;">${n.kiosko_reposo_url?'':'🖼'}</div>
             <div style="flex:1;font-size:11.5px;color:var(--muted);line-height:1.5;">Cuando nadie usa el kiosco por un rato, muestra esta imagen (tu logo o una foto) con el botón "Ordenar ahora". Toca para subirla.</div>
           </div>
+          ${n.kiosko_reposo_url ? `<button class="btn" id="kioReposoQuitar" style="margin-top:10px;font-size:11.5px;color:var(--red);">Quitar imagen</button>` : ''}
           <input type="file" id="kioReposoInput" accept="image/*" style="display:none;">
         </div>
         <div>
-          <div style="padding:14px;background:#FFF3EC;border-radius:11px;">
-            <div style="font-size:12.5px;color:#C05000;font-weight:600;margin-bottom:8px;">Dirección para la tablet del kiosco:</div>
+          <div style="padding:14px;background:var(--electric-soft);border-radius:11px;">
+            <div style="font-size:12.5px;color:var(--electric-deep);font-weight:600;margin-bottom:8px;">Dirección para la tablet del kiosco:</div>
             <div style="font-family:monospace;font-size:13px;background:#fff;padding:9px 12px;border-radius:8px;margin-bottom:10px;word-break:break-all;">atiendepro.net/kiosko?k=${v(n.user_id)}</div>
-            <button class="btn primary" id="cfgAbrirKiosko" style="width:100%;background:#FF6A00;border-color:#FF6A00;">🛎 Abrir kiosco</button>
+            <button class="btn primary" id="cfgAbrirKiosko" style="width:100%;">Abrir kiosco</button>
             <div style="font-size:11.5px;color:var(--muted);margin-top:9px;line-height:1.5;">Ábrela en la tablet del kiosco y déjala en pantalla completa. Los clientes ordenan solos.</div>
           </div>
         </div>
@@ -2488,7 +2505,7 @@ function bloqueTecnicoCreador(n){
   const v = (x)=> x==null ? '' : esc(x);
   const tieneAsistente = n.vapi_asistente_id ? true : false;
   return `<div class="card card-pad" style="margin-top:16px;border:1.5px solid #B98BFF;">
-    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#B98BFF;">⬡ Configuración técnica (solo creador)</div>
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#B98BFF;">Configuración técnica (solo creador)</div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">Área privada de administrador. El cliente NO ve ni edita esto. Aquí configuras el asistente de voz y la conexión de este negocio.</div>
 
     <div class="field"><label>Llave de conexión del negocio (token)</label>
@@ -2514,14 +2531,14 @@ function bloqueTecnicoCreador(n){
     <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
       <button class="btn primary" id="tecCrearAsistente">${tieneAsistente ? 'Actualizar guión guardado' : 'Crear asistente en Vapi'}</button>
       <button class="btn" id="tecGuardarGuion">Solo guardar guión</button>
-      ${tieneAsistente ? `<button class="btn" id="tecEmpujarVapi" style="color:#B98BFF;border-color:rgba(185,139,255,.4);">⬆ Empujar a Vapi</button>` : ''}
+      ${tieneAsistente ? `<button class="btn" id="tecEmpujarVapi" style="color:#B98BFF;border-color:rgba(185,139,255,.4);">Empujar a Vapi</button>` : ''}
     </div>
     ${tieneAsistente ? `<div style="font-size:11.5px;color:var(--faint);margin-top:8px;">"Empujar a Vapi" manda el guión y la bienvenida al asistente real, y le repone la herramienta guardar_pedido.</div>` : ''}
     ${tieneAsistente ? `<div style="margin-top:12px;font-size:12px;color:var(--green);display:flex;align-items:center;gap:6px;"><span class="live-dot"></span>Asistente Vapi conectado · ID: <span style="font-family:monospace;">${v(n.vapi_asistente_id)}</span></div>` : ''}
     <div id="tecResultado" style="display:none;"></div>
 
     <div style="border-top:1px solid var(--line);margin:18px 0 14px;"></div>
-    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#B98BFF;">📞 Número de teléfono (EE.UU.)</div>
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;color:#B98BFF;">Número de teléfono (EE.UU.)</div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:12px;">${tieneAsistente ? 'Asigna un número de tu cuenta Vapi a este negocio para que reciba llamadas.' : 'Primero crea el asistente (arriba), luego podrás asignarle un número.'}</div>
     <button class="btn" id="numCargar">Ver números disponibles</button>
     <div id="numListado" style="margin-top:12px;"></div>
@@ -2569,7 +2586,7 @@ function bloqueHorario(n){
     return `<label class="dia-chip${on?' on':''}" data-dia-chip="${i}"><input type="checkbox" id="cfgDia${i}" ${on?'checked':''} style="display:none;">${d}</label>`;
   }).join('');
   return `<div class="card card-pad" style="margin-top:16px;">
-    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">🕒 Horario de atención</div>
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">Horario de atención</div>
     <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">Esto es lo que obedece tu Recepcionista Virtual.</div>
     <div class="row2">
       <div class="field"><label>Abre a las</label><select id="cfgAbre">${opcionesHora(abre)}</select></div>
@@ -3509,6 +3526,7 @@ async function volverACreador(){
   if(esCreador) document.body.classList.add('tema-creador');
   const banner = document.getElementById('bannerSoporte');
   if(banner) banner.remove();
+  document.body.classList.remove('con-banner-soporte');
   state.pedidosReales = state.clientesReales = state.productosReales = null;
   state.llamadasReales = state.gastosReales = state.actividadReal = null;
   cargarProductos(); cargarPedidos(); cargarClientes();
@@ -3523,11 +3541,12 @@ function mostrarBannerSoporte(){
   if(!banner){
     banner = document.createElement('div');
     banner.id = 'bannerSoporte';
-    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;background:linear-gradient(90deg,#6D3BD6,#B98BFF);color:#fff;padding:9px 18px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:13.5px;font-weight:600;box-shadow:0 2px 12px rgba(109,59,214,.3);';
+    banner.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:9999;height:42px;box-sizing:border-box;background:var(--navy-900);color:#fff;padding:0 18px;display:flex;align-items:center;justify-content:center;gap:14px;font-size:13px;font-weight:600;box-shadow:0 1px 3px rgba(0,0,0,.2);';
     document.body.appendChild(banner);
+    document.body.classList.add('con-banner-soporte');
   }
-  banner.innerHTML = `👁 Modo soporte — estás viendo la cuenta de <b>${esc(viendoComoCliente.nombre)}</b> (${esc(viendoComoCliente.user_id||'')}) `
-    + `<button id="btnVolverCreador" style="background:rgba(255,255,255,.2);border:none;color:#fff;padding:5px 14px;border-radius:8px;font-weight:600;cursor:pointer;">Volver al Centro de Control</button>`;
+  banner.innerHTML = `Modo soporte — estás viendo la cuenta de <b>${esc(viendoComoCliente.nombre)}</b> (${esc(viendoComoCliente.user_id||'')}) `
+    + `<button id="btnVolverCreador" style="background:transparent;border:1px solid rgba(255,255,255,.3);color:#fff;padding:5px 14px;border-radius:8px;font-weight:600;font-size:13px;cursor:pointer;">Volver al Centro de Control</button>`;
   const b = document.getElementById('btnVolverCreador');
   if(b) b.onclick = volverACreador;
 }
@@ -3771,6 +3790,8 @@ function wireContent(){
     kioPrev.onclick = ()=> kioInput.click();
     kioInput.onchange = ()=> subirReposoKiosko(kioInput.files[0]);
   }
+  const kioQuitar = document.getElementById('kioReposoQuitar');
+  if(kioQuitar) kioQuitar.onclick = quitarReposoKiosko;
   const cfgBtn = document.getElementById('cfgSave');
   if(cfgBtn) cfgBtn.onclick = guardarConfig;
   for(let i=0;i<7;i++){
