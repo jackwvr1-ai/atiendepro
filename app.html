@@ -3552,15 +3552,18 @@ function mostrarBannerSoporte(){
 }
 
 function viewCuenta(){
-  const email = usuarioActual ? usuarioActual.email : '—';
   const n = negocioActual || {};
-  const nombreNeg = n.nombre || 'Mi negocio';
+  const enSoporte = !!viendoComoCliente;
+  const email = (!enSoporte && usuarioActual) ? usuarioActual.email : '—';
   const ini = email.slice(0,2).toUpperCase();
   const fechaInicio = n.creado_en ? new Date(n.creado_en).toLocaleDateString('es-ES',{day:'2-digit',month:'long',year:'numeric'}) : '—';
   const v = x => x ? esc(x) : '<span style="color:var(--faint);">Sin especificar</span>';
-  return `<div class="page-head"><div><div class="page-title">Mi cuenta</div><div class="page-sub">Datos de tu cuenta y de tu negocio.</div></div></div>
-    <div id="ctaMsg" style="display:none;margin-bottom:16px;border-radius:9px;padding:10px 13px;font-size:12.5px;"></div>
 
+  const tarjetaPerfil = enSoporte ? `
+    <div class="card card-pad" style="margin-bottom:16px;">
+      <div class="card-title" style="margin-bottom:10px;">Cuenta del cliente</div>
+      <div style="font-size:13px;color:var(--muted);line-height:1.6;">Los datos personales y la contraseña de esta cuenta solo puede verlos y cambiarlos su dueño. Aquí se muestran únicamente los datos del negocio.</div>
+    </div>` : `
     <div class="card card-pad" style="margin-bottom:16px;">
       <div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;">
         <div style="position:relative;flex-shrink:0;">
@@ -3581,11 +3584,26 @@ function viewCuenta(){
       </div>
       <button class="btn primary" id="perfilGuardar" style="margin-top:14px;">Guardar perfil</button>
       <div style="font-size:11.5px;color:var(--faint);margin-top:8px;">Toca la foto para cambiarla. Tu foto y nombre se guardan en tu cuenta.</div>
-    </div>
+    </div>`;
+
+  const tarjetaSeguridad = enSoporte ? '' : `
+      <div class="card card-pad" style="align-self:flex-start;">
+        <div class="card-title" style="margin-bottom:14px;">Seguridad</div>
+        <div class="field"><label>Correo electrónico</label><input value="${esc(email)}" disabled style="background:var(--bg);color:var(--muted);" /></div>
+        <div class="field"><label>Nueva contraseña</label><input id="ctaPass" type="password" placeholder="Mínimo 6 caracteres" /></div>
+        <div class="field"><label>Repetir contraseña</label><input id="ctaPass2" type="password" placeholder="Repite la contraseña" /></div>
+        <button class="btn primary" id="ctaChangePass">Cambiar contraseña</button>
+      </div>`;
+
+  return `<div class="page-head"><div><div class="page-title">Mi cuenta</div><div class="page-sub">Datos de tu cuenta y de tu negocio.</div></div></div>
+    <div id="ctaMsg" style="display:none;margin-bottom:16px;border-radius:9px;padding:10px 13px;font-size:12.5px;"></div>
+
+    ${tarjetaPerfil}
 
     <div class="grid-2eq">
       <div class="card card-pad">
         <div class="card-title" style="margin-bottom:14px;">Información del negocio</div>
+        ${enSoporte ? `<div class="info-row"><span>ID de cliente</span><b>${v(n.user_id)}</b></div>` : ''}
         <div class="info-row"><span>Tipo de negocio</span><b>${v(n.tipo_negocio)}</b></div>
         <div class="info-row"><span>Dirección</span><b>${v(n.direccion)}</b></div>
         <div class="info-row"><span>Ciudad</span><b>${v(n.ciudad)}</b></div>
@@ -3596,13 +3614,7 @@ function viewCuenta(){
         <div class="info-row"><span>Cliente desde</span><b>${fechaInicio}</b></div>
         <div style="font-size:12px;color:var(--faint);margin-top:12px;">Para editar estos datos, ve a la sección <b>Configuración</b>.</div>
       </div>
-      <div class="card card-pad" style="align-self:flex-start;">
-        <div class="card-title" style="margin-bottom:14px;">Seguridad</div>
-        <div class="field"><label>Correo electrónico</label><input value="${esc(email)}" disabled style="background:var(--bg);color:var(--muted);" /></div>
-        <div class="field"><label>Nueva contraseña</label><input id="ctaPass" type="password" placeholder="Mínimo 6 caracteres" /></div>
-        <div class="field"><label>Repetir contraseña</label><input id="ctaPass2" type="password" placeholder="Repite la contraseña" /></div>
-        <button class="btn primary" id="ctaChangePass">Cambiar contraseña</button>
-      </div>
+      ${tarjetaSeguridad}
     </div>`;
 }
 
