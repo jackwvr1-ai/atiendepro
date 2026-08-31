@@ -539,6 +539,10 @@ table.tbl{width:100%; border-collapse:collapse; font-size:13px;}
 .chip{font-size:12.5px; font-weight:600; padding:6px 13px; border-radius:999px; cursor:pointer;
   border:1px solid var(--line); background:#fff; color:var(--muted);}
 .chip.on{background:var(--navy-900); color:#fff; border-color:var(--navy-900);}
+.dia-chip{display:inline-flex; align-items:center; justify-content:center; min-width:46px; padding:8px 10px;
+  border-radius:999px; border:1px solid var(--line); background:#fff; color:var(--muted); font-size:12.5px;
+  font-weight:600; cursor:pointer; user-select:none;}
+.dia-chip.on{background:var(--navy-900); color:#fff; border-color:var(--navy-900);}
 
 .field{display:flex; flex-direction:column; gap:6px; margin-bottom:14px;}
 .field label{font-size:12px; font-weight:600; color:var(--muted);}
@@ -2416,7 +2420,6 @@ function viewConfig(){
       <div class="card card-pad"><div class="card-title" style="margin-bottom:14px;">Negocio</div>
         <div class="field"><label>Nombre del negocio</label><input id="cfgNombre" value="${v(n.nombre)}" placeholder="Ej. Mi Negocio" /></div>
         <div class="field"><label>Número telefónico principal</label><input id="cfgTel" value="${v(n.telefono)}" placeholder="+1 (602) 555-1000" /></div>
-        <div class="row2"><div class="field"><label>Apertura</label><input id="cfgApertura" value="${v(n.horario_apertura)}" placeholder="10:00 am" /></div><div class="field"><label>Cierre</label><input id="cfgCierre" value="${v(n.horario_cierre)}" placeholder="9:00 pm" /></div></div>
         <div class="field"><label>Dirección del negocio</label><input id="cfgDir" value="${v(n.direccion)}" placeholder="4a Avenida 10-25, Zona 1" /></div>
         <div class="field"><label>Zona de cobertura</label><input id="cfgZona" value="${v(n.zona_cobertura)}" placeholder="Zonas 1, 2, 3 — radio de 6 km" /></div>
       </div>
@@ -2427,6 +2430,7 @@ function viewConfig(){
         <div style="padding:12px 14px;background:var(--electric-soft);border-radius:10px;font-size:12.5px;color:var(--electric-deep);display:flex;gap:9px;">${svg('Zap',15)} Estos datos son los que usará tu Recepcionista Virtual cuando conectemos el teléfono.</div>
       </div>
     </div>
+    ${bloqueHorario(n)}
     <div class="card card-pad" style="margin-top:16px;">
       <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">🍳 Pantalla de Cocina</div>
       <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">Una pantalla aparte para tus cocineros: solo ven los pedidos, nada más. Ábrela en la tablet de la cocina.</div>
@@ -2525,6 +2529,63 @@ function bloqueTecnicoCreador(n){
   </div>`;
 }
 
+/* Convierte 0-23 a "8:00 am" / "10:00 pm" */
+function horaTexto(h){
+  h = ((Number(h)||0) % 24 + 24) % 24;
+  const per = h < 12 ? 'am' : 'pm';
+  let h12 = h % 12; if(h12 === 0) h12 = 12;
+  return h12 + ':00 ' + per;
+}
+
+const ZONAS_HORARIAS = [
+  ['America/Phoenix','Phoenix (Arizona)'],
+  ['America/Los_Angeles','Los Ángeles'],
+  ['America/Denver','Denver'],
+  ['America/Chicago','Chicago'],
+  ['America/New_York','Nueva York'],
+  ['America/Mexico_City','Ciudad de México'],
+  ['America/Bogota','Bogotá'],
+  ['America/Caracas','Caracas'],
+  ['America/Lima','Lima'],
+  ['America/Panama','Panamá'],
+  ['America/Santiago','Santiago'],
+  ['America/Argentina/Buenos_Aires','Buenos Aires']
+];
+const DIAS_SEMANA = ['Dom','Lun','Mar','Mié','Jue','Vie','Sáb'];
+
+/* Único lugar donde se edita config_horario: lo que de verdad obedece la Recepcionista Virtual */
+function bloqueHorario(n){
+  const ch = n.config_horario || {};
+  const v = (x)=> x==null ? '' : esc(x);
+  const abre = ch.abre != null ? ch.abre : 9;
+  const cierra = ch.cierra != null ? ch.cierra : 21;
+  const zona = ch.zona || 'America/Phoenix';
+  const cerrados = Array.isArray(ch.dias_cerrados) ? ch.dias_cerrados : [];
+  const dinamico = !!ch.saludo_dinamico;
+  const opcionesHora = (sel) => Array.from({length:24},(_,h)=>`<option value="${h}" ${h===Number(sel)?'selected':''}>${horaTexto(h)}</option>`).join('');
+  const opcionesZona = ZONAS_HORARIAS.map(([val,label])=>`<option value="${val}" ${val===zona?'selected':''}>${label}</option>`).join('');
+  const chipsDias = DIAS_SEMANA.map((d,i)=>{
+    const on = !cerrados.includes(i);
+    return `<label class="dia-chip${on?' on':''}" data-dia-chip="${i}"><input type="checkbox" id="cfgDia${i}" ${on?'checked':''} style="display:none;">${d}</label>`;
+  }).join('');
+  return `<div class="card card-pad" style="margin-top:16px;">
+    <div class="card-title" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">🕒 Horario de atención</div>
+    <div style="font-size:12.5px;color:var(--muted);margin-bottom:16px;">Esto es lo que obedece tu Recepcionista Virtual.</div>
+    <div class="row2">
+      <div class="field"><label>Abre a las</label><select id="cfgAbre">${opcionesHora(abre)}</select></div>
+      <div class="field"><label>Cierra a las</label><select id="cfgCierre">${opcionesHora(cierra)}</select></div>
+    </div>
+    <div class="field"><label>Zona horaria</label><select id="cfgZonaHoraria">${opcionesZona}</select></div>
+    <div class="field"><label>Días que abre</label><div style="display:flex;gap:8px;flex-wrap:wrap;">${chipsDias}</div></div>
+    <div class="grid-2eq">
+      <div class="field"><label>Saludo cuando está abierto</label><textarea id="cfgSaludoAbierto" rows="3" placeholder="¡Gracias por llamar! ¿Qué desea ordenar hoy?">${v(ch.saludo_abierto)}</textarea></div>
+      <div class="field"><label>Saludo cuando está cerrado</label><textarea id="cfgSaludoCerrado" rows="3" placeholder="Gracias por llamar. En este momento estamos cerrados.">${v(ch.saludo_cerrado)}</textarea></div>
+    </div>
+    <div class="field"><label>Si piden algo estando cerrado</label><textarea id="cfgMensajeCerrado" rows="2" placeholder="Ej. Con gusto tomamos tu pedido para prepararlo apenas abramos.">${v(ch.mensaje)}</textarea></div>
+    <label class="kd-auto"><input type="checkbox" id="cfgSaludoDinamico" ${dinamico?'checked':''}> Cambiar el saludo solo según el horario</label>
+  </div>`;
+}
+
 async function guardarConfig(){
   const btn = document.getElementById('cfgSave');
   const msg = document.getElementById('cfgMsg');
@@ -2532,8 +2593,6 @@ async function guardarConfig(){
   const cambios = {
     nombre: val('cfgNombre').trim() || 'Mi negocio',
     telefono: val('cfgTel').trim(),
-    horario_apertura: val('cfgApertura').trim(),
-    horario_cierre: val('cfgCierre').trim(),
     direccion: val('cfgDir').trim(),
     zona_cobertura: val('cfgZona').trim(),
     mensaje_bienvenida: val('cfgBienvenida').trim(),
@@ -2546,6 +2605,44 @@ async function guardarConfig(){
   if(inpUsu) cambios.usuario_cocina = inpUsu.value.trim() || null;
   const ckCocAuto = document.getElementById('cfgCocinaAuto');
   if(ckCocAuto) cambios.cocina_automatica = ckCocAuto.checked;
+
+  // Horario de atención: único lugar que edita config_horario, lo que de verdad obedece la Recepcionista Virtual
+  const abre = parseInt(val('cfgAbre'), 10);
+  const cierra = parseInt(val('cfgCierre'), 10);
+  const zonaHoraria = val('cfgZonaHoraria');
+  const diasCerrados = [];
+  for(let i=0;i<7;i++){
+    const ck = document.getElementById('cfgDia'+i);
+    if(ck && !ck.checked) diasCerrados.push(i);
+  }
+  const saludoAbierto = val('cfgSaludoAbierto').trim();
+  const saludoCerrado = val('cfgSaludoCerrado').trim();
+  const mensajeCerrado = val('cfgMensajeCerrado').trim();
+  const saludoDinamico = document.getElementById('cfgSaludoDinamico')?.checked || false;
+  const anterior = negocioActual.config_horario || {};
+  const cambioHora = anterior.abre !== abre || anterior.cierra !== cierra;
+  const cambioDia = JSON.stringify((anterior.dias_cerrados||[]).slice().sort()) !== JSON.stringify(diasCerrados.slice().sort());
+  const cambioSaludo = (anterior.saludo_abierto||'') !== saludoAbierto || (anterior.saludo_cerrado||'') !== saludoCerrado || (anterior.mensaje||'') !== mensajeCerrado;
+  const cambioInterruptor = !!anterior.saludo_dinamico !== saludoDinamico;
+  cambios.config_horario = Object.assign({}, anterior, {
+    activo: true,
+    abre, cierra,
+    cierra_normal: String(cierra),
+    zona: zonaHoraria,
+    dias_cerrados: diasCerrados,
+    saludo_dinamico: saludoDinamico,
+    saludo_abierto: saludoAbierto,
+    saludo_cerrado: saludoCerrado,
+    mensaje: mensajeCerrado,
+    saludo_fijo: val('cfgBienvenida').trim()
+  });
+  if(cambioHora || cambioDia || cambioSaludo || cambioInterruptor){
+    cambios.config_horario._puesto = 'pendiente';
+  }
+  // Mantener sincronizadas las columnas de texto para otras pantallas que las lean
+  cambios.horario_apertura = horaTexto(abre);
+  cambios.horario_cierre = horaTexto(cierra);
+
   const { data, error } = await sb.from('negocios').update(cambios).eq('id', negocioActual.id).select().single();
   btn.disabled = false; btn.textContent = 'Guardar cambios';
   if(error){
@@ -3395,6 +3492,7 @@ async function verCuentaCliente(negocioId){
   if(!neg) return;
   viendoComoCliente = neg;
   negocioActual = neg;
+  document.body.classList.remove('tema-creador');
   // Recargar todos los datos de ESE negocio
   state.pedidosReales = state.clientesReales = state.productosReales = null;
   state.llamadasReales = state.gastosReales = state.actividadReal = null;
@@ -3408,6 +3506,7 @@ async function verCuentaCliente(negocioId){
 async function volverACreador(){
   viendoComoCliente = null;
   negocioActual = negocioPropio;
+  if(esCreador) document.body.classList.add('tema-creador');
   const banner = document.getElementById('bannerSoporte');
   if(banner) banner.remove();
   state.pedidosReales = state.clientesReales = state.productosReales = null;
@@ -3674,6 +3773,10 @@ function wireContent(){
   }
   const cfgBtn = document.getElementById('cfgSave');
   if(cfgBtn) cfgBtn.onclick = guardarConfig;
+  for(let i=0;i<7;i++){
+    const ckDia = document.getElementById('cfgDia'+i);
+    if(ckDia) ckDia.onchange = ()=> ckDia.parentElement.classList.toggle('on', ckDia.checked);
+  }
   const cfgCopy = document.getElementById('cfgCopyToken');
   if(cfgCopy) cfgCopy.onclick = ()=>{
     const inp = document.getElementById('cfgToken');
