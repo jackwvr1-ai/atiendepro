@@ -416,7 +416,7 @@
     </div>
     <div class="datos-foot">
       <button class="volver-d" id="datosVolver">Atrás</button>
-      <button class="confirmar" id="datosConfirmar">Enviar a cocina · <span id="datosTotal">$0.00</span></button>
+      <button class="confirmar" id="datosConfirmar"><span id="datosConfirmarTexto">Enviar a cocina</span> · <span id="datosTotal">$0.00</span></button>
     </div>
   </div>
 </div>
@@ -464,6 +464,8 @@ let CATEGORIAS = [];
 let catActual = '';
 let carrito = [];        // {pid, nombre, precio, q, opciones:[], nota:''}
 let busqueda = '';
+let claveIdempotencia = null;  // se genera al abrir la pantalla de datos, se reutiliza en reintentos
+let enviandoPedido = false;    // evita doble envío por doble clic
 
 /* Emojis por categoría (fallback visual mientras no hay fotos) */
 const EMOJI_CAT = {
@@ -672,11 +674,12 @@ function agregarCarrito(p, q, opciones, nota){
   vibrar();
   toast(`${p.nombre} agregado`);
 }
-function quitarLinea(clave){ carrito = carrito.filter(x=>x._clave!==clave); pintarPedido(); }
+function quitarLinea(clave){ carrito = carrito.filter(x=>x._clave!==clave); if(!carrito.length) claveIdempotencia = null; pintarPedido(); }
 function cambiarCant(clave, delta){
   const it = carrito.find(x=>x._clave===clave); if(!it) return;
   it.q += delta;
   if(it.q<=0) carrito = carrito.filter(x=>x._clave!==clave);
+  if(!carrito.length) claveIdempotencia = null;
   pintarPedido();
 }
 function totalCarrito(){ return carrito.reduce((s,it)=> s + it.precio*it.q, 0); }
@@ -783,8 +786,20 @@ $('listaUpsell').addEventListener('scroll', actualizarFlechasUpsell, {passive:tr
 let tipoServicio = 'aqui';   // 'aqui' o 'llevar'
 let mesaSel = '';
 
+// Escriben solo el span correspondiente del botón de confirmar, nunca su innerHTML completo,
+// para que la estructura (texto + total) nunca se pierda. Comprueban que el elemento exista.
+function pintarTextoConfirmar(txt){
+  const el = $('datosConfirmarTexto');
+  if(el) el.textContent = txt;
+}
+function pintarTotalConfirmar(){
+  const el = $('datosTotal');
+  if(el) el.textContent = money(totalCarrito());
+}
+
 function abrirDatos(){
   if(!carrito.length) return;
+  if(!claveIdempotencia) claveIdempotencia = crypto.randomUUID();
   tipoServicio = 'aqui'; mesaSel = '';
   $('tipoAqui').classList.add('on'); $('tipoLlevar').classList.remove('on');
   $('campoMesa').classList.remove('datos-oculto');
@@ -796,7 +811,10 @@ function abrirDatos(){
     $('mesaGrid').querySelectorAll('.mesa-n').forEach(x=>x.classList.remove('on'));
     b.classList.add('on');
   });
-  $('datosTotal').textContent = money(totalCarrito());
+  const btnConfirmar = $('datosConfirmar');
+  if(btnConfirmar) btnConfirmar.disabled = false;
+  pintarTextoConfirmar('Enviar a cocina');
+  pintarTotalConfirmar();
   $('datosBg').classList.add('on');
   $('panelDer').classList.remove('abierto');
 }
@@ -810,47 +828,92 @@ $('datosBg').onclick = (e)=>{ if(e.target===$('datosBg')) cerrarDatos(); };
 $('datosConfirmar').onclick = ()=> finalizar();
 
 /* ============ FINALIZAR PEDIDO ============ */
-async function finalizar(){
-  if(!carrito.length) return;
-  const btn = $('datosConfirmar');
-  btn.disabled = true; btn.textContent = 'Enviando a cocina…';
+const URL_CREAR_PEDIDO = 'https://wetpjfpefypgzmcfoxui.supabase.co/functions/v1/crear-pedido-atiendepro';
 
-  const items = carrito.map(it=>({
-    n: it.nombre, q: it.q,
-    d: [...(it.opciones||[]), it.nota].filter(Boolean).join(' · ') || undefined
-  }));
-  const total = totalCarrito();
-  const notasGlobal = carrito.map(it=> it.nota).filter(Boolean).join(' | ');
+async function finalizar(){
+  if(!carrito.length || enviandoPedido) return;
+  enviandoPedido = true;
+
+  const btn = $('datosConfirmar');
+  const restaurarBoton = ()=>{ btn.disabled = false; pintarTextoConfirmar('Enviar a cocina'); pintarTotalConfirmar(); };
+
+  btn.disabled = true;
+  pintarTextoConfirmar('Enviando a cocina…');
+
+  if(!claveIdempotencia) claveIdempotencia = crypto.randomUUID();
+
   const nombre = $('datoNombre').value.trim();
   const telefono = $('datoTelefono').value.trim();
   const esLlevar = tipoServicio === 'llevar';
+  const notasGlobal = carrito.map(it=> it.nota).filter(Boolean).join(' | ');
+  const items = carrito.map(it=>({
+    nombre: it.nombre,
+    cantidad: it.q,
+    opciones: it.opciones || [],
+    nota: it.nota || ''
+  }));
 
-  try {
-    const { data, error } = await sb.from('pedidos').insert({
-      negocio_id: NEGOCIO.id,
-      cliente_nombre: nombre || (esLlevar ? '🥡 Para llevar' : 'Kiosco'),
-      cliente_telefono: telefono || null,
-      items,
-      total,
-      estado: 'Nuevo',
-      tipo: 'kiosco',
-      mesa: esLlevar ? null : (mesaSel || null),
-      en_cocina: true,
-      enviado_cocina_en: new Date().toISOString(),
-      notas: (esLlevar ? 'PARA LLEVAR' : '') + (notasGlobal ? (esLlevar?' · ':'')+notasGlobal : '') || null
-    }).select('numero_dia, id').single();
+  const payload = {
+    negocio_id: NEGOCIO.id,
+    clave_idempotencia: claveIdempotencia,
+    origen: 'atiendepro_kiosk',
+    tipo_servicio: esLlevar ? 'llevar' : 'aqui',
+    mesa: esLlevar ? '' : (mesaSel || ''),
+    cliente_nombre: nombre,
+    cliente_telefono: telefono,
+    notas: notasGlobal,
+    items
+  };
 
-    if(error) throw error;
+  const ESPERAS = [1000, 2000];
+  let ultimoError = null;
 
-    const num = data?.numero_dia ?? (data?.id ? String(data.id).slice(0,4).toUpperCase() : '—');
-    cerrarDatos();
-    mostrarExito(num);
-    carrito = [];
-  } catch(e){
-    btn.disabled = false; btn.innerHTML = 'Enviar a cocina · <span id="datosTotal">'+money(total)+'</span>';
-    toast('No se pudo enviar. Intenta de nuevo.', true);
-    console.log(e);
+  for(let intento=0; intento<3; intento++){
+    if(intento>0){
+      pintarTextoConfirmar('Reintentando…');
+      await new Promise(r=> setTimeout(r, ESPERAS[intento-1]));
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(()=> controller.abort(), 12000);
+
+    try {
+      const res = await fetch(URL_CREAR_PEDIDO, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'apikey': SB_KEY, 'Authorization': 'Bearer ' + SB_KEY },
+        body: JSON.stringify(payload),
+        signal: controller.signal
+      });
+      clearTimeout(timer);
+      const data = await res.json();
+
+      if(data && (data.ok === true || data.ya_existia === true)){
+        cerrarDatos();
+        mostrarExito(data.numero);
+        carrito = [];
+        claveIdempotencia = null;
+        enviandoPedido = false;
+        btn.disabled = false;
+        pintarTextoConfirmar('Enviar a cocina');
+        return;
+      }
+
+      // El servidor respondió pero rechazó el pedido: no reintentar.
+      restaurarBoton();
+      toast((data && data.mensaje) || 'No se pudo enviar el pedido.', true);
+      enviandoPedido = false;
+      return;
+
+    } catch(e){
+      clearTimeout(timer);
+      ultimoError = e; // fallo de red o de tiempo límite: se reintenta
+    }
   }
+
+  restaurarBoton();
+  toast('No pudimos confirmar tu pedido. Revisa tu conexión e intenta otra vez.', true);
+  console.log(ultimoError);
+  enviandoPedido = false;
 }
 
 function mostrarExito(num){
@@ -871,6 +934,7 @@ function mostrarExito(num){
 
 function reiniciar(){
   clearInterval(window._exitoTimer);
+  claveIdempotencia = null;
   $('pantallaExito').classList.remove('on');
   const btn = $('btnFinalizar'); btn.disabled=false; btn.textContent='Finalizar pedido';
   catActual = CATEGORIAS[0]||''; busqueda=''; $('inputBuscar').value='';
