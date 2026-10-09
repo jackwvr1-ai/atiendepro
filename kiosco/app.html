@@ -3269,7 +3269,7 @@
 
   function crearFilaPedido(pedido) {
     var fila = document.createElement("div");
-    fila.className = "fila-pedido" + (pedido.estado === "nuevo" ? " pedido-nuevo" : "");
+    fila.className = "fila-pedido" + (pedido.estado === "nuevo" ? " pedido-nuevo" : "") + (pedido.estado === "cancelado" ? " pedido-cancelado" : "");
 
     var encabezado = document.createElement("div");
     encabezado.className = "encabezado-pedido";
@@ -3284,6 +3284,13 @@
       insignia.className = "badge-nuevo";
       insignia.textContent = "Nuevo";
       encabezado.appendChild(insignia);
+    }
+
+    if (pedido.estado === "cancelado") {
+      var insigniaCancelado = document.createElement("span");
+      insigniaCancelado.className = "badge-cancelado";
+      insigniaCancelado.textContent = "Cancelado";
+      encabezado.appendChild(insigniaCancelado);
     }
 
     var hora = document.createElement("span");
@@ -3318,6 +3325,23 @@
       filaItem.appendChild(nombreItem);
       filaItem.appendChild(totalItem);
       items.appendChild(filaItem);
+
+      // opciones viene de crear-pedido-kiosco como [{nombre, precio_extra}];
+      // los pedidos viejos pueden no tenerla y se muestran como antes.
+      var textosOpciones = [];
+      if (Array.isArray(item.opciones)) {
+        item.opciones.forEach(function (opcion) {
+          if (!opcion || !opcion.nombre) return;
+          var extra = Number(opcion.precio_extra);
+          textosOpciones.push(opcion.nombre + (extra > 0 ? " +$" + extra.toFixed(2) : ""));
+        });
+      }
+      if (textosOpciones.length > 0) {
+        var opcionesItem = document.createElement("p");
+        opcionesItem.className = "opciones-item-pedido";
+        opcionesItem.textContent = textosOpciones.join(", ");
+        items.appendChild(opcionesItem);
+      }
     });
     fila.appendChild(items);
 
@@ -3410,7 +3434,7 @@
 
     var selectEstado = document.createElement("select");
     selectEstado.className = "select-estado";
-    ["nuevo", "visto", "completado"].forEach(function (valor) {
+    ["nuevo", "visto", "completado", "cancelado"].forEach(function (valor) {
       var opcion = document.createElement("option");
       opcion.value = valor;
       opcion.textContent = NOMBRES_ESTADO[valor];
@@ -3418,6 +3442,13 @@
     });
     selectEstado.value = pedido.estado;
     selectEstado.addEventListener("change", function () {
+      if (selectEstado.value === "cancelado") {
+        var confirmado = window.confirm("¿Marcar el pedido #" + pedido.numero + " como cancelado?\n\nPuedes cambiar el estado después si te equivocas.");
+        if (!confirmado) {
+          selectEstado.value = pedido.estado;
+          return;
+        }
+      }
       cambiarEstadoPedido(pedido, selectEstado.value, selectEstado);
     });
     estadoBloque.appendChild(selectEstado);

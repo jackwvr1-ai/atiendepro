@@ -822,6 +822,36 @@ select:focus {
   font-size: 1.02rem;
 }
 
+.opciones-item-pedido {
+  margin: -2px 0 2px;
+  padding-left: 14px;
+  font-size: 0.84rem;
+  line-height: 1.35;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.fila-pedido.pedido-cancelado {
+  background: #f7f7f7;
+  border-style: dashed;
+}
+
+.badge-cancelado {
+  background: var(--error-fondo);
+  color: var(--error-texto);
+  font-size: 0.72rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 3px 8px;
+  border-radius: 20px;
+}
+
+.pedido-cancelado .total-pedido {
+  text-decoration: line-through;
+  color: var(--texto-suave);
+}
+
 .direccion-pedido,
 .nota-pedido {
   font-size: 0.88rem;
