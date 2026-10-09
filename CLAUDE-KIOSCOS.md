@@ -288,15 +288,76 @@ Dos temas para el kiosco público, nada más: **claro** y **moderno**. Comparten
 exactamente la misma estructura de datos; el tema solo cambia CSS. Jamás dupliques
 contenido por tema.
 
+Los dos temas se quedan **exactamente como están**: no se renombran, no se
+eliminan y no se modifican. La base de datos solo admite esos dos valores
+(`kioscos.tema`, por defecto `claro`) y cualquier valor desconocido se muestra
+como `claro`.
+
 El color de acento (`kioscos.color_acento`) es una **paleta cerrada de nueve
 colores**, no un selector libre: grafito, rojo, naranja, ámbar, verde,
 turquesa, azul, violeta, rosa. Pinta solo botones y detalles de acción
 (agregar, carrito, botones de acción); nunca fondos grandes ni el texto de
 los productos. El tema sigue mandando sobre fondo, texto y contraste.
 
+El tema y el color los elige el dueño. Las **plantillas** son otra cosa y las
+asigna solo el equipo: ver la sección 11.
+
 ---
 
-## 11. Lenguaje
+## 11. Plantillas curadas
+
+Una **plantilla** es una presentación visual alternativa de la tienda pública,
+diseñada y curada por nuestro equipo. Es una capa aparte del tema: el tema
+(claro o moderno) y el color los elige el dueño; la plantilla la asigna el
+equipo.
+
+Primera plantilla: **Gourmet**. Primer negocio piloto: uno solo, asignado por
+el equipo.
+
+### Cómo se asigna
+
+- Por negocio, mediante configuración reutilizable. **Nunca** por correo, ID
+  de usuario ni código atado a una cuenta. Ni un `if (slug === "...")`.
+- El dueño **no puede** activarse una plantilla por su cuenta. El campo o
+  mecanismo de asignación debe estar protegido en el servidor, no escondido
+  en el panel. Recuerda: hoy el dueño puede editar todas las columnas de su
+  fila en `kioscos`, así que una columna nueva ahí, sin más, **no** está
+  protegida.
+- Un negocio sin plantilla asignada ve **exactamente** la experiencia actual.
+- Los negocios nuevos no reciben plantilla por defecto.
+
+### Qué puede cambiar una plantilla
+
+Solo la presentación. **Nunca** toca:
+
+- carrito
+- checkout
+- métodos de pago y comprobantes
+- cálculo de precios
+- validaciones
+- funciones del servidor
+
+### Reglas de construcción
+
+- Los estilos de cada plantilla viven en **su propio archivo CSS**, acotados a
+  la plantilla. Prohibido agregar estilos globales a `publico.css` para una
+  plantilla.
+- Si una plantilla necesita JavaScript, ese código solo se ejecuta cuando la
+  plantilla está activa, y nunca altera la lógica de carrito, checkout, pagos
+  ni el envío del pedido.
+- Una plantilla **no puede eliminar ni renombrar** los elementos e
+  identificadores de los que depende `ver.html`. Si uno de ellos falta, la
+  tienda entera deja de cargar.
+- Si la plantilla no existe o no carga, la tienda se muestra con la
+  experiencia actual. Siempre hay respaldo.
+
+Una plantilla que funciona para un negocio y rompe a otro está mal hecha.
+Antes de dar una plantilla por terminada, comprueba que un kiosco **sin**
+plantilla se ve y funciona igual que antes.
+
+---
+
+## 12. Lenguaje
 
 Todo en español. Cálido y directo, sin jerga técnica.
 
@@ -313,7 +374,7 @@ marca porque el nombre de remitente que aparece en su bandeja de entrada es
 
 ---
 
-## 12. Forma de trabajar
+## 13. Forma de trabajar
 
 Entregas pequeñas y verificables. Después de cada una, **parar** y probar en
 `localhost:8000` antes de seguir:
@@ -330,14 +391,50 @@ Entregas pequeñas y verificables. Después de cada una, **parar** y probar en
 10. QR y compartir → probar
 
 Reglas de ejecución:
-- Rama `feature/kiosks`. **Nunca** hagas push a `main`.
+- Se trabaja en una rama de desarrollo, nunca directamente en `feature/kiosks`
+  (esa rama publica en vivo). Ver la sección 14.
+- **Nunca** hagas push a `main` ni a `feature/kiosks`.
 - **Nunca** hagas push por tu cuenta. El dueño revisa y sube manualmente.
 - Valida todo JavaScript con `node --check` antes de darlo por terminado.
 - Entrega archivos completos, nunca fragmentos ni diffs.
 
 ---
 
-## 13. Cuando dudes entre dos caminos
+## 14. Desarrollo seguro
+
+Kiosco ya tiene negocios reales. Cada cambio se hace sin ponerlos en riesgo.
+
+### Ramas
+
+| Rama | Qué es |
+|---|---|
+| `feature/kiosks` | **Publica en vivo** en `kiosco.atiendepro.net`. No se trabaja ni se hace push directamente aquí. |
+| `feature/plantillas` | Rama de desarrollo actual. No publica. |
+| `main` | AtiendePro. Fuera de este proyecto. |
+
+El desarrollo ocurre en ramas separadas y se prueba en `localhost:8000`. Solo
+cuando el dueño lo aprueba, el cambio pasa a `feature/kiosks`.
+
+### Base de datos
+
+Hay **una sola base de datos y es de producción**. No se usa para experimentar.
+
+- Antes de cualquier cambio en Supabase o en las funciones del servidor, se
+  propone un entorno de pruebas aislado y se verifica que sea compatible con
+  los negocios actuales.
+- Ninguna migración, cambio de políticas o permisos, ni despliegue de
+  funciones sin **aprobación explícita del dueño**.
+- Los cambios de base de datos son **solo aditivos** y compatibles con el
+  código que ya está en producción: se agregan columnas o tablas, no se
+  renombran ni se borran. El código publicado hoy debe seguir funcionando
+  igual al día siguiente.
+- `localhost` también usa la base de producción: cada pedido de prueba es un
+  pedido real. Las pruebas se hacen solo en el negocio piloto, nunca con
+  datos de otros negocios.
+
+---
+
+## 15. Cuando dudes entre dos caminos
 
 **A:** perfecta, enorme, tarda mucho.
 **B:** limpia, segura, simple, suficiente para validar.
@@ -350,17 +447,37 @@ señora que vende galletas pueda usar desde su teléfono.
 
 ---
 
-## 14. Qué NO construir todavía
+## 16. Qué NO construir todavía
 
 Stripe · pasarelas de pago · facturación · contabilidad · punto de venta · pantalla
 de cocina · inventario avanzado · reparto avanzado · apps nativas · promociones
 complejas · marketplace · puntos · analítica · multi-sucursal · WhatsApp API ·
-temas premium · constructor visual libre · dominio personalizado · cualquier
-integración con AtiendePro.
+constructor visual libre · dominio personalizado · cualquier integración con
+AtiendePro.
+
+**Excepción aprobada:** las plantillas curadas por el equipo (sección 11) están
+permitidas. Sigue prohibido el **constructor visual libre**: el dueño no diseña
+su tienda pieza por pieza, ni elige o se activa una plantilla por su cuenta.
 
 ---
 
-## 15. Cuándo está listo
+## 17. Horarios y pausa de pedidos
+
+**Principios aprobados. Todavía no implementado.**
+
+- Cada negocio puede configurar su horario, con su **propia zona horaria**.
+- Un negocio sin horario configurado se comporta como hoy: siempre abierto.
+- Fuera de horario:
+  - el menú sigue visible y se puede recorrer;
+  - los pedidos nuevos quedan **bloqueados**;
+  - se muestra claramente que el negocio está cerrado.
+- El dueño puede **pausar los pedidos** manualmente, en cualquier momento.
+- El bloqueo se valida **también en el servidor**, no solo en el navegador.
+  Si algo funciona solo porque el JavaScript lo esconde, está mal hecho.
+
+---
+
+## 18. Cuándo está listo
 
 Cuando esto funcione de principio a fin:
 
@@ -373,7 +490,7 @@ usuarios reales lo piden.
 
 ---
 
-## 16. Filosofía
+## 19. Filosofía
 
 > **La idea es que funcione bien, siempre.**
 
