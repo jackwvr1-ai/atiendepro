@@ -417,17 +417,42 @@
     return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
   }
 
+  function validarPlantilla(nombre) {
+    var limpio = String(nombre || "").trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(PLANTILLAS, limpio) ? limpio : null;
+  }
+
+  // Consulta aparte, nunca dentro de la consulta principal de kioscos: si la
+  // tabla no existe, falla la red o no hay fila, devuelve null y la tienda
+  // sigue sin plantilla. Nunca rechaza.
+  function consultarPlantillaAsignada(kioscoId) {
+    return Promise.resolve(
+      sb.from("kiosco_plantillas")
+        .select("plantilla")
+        .eq("kiosco_id", kioscoId)
+        .maybeSingle()
+    ).then(function (resultado) {
+      if (!resultado || resultado.error || !resultado.data) return null;
+      return resultado.data.plantilla || null;
+    }).catch(function () {
+      return null;
+    });
+  }
+
+  // Devuelve una promesa con el nombre de la plantilla validado, o null.
+  // 1) En local, ?plantilla= manda (para pruebas); ?plantilla=ninguna fuerza
+  //    la tienda sin plantilla. En cualquier otro dominio ni se lee.
+  // 2) Si no, la plantilla asignada por el equipo en kiosco_plantillas.
   function elegirPlantilla(kiosco) {
-    var nombre = "";
-    // Por ahora solo para pruebas en local, con ?plantilla= en la dirección.
-    // En cualquier otro dominio el parámetro ni se lee.
     if (esEntornoLocal()) {
-      nombre = new URLSearchParams(window.location.search).get("plantilla") || "";
+      var parametro = new URLSearchParams(window.location.search).get("plantilla");
+      if (parametro !== null) {
+        if (parametro.trim().toLowerCase() === "ninguna") return Promise.resolve(null);
+        return Promise.resolve(validarPlantilla(parametro));
+      }
     }
-    // Cuando exista la columna protegida en el servidor:
-    // if (!nombre && kiosco && kiosco.plantilla) nombre = kiosco.plantilla;
-    nombre = String(nombre).trim().toLowerCase();
-    return Object.prototype.hasOwnProperty.call(PLANTILLAS, nombre) ? nombre : null;
+    if (!kiosco || !kiosco.id) return Promise.resolve(null);
+    return consultarPlantillaAsignada(kiosco.id).then(validarPlantilla);
   }
 
   // El JS de la plantilla se registra aquí. Si no es la plantilla activa (o
@@ -464,6 +489,33 @@
     });
   }
 
+  // Decide y carga la plantilla dentro de un único límite de 3 s, que cubre
+  // la consulta y la descarga de los archivos. Sin plantilla asignada, la
+  // espera es solo la consulta, que corre en paralelo con la del menú.
+  // Siempre resuelve: true si la plantilla quedó lista, false si no.
+  function prepararPlantilla(kiosco) {
+    var descartada = false;
+
+    var proceso = elegirPlantilla(kiosco).then(function (nombre) {
+      if (descartada) return false; // la decisión llegó tarde: se ignora
+      return aplicarPlantilla(nombre);
+    }).catch(function () {
+      return false;
+    });
+
+    var limite = new Promise(function (resolve) {
+      setTimeout(function () { resolve(false); }, ESPERA_MAXIMA_PLANTILLA);
+    });
+
+    return Promise.race([proceso, limite]).then(function (lista) {
+      if (!lista) {
+        descartada = true;
+        quitarPlantilla();
+      }
+      return lista;
+    });
+  }
+
   function aplicarPlantilla(nombre) {
     if (!nombre) return Promise.resolve(false);
     var plantilla = PLANTILLAS[nombre];
@@ -473,7 +525,7 @@
     // La fuente no se espera: si no llega, el CSS trae un respaldo.
     if (plantilla.fuente) cargarRecurso("css", plantilla.fuente);
 
-    var carga = Promise.all([
+    return Promise.all([
       cargarRecurso("css", plantilla.css),
       cargarRecurso("js", plantilla.js)
     ]).then(function (resultados) {
@@ -482,15 +534,6 @@
       var marca = window.getComputedStyle(document.body).getPropertyValue("--plantilla").trim();
       return resultados[0] && resultados[1] && marca === nombre &&
         Object.keys(ganchosPlantilla).length > 0;
-    });
-
-    var limite = new Promise(function (resolve) {
-      setTimeout(function () { resolve(false); }, ESPERA_MAXIMA_PLANTILLA);
-    });
-
-    return Promise.race([carga, limite]).then(function (lista) {
-      if (!lista) quitarPlantilla();
-      return lista;
     });
   }
 
@@ -2026,7 +2069,7 @@
         document.title = kioscoActual.nombre;
         document.body.setAttribute("data-tema", kioscoActual.tema === "moderno" ? "moderno" : "claro");
         document.body.setAttribute("data-color", kioscoActual.color_acento || "grafito");
-        plantillaLista = aplicarPlantilla(elegirPlantilla(kioscoActual));
+        plantillaLista = prepararPlantilla(kioscoActual);
 
         nombreNegocio.textContent = kioscoActual.nombre;
         if (kioscoActual.descripcion) {
