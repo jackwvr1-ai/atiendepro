@@ -1,0 +1,1364 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Plantilla Gourmet — maqueta de diseño</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Anton&display=swap">
+<style>
+/* =====================================================================
+   MAQUETA ESTÁTICA DE LA PLANTILLA GOURMET
+   Solo diseño, para aprobación. No es la plantilla real y no se conecta
+   a nada. Los datos están escritos a mano.
+
+   Convención:
+   - Clases con el MISMO nombre que en ver.html (.cabecera, .producto,
+     .opcion-detalle, .fila-carrito...) = elemento que YA existe.
+   - Clases con prefijo "g-" = elemento NUEVO que hoy no existe en ver.html.
+   - Clases con prefijo "ref-" = marco de la maqueta (títulos de pantalla,
+     selector de color). No forman parte del diseño.
+   ===================================================================== */
+
+/* ---- Variables (mismos nombres que publico.css) ---- */
+:root {
+  --fondo: #ffffff;
+  --texto: #111111;
+  --texto-suave: #666666;
+  --borde: #e5e5e5;
+  --gris-claro: #f5f5f5;
+  --acento-fondo: #c2410c;  /* "naranja" de publico.css, tema claro */
+  --acento-texto: #ffffff;
+  --exito-texto: #3f7a4c;
+  --oscuro: #111111;
+  --fuente-titulos: "Anton", Impact, "Arial Narrow Bold", "Helvetica Neue", sans-serif;
+  --fuente-texto: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --radio-grande: 22px;
+  --radio: 14px;
+}
+
+/* Paleta cerrada: mismos valores del tema claro en publico.css. */
+body[data-color="grafito"] { --acento-fondo: #111111; --acento-texto: #ffffff; }
+body[data-color="rojo"]    { --acento-fondo: #b91c1c; --acento-texto: #ffffff; }
+body[data-color="naranja"] { --acento-fondo: #c2410c; --acento-texto: #ffffff; }
+body[data-color="ambar"]   { --acento-fondo: #92400e; --acento-texto: #ffffff; }
+body[data-color="verde"]   { --acento-fondo: #15803d; --acento-texto: #ffffff; }
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  background: #f4f4f5;
+  color: var(--texto);
+  font-family: var(--fuente-texto);
+  -webkit-font-smoothing: antialiased;
+}
+
+img { display: block; max-width: 100%; }
+
+button { font-family: inherit; }
+
+/* ---- Marco de la maqueta (no es parte del diseño) ---- */
+.ref-cabecera {
+  max-width: 390px;
+  margin: 0 auto;
+  padding: 32px 16px 8px;
+}
+
+.ref-cabecera h1 {
+  margin: 0 0 6px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.ref-cabecera p {
+  margin: 0 0 14px;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.ref-colores {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-items: center;
+  font-size: 0.82rem;
+  color: var(--texto-suave);
+}
+
+.ref-color {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid #fff;
+  box-shadow: 0 0 0 1px var(--borde);
+  cursor: pointer;
+  padding: 0;
+}
+
+.ref-color[aria-pressed="true"] {
+  box-shadow: 0 0 0 2px var(--texto);
+}
+
+.ref-pantalla {
+  max-width: 390px;
+  margin: 0 auto;
+  padding: 28px 16px 8px;
+}
+
+.ref-titulo {
+  margin: 0 0 10px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #8a8a8a;
+}
+
+.ref-nota {
+  margin: -4px 0 12px;
+  font-size: 0.8rem;
+  color: #8a8a8a;
+  line-height: 1.4;
+}
+
+.ref-pantalla.ref-variante .ref-titulo {
+  color: #b45309;
+}
+
+.telefono {
+  position: relative;
+  background: var(--fondo);
+  border: 1px solid var(--borde);
+  border-radius: 28px;
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(17, 17, 17, 0.07);
+}
+
+.ref-fin {
+  height: 48px;
+}
+
+/* =====================================================================
+   PLANTILLA GOURMET
+   En la plantilla real todo esto viviría acotado bajo
+   body[data-plantilla="gourmet"] en su propio archivo CSS.
+   ===================================================================== */
+
+/* ---- Cabecera: portada grande + tarjeta blanca con nombre ---- */
+.cabecera {
+  position: relative;
+}
+
+.portada-negocio {
+  position: relative;
+  height: 300px;
+  background: var(--gris-claro);
+}
+
+.portada-negocio img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* NUEVO: barra flotante sobre la portada (logo + acceso al carrito). */
+.g-barra-superior {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  z-index: 2;
+}
+
+.logo-negocio {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--oscuro);
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font-family: var(--fuente-titulos);
+  font-size: 1.05rem;
+  letter-spacing: 0.04em;
+  box-shadow: 0 0 0 3px #fff, 0 4px 14px rgba(17, 17, 17, 0.25);
+}
+
+.g-carrito-cabecera {
+  position: relative;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  border: 0;
+  background: #fff;
+  color: var(--texto);
+  display: grid;
+  place-items: center;
+  box-shadow: 0 4px 14px rgba(17, 17, 17, 0.18);
+  cursor: pointer;
+}
+
+.g-carrito-cabecera svg {
+  width: 22px;
+  height: 22px;
+}
+
+.g-carrito-cabecera .g-insignia {
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 5px;
+  border-radius: 10px;
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: 0.72rem;
+  font-weight: 800;
+  line-height: 20px;
+  text-align: center;
+}
+
+.texto-cabecera {
+  position: relative;
+  margin-top: -36px;
+  background: var(--fondo);
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  padding: 24px 20px 8px;
+}
+
+.nombre-negocio {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2.6rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.descripcion-negocio {
+  margin: 10px 0 0;
+  color: var(--texto-suave);
+  font-size: 1rem;
+  line-height: 1.45;
+}
+
+/* NUEVO: indicador de estado (requiere horarios). */
+.g-estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 14px;
+  padding: 7px 12px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 700;
+}
+
+.g-estado::before {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.g-estado.abierto {
+  background: #ecf6ee;
+  color: var(--exito-texto);
+}
+
+.g-estado.cerrado {
+  padding: 10px 14px;
+  background: var(--oscuro);
+  color: #fff;
+  font-size: 0.95rem;
+}
+
+/* ---- Formas de pago: una sola línea discreta ---- */
+.bloque-pago-kiosco {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 14px 20px 4px;
+}
+
+.etiqueta-pago-kiosco {
+  margin: 0;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--texto-suave);
+}
+
+.metodo-pago-tarjeta {
+  min-height: 36px;
+  padding: 0 12px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  background: #fff;
+  color: var(--texto);
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* ---- Menú: tarjetas grandes en una columna (en ver.html es carrusel) ---- */
+.rejilla-productos {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+  padding: 22px 20px 8px;
+}
+
+.producto {
+  display: flex;
+  flex-direction: column;
+}
+
+.foto-producto {
+  position: relative;
+  aspect-ratio: 3 / 2;
+  border-radius: var(--radio-grande);
+  overflow: hidden;
+  background: var(--gris-claro);
+}
+
+.foto-producto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-producto {
+  padding: 14px 2px 0;
+}
+
+.g-fila-nombre {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+}
+
+.nombre-producto {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.7rem;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.precio-producto {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+/* NUEVO en la tarjeta: hoy la descripción solo se ve en el detalle. */
+.g-descripcion-producto {
+  margin: 6px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* NUEVO: botón visible. Hoy la tarjeta entera es tocable y muestra "›". */
+.g-boton-personalizar {
+  width: 100%;
+  min-height: 52px;
+  margin-top: 14px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.g-boton-personalizar:disabled {
+  background: var(--gris-claro);
+  color: #9a9a9a;
+  border: 1px solid var(--borde);
+  cursor: not-allowed;
+}
+
+/* VARIANTE (requiere dato nuevo): etiqueta sobre la foto. */
+.g-etiqueta-foto {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  padding: 7px 12px 6px;
+  border-radius: 8px;
+  background: var(--oscuro);
+  color: #fff;
+  font-family: var(--fuente-titulos);
+  font-size: 0.95rem;
+  letter-spacing: 0.06em;
+}
+
+/* ---- Pie ---- */
+.pie-kiosco {
+  margin-top: 28px;
+  padding: 22px 20px 110px;
+  border-top: 1px solid var(--borde);
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 0.85rem;
+}
+
+.pie-kiosco p { margin: 0 0 4px; }
+
+.pie-nombre {
+  font-weight: 700;
+  color: var(--texto);
+}
+
+.pie-marca {
+  margin-top: 10px !important;
+  font-size: 0.75rem;
+  color: #9a9a9a;
+}
+
+.pie-kiosco.sin-barra { padding-bottom: 28px; }
+
+/* ---- Barra del carrito (existe; solo cambia el estilo) ---- */
+.barra-carrito {
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: 14px;
+  min-height: 60px;
+  padding: 0 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border: 0;
+  border-radius: 16px;
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: 1rem;
+  font-weight: 700;
+  box-shadow: 0 8px 24px rgba(17, 17, 17, 0.22);
+  cursor: pointer;
+}
+
+.barra-carrito-info,
+.barra-carrito-accion {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.barra-carrito svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ---- Paneles (detalle y carrito): hoja que sube desde abajo ---- */
+.g-velo {
+  height: 36px;
+  background: rgba(17, 17, 17, 0.42);
+}
+
+.carrito-panel {
+  margin-top: -14px;
+  position: relative;
+  background: var(--fondo);
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  overflow: hidden;
+}
+
+.cerrar-carrito {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gris-claro);
+  color: var(--texto);
+  font-size: 1.05rem;
+  cursor: pointer;
+}
+
+.carrito-encabezado {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 18px 20px 6px;
+}
+
+.carrito-encabezado h2 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.7rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.carrito-encabezado.con-volver h2 { text-align: center; }
+
+.carrito-pie {
+  padding: 16px 20px 20px;
+  border-top: 1px solid var(--borde);
+  background: var(--fondo);
+}
+
+.fila-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 14px;
+  font-size: 1rem;
+  font-weight: 700;
+}
+
+.fila-total span:last-child {
+  font-size: 1.35rem;
+  font-weight: 800;
+}
+
+.boton-hacer-pedido {
+  width: 100%;
+  min-height: 56px;
+  border: 0;
+  border-radius: var(--radio);
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: 1.05rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+/* ---- Detalle del producto ---- */
+.producto-detalle-foto {
+  position: relative;
+  aspect-ratio: 3 / 2;
+}
+
+.producto-detalle-foto img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.producto-detalle-foto .cerrar-carrito {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: #fff;
+  box-shadow: 0 4px 14px rgba(17, 17, 17, 0.18);
+}
+
+.producto-detalle-info {
+  padding: 20px 20px 4px;
+}
+
+.producto-detalle-nombre {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2.1rem;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.producto-detalle-precio {
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+  font-weight: 800;
+}
+
+.producto-detalle-descripcion {
+  margin: 8px 0 0;
+  color: var(--texto-suave);
+  line-height: 1.45;
+}
+
+.grupo-detalle {
+  padding: 22px 20px 0;
+}
+
+.encabezado-grupo-detalle {
+  margin-bottom: 10px;
+}
+
+.nombre-grupo-detalle {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.2rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.opcion-detalle {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio);
+  background: #fff;
+  color: var(--texto);
+  font-size: 1rem;
+  font-weight: 600;
+  text-align: left;
+  cursor: pointer;
+}
+
+.opcion-detalle-izquierda {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* En Gourmet la marca es un cuadro con palomita (grupos de varias). */
+.marca-opcion-detalle {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  border: 1.5px solid #c9c9c9;
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+}
+
+.precio-opcion-detalle {
+  font-weight: 700;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+}
+
+.opcion-detalle.seleccionada {
+  border: 2px solid var(--acento-fondo);
+  background: color-mix(in srgb, var(--acento-fondo) 7%, #fff);
+}
+
+.opcion-detalle.seleccionada .marca-opcion-detalle {
+  border-color: var(--acento-fondo);
+  background: var(--acento-fondo);
+}
+
+.opcion-detalle.seleccionada .marca-opcion-detalle::after {
+  content: "";
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--acento-texto);
+  border-width: 0 2.5px 2.5px 0;
+  transform: rotate(45deg);
+}
+
+.opcion-detalle.seleccionada .precio-opcion-detalle {
+  color: var(--texto);
+}
+
+.fila-cantidad {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  font-weight: 700;
+}
+
+.contador {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+  padding: 3px;
+}
+
+.contador button {
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 50%;
+  background: var(--gris-claro);
+  color: var(--texto);
+  font-size: 1.3rem;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.contador span {
+  min-width: 28px;
+  text-align: center;
+  font-weight: 800;
+}
+
+/* ---- Carrito ---- */
+.carrito-lista {
+  padding: 6px 20px 4px;
+}
+
+.fila-carrito {
+  display: grid;
+  grid-template-columns: 72px 1fr;
+  grid-template-areas:
+    "foto info"
+    "foto contador";
+  column-gap: 14px;
+  row-gap: 10px;
+  padding: 16px 0;
+  border-bottom: 1px solid var(--borde);
+}
+
+.fila-carrito:last-child { border-bottom: 0; }
+
+.miniatura-carrito {
+  grid-area: foto;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.miniatura-carrito img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.info-fila-carrito { grid-area: info; min-width: 0; }
+
+.nombre-fila-carrito {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.2rem;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.opciones-fila-carrito {
+  margin: 4px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.subtotal-fila-carrito {
+  margin: 6px 0 0;
+  font-weight: 800;
+}
+
+.g-fila-acciones {
+  grid-area: contador;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.quitar-fila-carrito {
+  min-height: 44px;
+  padding: 0 4px;
+  border: 0;
+  background: none;
+  color: var(--texto-suave);
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-decoration: underline;
+  cursor: pointer;
+}
+
+/* ---- Datos del cliente ---- */
+.checkout-cuerpo {
+  padding: 10px 20px 8px;
+}
+
+.campo-checkout {
+  margin-bottom: 16px;
+}
+
+.campo-checkout label {
+  display: block;
+  margin-bottom: 6px;
+  font-size: 0.9rem;
+  font-weight: 700;
+}
+
+.campo-checkout input,
+.campo-checkout textarea {
+  width: 100%;
+  min-height: 52px;
+  padding: 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio);
+  background: #fff;
+  color: var(--texto);
+  font-family: inherit;
+  font-size: 1rem;
+}
+
+.campo-checkout textarea {
+  resize: none;
+  line-height: 1.4;
+}
+
+.campo-checkout input:focus,
+.campo-checkout textarea:focus {
+  outline: none;
+  border-color: var(--acento-fondo);
+}
+
+/* ---- Pago ---- */
+.lista-metodos-pago .opcion-detalle .marca-opcion-detalle {
+  border-radius: 50%;
+}
+
+.lista-metodos-pago .opcion-detalle.seleccionada .marca-opcion-detalle::after {
+  width: 8px;
+  height: 8px;
+  margin: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--acento-texto);
+  transform: none;
+}
+
+.detalle-metodo-pago {
+  margin: -2px 0 10px;
+  padding: 14px 16px;
+  border-radius: var(--radio);
+  background: var(--gris-claro);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.detalle-metodo-pago p { margin: 0 0 4px; }
+.detalle-metodo-pago p:last-child { margin-bottom: 0; }
+
+.detalle-metodo-pago .g-instrucciones {
+  margin-top: 8px;
+  color: var(--texto-suave);
+}
+
+/* ---- Confirmación ---- */
+.confirmacion {
+  padding: 44px 24px 28px;
+  text-align: center;
+}
+
+.icono-confirmacion {
+  width: 76px;
+  height: 76px;
+  margin: 0 auto 18px;
+  border-radius: 50%;
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  display: grid;
+  place-items: center;
+  font-size: 2rem;
+  font-weight: 800;
+}
+
+.titulo-confirmacion {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2.3rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+.numero-confirmacion {
+  margin: 12px 0 0;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.total-confirmacion {
+  margin: 4px 0 0;
+  font-size: 1.6rem;
+  font-weight: 800;
+}
+
+.bloque-comprobante {
+  margin-top: 28px;
+  padding-top: 24px;
+  border-top: 1px solid var(--borde);
+}
+
+.boton-comprobante {
+  width: 100%;
+  min-height: 52px;
+  border: 2px solid var(--acento-fondo);
+  border-radius: var(--radio);
+  background: #fff;
+  color: var(--acento-fondo);
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+}
+
+.nota-comprobante {
+  margin: 10px 0 0;
+  color: var(--texto-suave);
+  font-size: 0.88rem;
+}
+
+.boton-secundario-g {
+  background: var(--oscuro);
+  color: #fff;
+}
+
+/* ---- Escritorio: centrado y con ancho máximo ---- */
+@media (min-width: 720px) {
+  .ref-cabecera { padding-top: 48px; }
+}
+</style>
+</head>
+<body data-color="naranja">
+
+<header class="ref-cabecera">
+  <h1>Plantilla Gourmet · maqueta de diseño</h1>
+  <p>Seis pantallas de la tienda pública, una debajo de otra. Los botones de color solo sirven para comprobar que el diseño respeta el color de acento que elige cada dueño.</p>
+  <div class="ref-colores" role="group" aria-label="Color de acento">
+    <span>Color de acento:</span>
+    <button type="button" class="ref-color" data-color="naranja" style="background:#c2410c" aria-label="Naranja" aria-pressed="true"></button>
+    <button type="button" class="ref-color" data-color="ambar" style="background:#92400e" aria-label="Ámbar" aria-pressed="false"></button>
+    <button type="button" class="ref-color" data-color="rojo" style="background:#b91c1c" aria-label="Rojo" aria-pressed="false"></button>
+    <button type="button" class="ref-color" data-color="verde" style="background:#15803d" aria-label="Verde" aria-pressed="false"></button>
+    <button type="button" class="ref-color" data-color="grafito" style="background:#111111" aria-label="Grafito" aria-pressed="false"></button>
+  </div>
+</header>
+
+<!-- ================================================================= -->
+<!-- 1. INICIO ABIERTO                                                 -->
+<!-- ================================================================= -->
+<section class="ref-pantalla">
+  <p class="ref-titulo">1 · Inicio abierto</p>
+  <div class="telefono">
+
+    <div class="cabecera">
+      <div class="portada-negocio">
+        <img src="img/triple.jpg" alt="Portada de La Bañada">
+      </div>
+      <div class="g-barra-superior">
+        <div class="logo-negocio" role="img" aria-label="Logo de La Bañada">LB</div>
+        <button type="button" class="g-carrito-cabecera" aria-label="Ver carrito, 1 artículo">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="17" cy="20" r="1.4" fill="currentColor" stroke="none"></circle><path d="M2.5 3h2l2.3 12.1a2 2 0 0 0 2 1.65h7.9a2 2 0 0 0 2-1.6L20.5 7H6.2"></path></svg>
+          <span class="g-insignia">1</span>
+        </button>
+      </div>
+      <div class="texto-cabecera">
+        <h2 class="nombre-negocio">La Bañada</h2>
+        <p class="descripcion-negocio">Hamburguesas bañadas en salsa de la casa.</p>
+        <span class="g-estado abierto">Abierto</span>
+      </div>
+    </div>
+
+    <div class="bloque-pago-kiosco">
+      <p class="etiqueta-pago-kiosco">Pagas con</p>
+      <button type="button" class="metodo-pago-tarjeta">Efectivo</button>
+      <button type="button" class="metodo-pago-tarjeta">Zelle</button>
+    </div>
+
+    <div class="rejilla-productos">
+      <div class="producto">
+        <div class="foto-producto"><img src="img/doble.jpg" alt="Hamburguesa Doble"></div>
+        <div class="info-producto">
+          <div class="g-fila-nombre">
+            <p class="nombre-producto">Hamburguesa Doble</p>
+            <p class="precio-producto">$12.00</p>
+          </div>
+          <p class="g-descripcion-producto">Dos carnes, cheddar, Ruffles y salsa.</p>
+          <button type="button" class="g-boton-personalizar">Personalizar y agregar</button>
+        </div>
+      </div>
+      <div class="producto">
+        <div class="foto-producto"><img src="img/triple.jpg" alt="Hamburguesa Triple"></div>
+        <div class="info-producto">
+          <div class="g-fila-nombre">
+            <p class="nombre-producto">Hamburguesa Triple</p>
+            <p class="precio-producto">$15.00</p>
+          </div>
+          <p class="g-descripcion-producto">Tres carnes, cheddar, Ruffles y salsa.</p>
+          <button type="button" class="g-boton-personalizar">Personalizar y agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="pie-kiosco">
+      <p class="pie-nombre">La Bañada</p>
+      <p>+1 305 555 0142</p>
+      <p class="pie-marca">Hecho con CarritoGo</p>
+    </footer>
+
+    <button type="button" class="barra-carrito">
+      <span class="barra-carrito-info">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="17" cy="20" r="1.4" fill="currentColor" stroke="none"></circle><path d="M2.5 3h2l2.3 12.1a2 2 0 0 0 2 1.65h7.9a2 2 0 0 0 2-1.6L20.5 7H6.2"></path></svg>
+        <span>1 artículo · $16.00</span>
+      </span>
+      <span class="barra-carrito-accion">Ver carrito ›</span>
+    </button>
+
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<!-- 2. INICIO CERRADO                                                 -->
+<!-- ================================================================= -->
+<section class="ref-pantalla">
+  <p class="ref-titulo">2 · Inicio cerrado</p>
+  <div class="telefono">
+
+    <div class="cabecera">
+      <div class="portada-negocio">
+        <img src="img/triple.jpg" alt="Portada de La Bañada">
+      </div>
+      <div class="g-barra-superior">
+        <div class="logo-negocio" role="img" aria-label="Logo de La Bañada">LB</div>
+        <button type="button" class="g-carrito-cabecera" aria-label="Ver carrito">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4" fill="currentColor" stroke="none"></circle><circle cx="17" cy="20" r="1.4" fill="currentColor" stroke="none"></circle><path d="M2.5 3h2l2.3 12.1a2 2 0 0 0 2 1.65h7.9a2 2 0 0 0 2-1.6L20.5 7H6.2"></path></svg>
+        </button>
+      </div>
+      <div class="texto-cabecera">
+        <h2 class="nombre-negocio">La Bañada</h2>
+        <p class="descripcion-negocio">Hamburguesas bañadas en salsa de la casa.</p>
+        <span class="g-estado cerrado" role="status">Cerrado · abre viernes 7:00 p. m.</span>
+      </div>
+    </div>
+
+    <div class="bloque-pago-kiosco">
+      <p class="etiqueta-pago-kiosco">Pagas con</p>
+      <button type="button" class="metodo-pago-tarjeta">Efectivo</button>
+      <button type="button" class="metodo-pago-tarjeta">Zelle</button>
+    </div>
+
+    <div class="rejilla-productos">
+      <div class="producto">
+        <div class="foto-producto"><img src="img/doble.jpg" alt="Hamburguesa Doble"></div>
+        <div class="info-producto">
+          <div class="g-fila-nombre">
+            <p class="nombre-producto">Hamburguesa Doble</p>
+            <p class="precio-producto">$12.00</p>
+          </div>
+          <p class="g-descripcion-producto">Dos carnes, cheddar, Ruffles y salsa.</p>
+          <button type="button" class="g-boton-personalizar" disabled>Personalizar y agregar</button>
+        </div>
+      </div>
+      <div class="producto">
+        <div class="foto-producto"><img src="img/triple.jpg" alt="Hamburguesa Triple"></div>
+        <div class="info-producto">
+          <div class="g-fila-nombre">
+            <p class="nombre-producto">Hamburguesa Triple</p>
+            <p class="precio-producto">$15.00</p>
+          </div>
+          <p class="g-descripcion-producto">Tres carnes, cheddar, Ruffles y salsa.</p>
+          <button type="button" class="g-boton-personalizar" disabled>Personalizar y agregar</button>
+        </div>
+      </div>
+    </div>
+
+    <footer class="pie-kiosco sin-barra">
+      <p class="pie-nombre">La Bañada</p>
+      <p>+1 305 555 0142</p>
+      <p class="pie-marca">Hecho con CarritoGo</p>
+    </footer>
+
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<!-- 3. DETALLE Y PERSONALIZACIÓN                                      -->
+<!-- ================================================================= -->
+<section class="ref-pantalla">
+  <p class="ref-titulo">3 · Detalle y personalización</p>
+  <div class="telefono">
+    <div class="g-velo" aria-hidden="true"></div>
+    <div class="carrito-panel panel-producto">
+
+      <div class="producto-detalle-foto">
+        <img src="img/doble.jpg" alt="Hamburguesa Doble">
+        <button type="button" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="producto-detalle-info">
+        <h2 class="producto-detalle-nombre">Hamburguesa Doble</h2>
+        <p class="producto-detalle-precio">$12.00</p>
+        <p class="producto-detalle-descripcion">Dos carnes, cheddar, Ruffles y salsa.</p>
+      </div>
+
+      <div class="producto-detalle-grupos">
+        <div class="grupo-detalle">
+          <div class="encabezado-grupo-detalle"><h3 class="nombre-grupo-detalle">Quitar</h3></div>
+          <button type="button" class="opcion-detalle"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Sin queso</span></span></button>
+          <button type="button" class="opcion-detalle seleccionada"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Sin Ruffles</span></span></button>
+          <button type="button" class="opcion-detalle"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Sin salsa</span></span></button>
+        </div>
+
+        <div class="grupo-detalle">
+          <div class="encabezado-grupo-detalle"><h3 class="nombre-grupo-detalle">Extras</h3></div>
+          <button type="button" class="opcion-detalle seleccionada"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Carne extra</span></span><span class="precio-opcion-detalle">+ $3.00</span></button>
+          <button type="button" class="opcion-detalle seleccionada"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Queso extra</span></span><span class="precio-opcion-detalle">+ $1.00</span></button>
+          <button type="button" class="opcion-detalle"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Ruffles extra</span></span><span class="precio-opcion-detalle">+ $1.00</span></button>
+          <button type="button" class="opcion-detalle"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Salsa extra</span></span><span class="precio-opcion-detalle">+ $1.00</span></button>
+        </div>
+      </div>
+
+      <div class="carrito-pie producto-detalle-pie" style="margin-top: 22px;">
+        <div class="fila-cantidad">
+          <span>Cantidad</span>
+          <div class="contador">
+            <button type="button" aria-label="Quitar uno">−</button>
+            <span>1</span>
+            <button type="button" aria-label="Agregar uno">+</button>
+          </div>
+        </div>
+        <button type="button" class="boton-hacer-pedido">Agregar — $16.00</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<!-- 4. CARRITO                                                        -->
+<!-- ================================================================= -->
+<section class="ref-pantalla">
+  <p class="ref-titulo">4 · Carrito</p>
+  <div class="telefono">
+    <div class="g-velo" aria-hidden="true"></div>
+    <div class="carrito-panel">
+
+      <div class="carrito-encabezado">
+        <h2>Tu carrito</h2>
+        <button type="button" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="carrito-lista">
+        <div class="fila-carrito">
+          <div class="miniatura-carrito"><img src="img/doble.jpg" alt=""></div>
+          <div class="info-fila-carrito">
+            <p class="nombre-fila-carrito">Hamburguesa Doble</p>
+            <p class="opciones-fila-carrito">Sin Ruffles, Carne extra, Queso extra</p>
+            <p class="subtotal-fila-carrito">$16.00</p>
+          </div>
+          <div class="g-fila-acciones">
+            <button type="button" class="quitar-fila-carrito">Quitar</button>
+            <div class="contador">
+              <button type="button" aria-label="Quitar uno">−</button>
+              <span>1</span>
+              <button type="button" aria-label="Agregar uno">+</button>
+            </div>
+          </div>
+        </div>
+
+        <div class="fila-carrito">
+          <div class="miniatura-carrito"><img src="img/triple.jpg" alt=""></div>
+          <div class="info-fila-carrito">
+            <p class="nombre-fila-carrito">Hamburguesa Triple</p>
+            <p class="subtotal-fila-carrito">$30.00</p>
+          </div>
+          <div class="g-fila-acciones">
+            <button type="button" class="quitar-fila-carrito">Quitar</button>
+            <div class="contador">
+              <button type="button" aria-label="Quitar uno">−</button>
+              <span>2</span>
+              <button type="button" aria-label="Agregar uno">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="carrito-pie">
+        <div class="fila-total">
+          <span>Total</span>
+          <span>$46.00</span>
+        </div>
+        <button type="button" class="boton-hacer-pedido">Hacer pedido</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<!-- 5. DATOS Y PAGO                                                   -->
+<!-- ================================================================= -->
+<section class="ref-pantalla">
+  <p class="ref-titulo">5a · Datos del cliente</p>
+  <p class="ref-nota">Hoy la tienda pide los datos y el pago en dos pasos seguidos (5a y 5b). La maqueta respeta ese flujo.</p>
+  <div class="telefono">
+    <div class="g-velo" aria-hidden="true"></div>
+    <div class="carrito-panel">
+
+      <div class="carrito-encabezado con-volver">
+        <button type="button" class="cerrar-carrito" aria-label="Volver">←</button>
+        <h2>Tus datos</h2>
+        <button type="button" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+      </div>
+
+      <form class="checkout-cuerpo" onsubmit="return false;">
+        <div class="campo-checkout">
+          <label for="m-nombre">Nombre</label>
+          <input type="text" id="m-nombre" placeholder="Tu nombre" value="Carlos Pérez">
+        </div>
+        <div class="campo-checkout">
+          <label for="m-telefono">Teléfono</label>
+          <input type="tel" id="m-telefono" placeholder="Tu teléfono" value="+1 305 555 0199">
+        </div>
+        <div class="campo-checkout">
+          <label for="m-nota">Nota (opcional)</label>
+          <textarea id="m-nota" rows="2" placeholder="Ej. sin cebolla, tocar el timbre..."></textarea>
+        </div>
+      </form>
+
+      <div class="carrito-pie">
+        <button type="button" class="boton-hacer-pedido">Continuar</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<section class="ref-pantalla">
+  <p class="ref-titulo">5b · Pago</p>
+  <div class="telefono">
+    <div class="g-velo" aria-hidden="true"></div>
+    <div class="carrito-panel">
+
+      <div class="carrito-encabezado con-volver">
+        <button type="button" class="cerrar-carrito" aria-label="Volver">←</button>
+        <h2>Pago</h2>
+        <button type="button" class="cerrar-carrito" aria-label="Cerrar">✕</button>
+      </div>
+
+      <div class="checkout-cuerpo lista-metodos-pago">
+        <button type="button" class="opcion-detalle"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Efectivo</span></span></button>
+        <button type="button" class="opcion-detalle seleccionada"><span class="opcion-detalle-izquierda"><span class="marca-opcion-detalle" aria-hidden="true"></span><span>Zelle</span></span></button>
+        <div class="detalle-metodo-pago">
+          <p><strong>Correo: </strong>pagos@labanada.com</p>
+          <p><strong>Titular: </strong>La Bañada LLC</p>
+          <p class="g-instrucciones">Envía el total y sube tu comprobante al terminar.</p>
+        </div>
+      </div>
+
+      <div class="carrito-pie">
+        <div class="fila-total">
+          <span>Total</span>
+          <span>$46.00</span>
+        </div>
+        <button type="button" class="boton-hacer-pedido">Confirmar pedido</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<!-- 6. CONFIRMACIÓN                                                   -->
+<!-- ================================================================= -->
+<section class="ref-pantalla">
+  <p class="ref-titulo">6 · Confirmación</p>
+  <div class="telefono">
+    <div class="g-velo" aria-hidden="true"></div>
+    <div class="carrito-panel">
+
+      <div class="confirmacion">
+        <div class="icono-confirmacion" aria-hidden="true">✓</div>
+        <h2 class="titulo-confirmacion">Pedido enviado</h2>
+        <p class="numero-confirmacion">Pedido #27</p>
+        <p class="total-confirmacion">$46.00</p>
+
+        <div class="bloque-comprobante">
+          <button type="button" class="boton-comprobante">Subir comprobante</button>
+          <p class="nota-comprobante">Opcional. También puedes enviarlo después.</p>
+        </div>
+      </div>
+
+      <div class="carrito-pie">
+        <button type="button" class="boton-hacer-pedido boton-secundario-g">Listo</button>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- ================================================================= -->
+<!-- VARIANTE OPCIONAL — REQUIERE DATO NUEVO                           -->
+<!-- ================================================================= -->
+<section class="ref-pantalla ref-variante">
+  <p class="ref-titulo">Variante opcional · requiere dato nuevo</p>
+  <p class="ref-nota">Etiqueta corta sobre la foto ("2 CARNES"). Hoy no existe un campo para guardarla: necesitaría una columna nueva por producto. No forma parte de la versión principal.</p>
+  <div class="telefono">
+    <div class="rejilla-productos" style="padding-bottom: 24px;">
+      <div class="producto">
+        <div class="foto-producto">
+          <img src="img/doble.jpg" alt="Hamburguesa Doble">
+          <span class="g-etiqueta-foto">2 CARNES</span>
+        </div>
+        <div class="info-producto">
+          <div class="g-fila-nombre">
+            <p class="nombre-producto">Hamburguesa Doble</p>
+            <p class="precio-producto">$12.00</p>
+          </div>
+          <p class="g-descripcion-producto">Dos carnes, cheddar, Ruffles y salsa.</p>
+          <button type="button" class="g-boton-personalizar">Personalizar y agregar</button>
+        </div>
+      </div>
+      <div class="producto">
+        <div class="foto-producto">
+          <img src="img/triple.jpg" alt="Hamburguesa Triple">
+          <span class="g-etiqueta-foto">3 CARNES</span>
+        </div>
+        <div class="info-producto">
+          <div class="g-fila-nombre">
+            <p class="nombre-producto">Hamburguesa Triple</p>
+            <p class="precio-producto">$15.00</p>
+          </div>
+          <p class="g-descripcion-producto">Tres carnes, cheddar, Ruffles y salsa.</p>
+          <button type="button" class="g-boton-personalizar">Personalizar y agregar</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="ref-fin"></div>
+
+<script>
+(function () {
+  "use strict";
+  // Solo para la maqueta: cambia el color de acento para comprobar que el
+  // diseño funciona con la paleta que elige el dueño.
+  var botones = document.querySelectorAll(".ref-color");
+  botones.forEach(function (boton) {
+    boton.addEventListener("click", function () {
+      document.body.setAttribute("data-color", boton.getAttribute("data-color"));
+      botones.forEach(function (b) {
+        b.setAttribute("aria-pressed", b === boton ? "true" : "false");
+      });
+    });
+  });
+})();
+</script>
+
+</body>
+</html>
