@@ -1,0 +1,747 @@
+/* =====================================================================
+   PLANTILLA GOURMET
+   Presentación alternativa de la tienda pública, asignada por el equipo
+   (sección 11 de CLAUDE-KIOSCOS.md). Referencia: kiosco/maquetas/gourmet.html
+
+   Reglas:
+   - Todo va acotado bajo body[data-plantilla="gourmet"]. Nada global.
+   - Este archivo se carga DESPUÉS de publico.css: con igual especificidad,
+     gana. Nunca se edita publico.css para una plantilla.
+   - Gourmet siempre se ve en claro, aunque el negocio tenga el tema
+     "moderno". El color de acento sí respeta body[data-color].
+   - Prohibido poner "animation: none" en .producto: su animación de entrada
+     arranca en opacity 0 y los productos quedarían invisibles.
+   ===================================================================== */
+
+/* ---- Marca de carga y colores ----
+   --plantilla la lee ver.html para confirmar que esta hoja se aplicó.
+   Si no la encuentra, descarta la plantilla y muestra la tienda normal. */
+
+body[data-plantilla="gourmet"] {
+  --plantilla: gourmet;
+  --fuente-titulos: "Anton", Impact, "Arial Narrow Bold", "Helvetica Neue", sans-serif;
+
+  --fondo: #ffffff;
+  --texto: #111111;
+  --texto-suave: #666666;
+  --negro: #111111;
+  --borde: #e5e5e5;
+  --gris-claro: #f5f5f5;
+  --error-fondo: #fdeceb;
+  --error-texto: #b8402c;
+  --exito-fondo: #ecf6ee;
+  --exito-texto: #3f7a4c;
+  --sombra: 0 -6px 20px rgba(17, 17, 17, 0.08);
+  --sombra-barra: 0 8px 24px rgba(17, 17, 17, 0.22);
+  --sombra-tarjeta: none;
+  --radio-grande: 22px;
+  --radio-gourmet: 14px;
+
+  /* Grafito, y respaldo para cualquier color desconocido. */
+  --acento-fondo: #111111;
+  --acento-texto: #ffffff;
+}
+
+/* Paleta cerrada, siempre en su versión para fondo claro (mismos valores
+   que el tema claro de publico.css). Así un negocio con tema "moderno" no
+   recibe los tonos pastel pensados para fondo oscuro. */
+body[data-plantilla="gourmet"][data-color="grafito"]  { --acento-fondo: #111111; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="rojo"]     { --acento-fondo: #b91c1c; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="naranja"]  { --acento-fondo: #c2410c; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="ambar"]    { --acento-fondo: #92400e; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="verde"]    { --acento-fondo: #15803d; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="turquesa"] { --acento-fondo: #0e7490; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="azul"]     { --acento-fondo: #1d4ed8; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="violeta"]  { --acento-fondo: #6d28d9; --acento-texto: #ffffff; }
+body[data-plantilla="gourmet"][data-color="rosa"]     { --acento-fondo: #be185d; --acento-texto: #ffffff; }
+
+/* Seguridad: publico.css oculta muchos bloques con ".x[hidden]". Una regla
+   de esta hoja con display: flex/grid podría vencerla y mostrar bloques
+   vacíos. Esto garantiza que lo oculto siga oculto. */
+body[data-plantilla="gourmet"] [hidden] {
+  display: none !important;
+}
+
+/* ---- Cabecera: portada grande + tarjeta con el nombre ---- */
+
+body[data-plantilla="gourmet"] .cabecera {
+  position: relative;
+  align-items: stretch;
+  text-align: left;
+  border-bottom: none;
+  padding-bottom: 6px;
+}
+
+body[data-plantilla="gourmet"] .portada-negocio {
+  height: 300px;
+}
+
+body[data-plantilla="gourmet"] .portada-negocio::after {
+  display: none;
+}
+
+/* Con portada, el logo flota arriba a la izquierda sobre la foto. */
+body[data-plantilla="gourmet"] .logo-negocio {
+  position: absolute;
+  top: 14px;
+  left: 14px;
+  z-index: 2;
+  width: 56px;
+  height: 56px;
+  margin: 0;
+  box-shadow: 0 0 0 3px #ffffff, 0 4px 14px rgba(17, 17, 17, 0.25);
+}
+
+/* Sin portada, el logo vuelve al flujo normal, alineado a la izquierda. */
+body[data-plantilla="gourmet"] .portada-negocio[hidden] + .logo-negocio {
+  position: relative;
+  top: auto;
+  left: auto;
+  width: 72px;
+  height: 72px;
+  margin: 28px 20px 0;
+  box-shadow: 0 0 0 1px var(--borde), 0 4px 14px rgba(17, 17, 17, 0.12);
+}
+
+body[data-plantilla="gourmet"] .texto-cabecera {
+  position: relative;
+  z-index: 1;
+  max-width: none;
+  margin-top: -36px;
+  padding: 24px 20px 8px;
+  background: var(--fondo);
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+}
+
+/* Mismas combinaciones que publico.css (con su misma especificidad) para
+   que estas ganen. */
+body[data-plantilla="gourmet"] .portada-negocio:not([hidden]) + .logo-negocio[hidden] + .texto-cabecera {
+  padding-top: 24px;
+}
+
+body[data-plantilla="gourmet"] .portada-negocio[hidden] + .logo-negocio + .texto-cabecera {
+  margin-top: 0;
+  padding-top: 18px;
+  border-radius: 0;
+}
+
+body[data-plantilla="gourmet"] .portada-negocio[hidden] + .logo-negocio[hidden] + .texto-cabecera {
+  margin-top: 0;
+  padding-top: 36px;
+  border-radius: 0;
+}
+
+body[data-plantilla="gourmet"] .nombre-negocio {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2.6rem;
+  /* Aire arriba para la tilde de Ñ, Á, É...: publico.css recorta el nombre
+     a dos líneas con overflow: hidden, y con line-height 1 se cortaba. */
+  line-height: 1.15;
+  padding-top: 0.06em;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .descripcion-negocio {
+  margin: 10px 0 0;
+  font-size: 1rem;
+  line-height: 1.45;
+  color: var(--texto-suave);
+}
+
+body[data-plantilla="gourmet"] .barra-confianza {
+  justify-content: flex-start;
+  margin-top: 14px;
+}
+
+/* ---- Formas de pago: una línea discreta de pastillas ---- */
+
+body[data-plantilla="gourmet"] .bloque-pago-kiosco {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 10px;
+  padding: 12px 20px 4px;
+  border-bottom: none;
+}
+
+body[data-plantilla="gourmet"] .etiqueta-pago-kiosco {
+  margin: 0;
+  flex-shrink: 0;
+  letter-spacing: 0.08em;
+}
+
+body[data-plantilla="gourmet"] .bloque-pago-kiosco > .envoltura-desvanecida {
+  flex: 1 1 0;
+  min-width: 0;
+}
+
+body[data-plantilla="gourmet"] .detalle-pago-kiosco-envoltorio {
+  flex: 0 0 100%;
+}
+
+body[data-plantilla="gourmet"] .detalle-pago-kiosco-envoltorio .detalle-metodo-pago {
+  margin: 4px 0 0;
+}
+
+body[data-plantilla="gourmet"] .metodo-pago-tarjeta {
+  min-height: 36px;
+  padding: 0 14px;
+  border-radius: 999px;
+  background: var(--fondo);
+}
+
+body[data-plantilla="gourmet"] .icono-metodo-pago-tarjeta {
+  display: none;
+}
+
+/* ---- Categorías y buscador ---- */
+
+body[data-plantilla="gourmet"] .fila-categorias {
+  padding-top: 16px;
+}
+
+/* ---- Menú: tarjetas grandes en una columna ---- */
+
+body[data-plantilla="gourmet"] .menu {
+  padding: 0 20px;
+}
+
+body[data-plantilla="gourmet"] .rejilla-productos,
+body[data-plantilla="gourmet"] .rejilla-busqueda {
+  display: flex;
+  flex-direction: column;
+  gap: 32px;
+  overflow: visible;
+  scroll-snap-type: none;
+  padding-top: 18px;
+}
+
+/* El empujón lateral que avisa "esto se desliza" no aplica en columna. */
+body[data-plantilla="gourmet"] .rejilla-productos.insinuar-desplazamiento {
+  animation: none;
+}
+
+/* Sin desplazamiento horizontal no hay borde que desvanecer. */
+body[data-plantilla="gourmet"] .menu .borde-desvanecido {
+  display: none;
+}
+
+body[data-plantilla="gourmet"] .producto,
+body[data-plantilla="gourmet"] .rejilla-busqueda .producto {
+  flex: none;
+  width: auto;
+  scroll-snap-align: none;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  box-shadow: none;
+  overflow: visible;
+}
+
+/* Foto cuadrada: muestra completa la foto 1080×1080 que ya genera el panel. */
+body[data-plantilla="gourmet"] .foto-producto {
+  aspect-ratio: 1 / 1;
+  border-radius: var(--radio-grande);
+  background: var(--gris-claro);
+}
+
+/* Todos los productos abren el detalle: fuera la flecha, el "+" y la
+   etiqueta sobre la foto (el estado agotado lo dice el botón de abajo). */
+body[data-plantilla="gourmet"] .flecha-producto,
+body[data-plantilla="gourmet"] .boton-agregar,
+body[data-plantilla="gourmet"] .etiqueta-agotado {
+  display: none;
+}
+
+body[data-plantilla="gourmet"] .info-producto {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: baseline;
+  padding: 14px 2px 0;
+}
+
+body[data-plantilla="gourmet"] .nombre-producto {
+  grid-column: 1;
+  height: auto;
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.7rem;
+  line-height: 1.15; /* aire para las tildes en mayúscula (recorte de publico.css) */
+  padding-top: 0.06em;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  -webkit-line-clamp: 3;
+}
+
+body[data-plantilla="gourmet"] .precio-producto {
+  grid-column: 2;
+  font-size: 1.15rem;
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+body[data-plantilla="gourmet"] .g-descripcion-producto {
+  grid-column: 1 / -1;
+  min-width: 0;
+  margin: 6px 0 0;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: var(--texto-suave);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+body[data-plantilla="gourmet"] .g-boton-personalizar {
+  grid-column: 1 / -1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 52px;
+  margin-top: 14px;
+  padding: 0 16px;
+  border-radius: var(--radio-gourmet);
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: 1rem;
+  font-weight: 700;
+  text-align: center;
+  transition: transform 0.1s ease;
+}
+
+body[data-plantilla="gourmet"] .producto:not(.agotado):active .g-boton-personalizar {
+  transform: scale(0.98);
+}
+
+body[data-plantilla="gourmet"] .g-boton-personalizar.g-deshabilitado {
+  background: var(--gris-claro);
+  color: #9a9a9a;
+  border: 1px solid var(--borde);
+}
+
+body[data-plantilla="gourmet"] .menu-vacio {
+  padding-top: 32px;
+}
+
+@media (min-width: 720px) {
+  body[data-plantilla="gourmet"] .rejilla-productos,
+  body[data-plantilla="gourmet"] .rejilla-busqueda {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 36px 24px;
+  }
+
+  body[data-plantilla="gourmet"] .portada-negocio {
+    height: 360px;
+  }
+}
+
+/* ---- Pie ---- */
+
+body[data-plantilla="gourmet"] .pie-kiosco {
+  margin-top: 40px;
+}
+
+/* ---- Barra del carrito (mismo elemento, solo cambia el estilo) ---- */
+
+body[data-plantilla="gourmet"] .barra-carrito {
+  left: 14px;
+  right: 14px;
+  border-radius: 16px;
+  box-shadow: var(--sombra-barra);
+}
+
+/* ---- Paneles: hoja que sube desde abajo ---- */
+
+body[data-plantilla="gourmet"] .carrito-panel {
+  background: var(--fondo);
+  color: var(--texto);
+  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  overflow: hidden;
+}
+
+body[data-plantilla="gourmet"] .carrito-encabezado {
+  gap: 12px;
+  padding: 18px 20px 10px;
+}
+
+body[data-plantilla="gourmet"] .carrito-encabezado h2 {
+  flex: 1;
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.7rem;
+  line-height: 1.05;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .carrito-encabezado.con-volver h2 {
+  font-size: 1.45rem;
+}
+
+body[data-plantilla="gourmet"] .cerrar-carrito {
+  width: 44px;
+  height: 44px;
+  background: var(--gris-claro);
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .carrito-pie {
+  background: var(--fondo);
+}
+
+body[data-plantilla="gourmet"] .fila-total span:last-child {
+  font-size: 1.35rem;
+}
+
+body[data-plantilla="gourmet"] .boton-hacer-pedido {
+  min-height: 56px;
+  border-radius: var(--radio-gourmet);
+  font-weight: 800;
+}
+
+body[data-plantilla="gourmet"] .boton-hacer-pedido:disabled {
+  opacity: 0.55;
+  cursor: default;
+}
+
+body[data-plantilla="gourmet"] .contador {
+  gap: 4px;
+  padding: 3px;
+  border: 1px solid var(--borde);
+  border-radius: 999px;
+}
+
+body[data-plantilla="gourmet"] .contador button {
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: var(--gris-claro);
+  color: var(--texto);
+  font-size: 1.3rem;
+}
+
+body[data-plantilla="gourmet"] .contador span {
+  min-width: 28px;
+  font-weight: 800;
+}
+
+/* ---- Detalle del producto ---- */
+
+body[data-plantilla="gourmet"] .producto-detalle-cuerpo {
+  position: relative;
+}
+
+/* Con foto, el ✕ flota sobre ella. Sin soporte para :has() la regla se
+   ignora entera y el ✕ queda donde está hoy. */
+body[data-plantilla="gourmet"] .producto-detalle-cuerpo:has(> .producto-detalle-foto:not([hidden])) .producto-detalle-encabezado {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 2;
+  padding: 0;
+}
+
+body[data-plantilla="gourmet"] .producto-detalle-cuerpo:has(> .producto-detalle-foto:not([hidden])) .cerrar-carrito {
+  background: #ffffff;
+  box-shadow: 0 4px 14px rgba(17, 17, 17, 0.18);
+}
+
+body[data-plantilla="gourmet"] .producto-detalle-foto {
+  aspect-ratio: 1 / 1;
+  max-height: 46vh;
+}
+
+body[data-plantilla="gourmet"] .producto-detalle-info {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 20px 4px;
+}
+
+body[data-plantilla="gourmet"] .producto-detalle-nombre {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2.1rem;
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--texto);
+}
+
+/* El precio va antes que la descripción, sin mover elementos. */
+body[data-plantilla="gourmet"] .producto-detalle-precio {
+  order: 1;
+  margin: 8px 0 0;
+  font-size: 1.25rem;
+}
+
+body[data-plantilla="gourmet"] .producto-detalle-descripcion {
+  order: 2;
+  margin: 8px 0 0;
+  line-height: 1.45;
+}
+
+body[data-plantilla="gourmet"] .producto-detalle-grupos {
+  padding: 8px 20px 22px;
+}
+
+body[data-plantilla="gourmet"] .grupo-detalle {
+  margin-top: 24px;
+}
+
+body[data-plantilla="gourmet"] .grupo-detalle:first-child {
+  margin-top: 14px;
+}
+
+body[data-plantilla="gourmet"] .nombre-grupo-detalle {
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.2rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--texto);
+}
+
+/* Opciones (también se usan en la lista de métodos de pago). */
+body[data-plantilla="gourmet"] .opcion-detalle {
+  margin-bottom: 8px;
+  border-radius: var(--radio-gourmet);
+  background: var(--fondo);
+  color: var(--texto);
+  font-size: 1rem;
+}
+
+body[data-plantilla="gourmet"] .opcion-detalle-izquierda {
+  gap: 12px;
+}
+
+body[data-plantilla="gourmet"] .marca-opcion-detalle {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border: 1.5px solid #c9c9c9;
+  border-radius: 50%;
+}
+
+body[data-plantilla="gourmet"] .opcion-detalle.seleccionada {
+  border-color: var(--acento-fondo);
+  background: color-mix(in srgb, var(--acento-fondo) 7%, #ffffff);
+}
+
+body[data-plantilla="gourmet"] .opcion-detalle.seleccionada .marca-opcion-detalle {
+  border-color: var(--acento-fondo);
+  background: var(--acento-fondo);
+}
+
+/* Una sola opción (y métodos de pago): punto al centro. */
+body[data-plantilla="gourmet"] .opcion-detalle.seleccionada .marca-opcion-detalle::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--acento-texto);
+}
+
+/* Varias opciones: casilla cuadrada con palomita. */
+body[data-plantilla="gourmet"] .grupo-detalle[data-g-tipo="multiple"] .marca-opcion-detalle {
+  border-radius: 6px;
+}
+
+body[data-plantilla="gourmet"] .grupo-detalle[data-g-tipo="multiple"] .opcion-detalle.seleccionada .marca-opcion-detalle::after {
+  width: 6px;
+  height: 11px;
+  margin-top: -2px;
+  border: solid var(--acento-texto);
+  border-width: 0 2.5px 2.5px 0;
+  border-radius: 0;
+  background: none;
+  transform: rotate(45deg);
+}
+
+body[data-plantilla="gourmet"] .opcion-detalle.seleccionada .precio-opcion-detalle {
+  color: var(--texto);
+}
+
+/* ---- Carrito ----
+   .info-fila-carrito se "disuelve" (display: contents) para que sus partes
+   se acomoden en la rejilla de la fila sin mover ningún elemento: foto a la
+   izquierda; nombre, opciones y subtotal arriba; "Quitar" y el contador
+   abajo. */
+
+body[data-plantilla="gourmet"] .carrito-lista {
+  padding: 6px 20px 4px;
+}
+
+body[data-plantilla="gourmet"] .fila-carrito {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    "foto nombre    nombre"
+    "foto opciones  opciones"
+    "foto subtotal  subtotal"
+    "foto quitar    contador";
+  column-gap: 14px;
+  align-items: center;
+  padding: 16px 0;
+}
+
+body[data-plantilla="gourmet"] .info-fila-carrito {
+  display: contents;
+}
+
+body[data-plantilla="gourmet"] .miniatura-carrito {
+  grid-area: foto;
+  align-self: start;
+  width: 72px;
+  height: 72px;
+  border-radius: 12px;
+}
+
+body[data-plantilla="gourmet"] .nombre-fila-carrito {
+  grid-area: nombre;
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 1.2rem;
+  line-height: 1.1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+}
+
+body[data-plantilla="gourmet"] .opciones-fila-carrito {
+  grid-area: opciones;
+  margin: 4px 0 0;
+  font-size: 0.9rem;
+}
+
+body[data-plantilla="gourmet"] .subtotal-fila-carrito {
+  grid-area: subtotal;
+  margin: 6px 0 0;
+  font-size: 1rem;
+  font-weight: 800;
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .quitar-fila-carrito {
+  grid-area: quitar;
+  justify-self: start;
+  min-height: 44px;
+  margin-top: 8px;
+  padding: 0;
+  font-size: 0.9rem;
+  text-decoration: underline;
+}
+
+body[data-plantilla="gourmet"] .fila-carrito > .contador {
+  grid-area: contador;
+  justify-self: end;
+  margin-top: 8px;
+}
+
+/* ---- Datos del cliente ---- */
+
+body[data-plantilla="gourmet"] .campo-checkout label {
+  font-size: 0.9rem;
+}
+
+body[data-plantilla="gourmet"] .campo-checkout input,
+body[data-plantilla="gourmet"] .campo-checkout textarea {
+  min-height: 52px;
+  padding: 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio-gourmet);
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .campo-checkout input:focus,
+body[data-plantilla="gourmet"] .campo-checkout textarea:focus {
+  border-color: var(--acento-fondo);
+}
+
+body[data-plantilla="gourmet"] .boton-modalidad {
+  min-height: 52px;
+  border-color: var(--borde);
+  border-radius: var(--radio-gourmet);
+  background: var(--fondo);
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .boton-modalidad.activo {
+  border-color: var(--acento-fondo);
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+}
+
+/* ---- Pago ---- */
+
+body[data-plantilla="gourmet"] .detalle-metodo-pago {
+  padding: 14px 16px;
+  border-radius: var(--radio-gourmet);
+  font-size: 0.95rem;
+}
+
+/* Las instrucciones son el párrafo sin etiqueta en negrita. */
+body[data-plantilla="gourmet"] .detalle-metodo-pago p:not(:has(strong)) {
+  margin-top: 8px;
+  color: var(--texto-suave);
+}
+
+body[data-plantilla="gourmet"] .detalle-metodo-pago p:first-child:not(:has(strong)) {
+  margin-top: 0;
+}
+
+/* ---- Confirmación ---- */
+
+body[data-plantilla="gourmet"] .icono-confirmacion {
+  width: 76px;
+  height: 76px;
+  margin-bottom: 14px;
+  background: var(--acento-fondo);
+  color: var(--acento-texto);
+  font-size: 2rem;
+}
+
+body[data-plantilla="gourmet"] .titulo-confirmacion {
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2.3rem;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .numero-confirmacion {
+  margin-top: 8px;
+  font-weight: 700;
+  color: var(--texto);
+}
+
+body[data-plantilla="gourmet"] .total-confirmacion {
+  font-size: 1.6rem;
+}
+
+body[data-plantilla="gourmet"] .boton-comprobante {
+  min-height: 52px;
+  border: 2px solid var(--acento-fondo);
+  border-radius: var(--radio-gourmet);
+  background: var(--fondo);
+  color: var(--acento-fondo);
+  font-weight: 800;
+}
+
+body[data-plantilla="gourmet"] #btnCerrarConfirmacion {
+  background: var(--negro);
+  color: #ffffff;
+}

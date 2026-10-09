@@ -395,6 +395,115 @@
     otro: "Otro"
   };
 
+  // ---- Plantillas curadas (sección 11 de CLAUDE-KIOSCOS.md) ----
+  // Lista cerrada: cualquier nombre que no esté aquí se ignora. Una plantilla
+  // solo cambia la presentación; si no carga a tiempo, se descarta y la
+  // tienda se ve exactamente como siempre.
+  var PLANTILLAS = {
+    gourmet: {
+      css: "css/plantillas/gourmet.css",
+      js: "js/plantillas/gourmet.js",
+      fuente: "https://fonts.googleapis.com/css2?family=Anton&display=swap"
+    }
+  };
+  var ESPERA_MAXIMA_PLANTILLA = 3000;
+  var plantillaActiva = null;
+  var ganchosPlantilla = {};
+  var elementosPlantilla = [];
+  var plantillaLista = Promise.resolve(false);
+
+  function esEntornoLocal() {
+    var host = window.location.hostname;
+    return host === "localhost" || host === "127.0.0.1" || host === "[::1]";
+  }
+
+  function elegirPlantilla(kiosco) {
+    var nombre = "";
+    // Por ahora solo para pruebas en local, con ?plantilla= en la dirección.
+    // En cualquier otro dominio el parámetro ni se lee.
+    if (esEntornoLocal()) {
+      nombre = new URLSearchParams(window.location.search).get("plantilla") || "";
+    }
+    // Cuando exista la columna protegida en el servidor:
+    // if (!nombre && kiosco && kiosco.plantilla) nombre = kiosco.plantilla;
+    nombre = String(nombre).trim().toLowerCase();
+    return Object.prototype.hasOwnProperty.call(PLANTILLAS, nombre) ? nombre : null;
+  }
+
+  // El JS de la plantilla se registra aquí. Si no es la plantilla activa (o
+  // ya se descartó por tardar demasiado), el registro se ignora.
+  window.registrarPlantilla = function (nombre, ganchos) {
+    if (nombre === plantillaActiva && ganchos) ganchosPlantilla = ganchos;
+  };
+
+  function quitarPlantilla() {
+    plantillaActiva = null;
+    ganchosPlantilla = {};
+    document.body.removeAttribute("data-plantilla");
+    elementosPlantilla.forEach(function (elemento) {
+      if (elemento.parentNode) elemento.parentNode.removeChild(elemento);
+    });
+    elementosPlantilla = [];
+  }
+
+  function cargarRecurso(tipo, url) {
+    return new Promise(function (resolve) {
+      var elemento;
+      if (tipo === "css") {
+        elemento = document.createElement("link");
+        elemento.rel = "stylesheet";
+        elemento.href = url;
+      } else {
+        elemento = document.createElement("script");
+        elemento.src = url;
+      }
+      elemento.onload = function () { resolve(true); };
+      elemento.onerror = function () { resolve(false); };
+      elementosPlantilla.push(elemento);
+      document.head.appendChild(elemento);
+    });
+  }
+
+  function aplicarPlantilla(nombre) {
+    if (!nombre) return Promise.resolve(false);
+    var plantilla = PLANTILLAS[nombre];
+    plantillaActiva = nombre;
+    document.body.setAttribute("data-plantilla", nombre);
+
+    // La fuente no se espera: si no llega, el CSS trae un respaldo.
+    if (plantilla.fuente) cargarRecurso("css", plantilla.fuente);
+
+    var carga = Promise.all([
+      cargarRecurso("css", plantilla.css),
+      cargarRecurso("js", plantilla.js)
+    ]).then(function (resultados) {
+      // El CSS declara --plantilla con su nombre: así se comprueba que lo que
+      // llegó es la hoja correcta y que de verdad se aplicó.
+      var marca = window.getComputedStyle(document.body).getPropertyValue("--plantilla").trim();
+      return resultados[0] && resultados[1] && marca === nombre &&
+        Object.keys(ganchosPlantilla).length > 0;
+    });
+
+    var limite = new Promise(function (resolve) {
+      setTimeout(function () { resolve(false); }, ESPERA_MAXIMA_PLANTILLA);
+    });
+
+    return Promise.race([carga, limite]).then(function (lista) {
+      if (!lista) quitarPlantilla();
+      return lista;
+    });
+  }
+
+  function llamarGancho(nombre) {
+    var gancho = ganchosPlantilla[nombre];
+    if (typeof gancho !== "function") return;
+    try {
+      gancho.apply(null, Array.prototype.slice.call(arguments, 1));
+    } catch (e) {
+      // Una plantilla nunca puede romper la tienda.
+    }
+  }
+
   // Iconos de trazo fijos (no vienen de datos del usuario): seguros para innerHTML.
   var ICONO_CONFIANZA_PAGO = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="5" width="20" height="14" rx="2"></rect><path d="M2 10h20"></path></svg>';
   var ICONO_CONFIANZA_ENTREGA = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path><path d="M12 13v8"></path></svg>';
@@ -731,6 +840,7 @@
       });
     }
 
+    llamarGancho("producto", fila, producto, { tieneOpciones: tieneOpciones });
     return fila;
   }
 
@@ -1292,6 +1402,7 @@
     gruposDetalleActuales.forEach(function (grupo) {
       productoDetalleGrupos.appendChild(crearBloqueGrupoDetalle(grupo));
     });
+    llamarGancho("gruposDetalle", productoDetalleGrupos, gruposDetalleActuales);
   }
 
   function mostrarMensajeDetalle(texto, tipo) {
@@ -1915,6 +2026,7 @@
         document.title = kioscoActual.nombre;
         document.body.setAttribute("data-tema", kioscoActual.tema === "moderno" ? "moderno" : "claro");
         document.body.setAttribute("data-color", kioscoActual.color_acento || "grafito");
+        plantillaLista = aplicarPlantilla(elegirPlantilla(kioscoActual));
 
         nombreNegocio.textContent = kioscoActual.nombre;
         if (kioscoActual.descripcion) {
@@ -2003,7 +2115,7 @@
       var categorias = resCategorias.data || [];
       var productos = resProductos.data || [];
 
-      return cargarGruposDeProductos(productos).then(function () {
+      return Promise.all([cargarGruposDeProductos(productos), plantillaLista]).then(function () {
         renderMenu(categorias, productos);
         mostrarSolo(contenido);
         configurarDescripcionExpandible();
