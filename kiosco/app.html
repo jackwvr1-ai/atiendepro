@@ -150,6 +150,33 @@
       </div>
     </div>
 
+    <!-- Solo aparece si el equipo asignó Gourmet a este negocio. -->
+    <div class="bloque-seccion" id="bloqueDisenoGourmet" hidden>
+      <h2 class="subtitulo-seccion">Diseño Gourmet</h2>
+      <p class="ayuda-diseno">Estos ajustes se ven en tu tienda con el diseño Gourmet.</p>
+
+      <div class="campo campo-diseno">
+        <label for="horarioDiseno">Horario que verán tus clientes</label>
+        <input type="text" id="horarioDiseno" placeholder="Vie · Sáb · Dom — 7:00 a 10:30 p. m." maxlength="60" autocomplete="off">
+        <p class="contador-diseno" id="contadorHorarioDiseno">0 / 60</p>
+        <p class="ayuda-diseno">Es solo informativo: no cierra ni pausa tus pedidos. Déjalo vacío si no quieres mostrar nada.</p>
+      </div>
+
+      <p class="etiqueta-diseno">¿Dónde se muestra?</p>
+      <div class="opciones-tema">
+        <button type="button" class="tarjeta-tema tarjeta-posicion" id="posicionPortada" data-posicion="portada" aria-pressed="false">
+          <span class="nombre-tema">Sobre la portada</span>
+        </button>
+        <button type="button" class="tarjeta-tema tarjeta-posicion" id="posicionNombre" data-posicion="nombre" aria-pressed="false">
+          <span class="nombre-tema">Debajo del nombre</span>
+        </button>
+      </div>
+      <p class="ayuda-diseno" id="avisoSinPortadaDiseno" hidden>Tu kiosco no tiene portada: se mostrará debajo del nombre.</p>
+
+      <button type="button" id="btnGuardarDiseno" class="boton-primario boton-guardar-diseno">Guardar diseño</button>
+      <div id="mensajeDiseno" class="mensaje mensaje-diseno" hidden></div>
+    </div>
+
     <div class="bloque-seccion">
       <div class="encabezado-bloque">
         <h2 class="subtitulo-seccion">Métodos de pago</h2>
@@ -870,6 +897,8 @@
     } else {
       renderMetodosPago();
     }
+
+    if (!disenoGourmetSolicitado) cargarDisenoGourmet();
   }
 
   // ---- Compartir ----
@@ -1119,6 +1148,9 @@
     circulosColor.forEach(function (circulo) {
       circulo.classList.toggle("activo", circulo.getAttribute("data-color") === color);
     });
+
+    // El aviso "no tiene portada" del Diseño Gourmet sigue a la portada.
+    if (!bloqueDisenoGourmet.hidden) renderDisenoGourmet();
   }
 
   function mostrarEstadoImagen(elemento, texto, esError) {
@@ -1383,6 +1415,133 @@
     circulo.addEventListener("click", function () {
       seleccionarColor(circulo.getAttribute("data-color"));
     });
+  });
+
+  // ---- Diseño Gourmet ----
+  // Solo se muestra si el equipo asignó Gourmet a este negocio en
+  // kiosco_plantillas (el dueño solo puede leer esa tabla). Lo que el dueño
+  // edita vive aparte, en kiosco_ajustes_plantilla. Ante cualquier fallo la
+  // sección sigue oculta y el panel queda como siempre.
+
+  var LARGO_MAXIMO_HORARIO = 60;
+  var bloqueDisenoGourmet = document.getElementById("bloqueDisenoGourmet");
+  var campoHorarioDiseno = document.getElementById("horarioDiseno");
+  var contadorHorarioDiseno = document.getElementById("contadorHorarioDiseno");
+  var posicionPortada = document.getElementById("posicionPortada");
+  var posicionNombre = document.getElementById("posicionNombre");
+  var avisoSinPortadaDiseno = document.getElementById("avisoSinPortadaDiseno");
+  var btnGuardarDiseno = document.getElementById("btnGuardarDiseno");
+  var mensajeDiseno = document.getElementById("mensajeDiseno");
+
+  var disenoGourmetSolicitado = false;
+  var posicionDisenoElegida = "nombre";
+
+  function cargarDisenoGourmet() {
+    disenoGourmetSolicitado = true;
+    var kioscoId = kioscoActual.id;
+
+    sb.from("kiosco_plantillas").select("plantilla").eq("kiosco_id", kioscoId).maybeSingle().then(function (resultado) {
+      if (resultado.error || !resultado.data) return null;
+      var plantilla = String(resultado.data.plantilla || "").trim().toLowerCase();
+      if (plantilla !== "gourmet") return null;
+
+      return sb.from("kiosco_ajustes_plantilla").select("horario_texto,horario_posicion").eq("kiosco_id", kioscoId).maybeSingle().then(function (ajustes) {
+        if (ajustes.error) return null;
+        return { ajustes: ajustes.data || {} };
+      });
+    }).then(function (respuesta) {
+      if (!respuesta || !kioscoActual || kioscoActual.id !== kioscoId) return;
+      campoHorarioDiseno.value = respuesta.ajustes.horario_texto || "";
+      posicionDisenoElegida = respuesta.ajustes.horario_posicion === "portada" ? "portada" : "nombre";
+      mensajeDiseno.hidden = true;
+      renderDisenoGourmet();
+      bloqueDisenoGourmet.hidden = false;
+    }).catch(function () {
+      // Sin conexión o tabla no disponible: la sección sigue oculta.
+    });
+  }
+
+  function renderDisenoGourmet() {
+    contadorHorarioDiseno.textContent = campoHorarioDiseno.value.length + " / " + LARGO_MAXIMO_HORARIO;
+    posicionPortada.classList.toggle("activo", posicionDisenoElegida === "portada");
+    posicionNombre.classList.toggle("activo", posicionDisenoElegida === "nombre");
+    posicionPortada.setAttribute("aria-pressed", posicionDisenoElegida === "portada" ? "true" : "false");
+    posicionNombre.setAttribute("aria-pressed", posicionDisenoElegida === "nombre" ? "true" : "false");
+    var sinPortada = !(kioscoActual && kioscoActual.portada_url);
+    avisoSinPortadaDiseno.hidden = !(sinPortada && posicionDisenoElegida === "portada");
+  }
+
+  function elegirPosicionDiseno(valor) {
+    posicionDisenoElegida = valor;
+    mensajeDiseno.hidden = true;
+    renderDisenoGourmet();
+  }
+
+  posicionPortada.addEventListener("click", function () {
+    elegirPosicionDiseno("portada");
+  });
+
+  posicionNombre.addEventListener("click", function () {
+    elegirPosicionDiseno("nombre");
+  });
+
+  campoHorarioDiseno.addEventListener("input", function () {
+    mensajeDiseno.hidden = true;
+    renderDisenoGourmet();
+  });
+
+  function traducirErrorDiseno(error) {
+    var msg = (error && error.message) || "";
+    if ((error && error.code === "23514") || msg.toLowerCase().indexOf("check constraint") !== -1) {
+      return "El horario puede tener hasta 60 letras, en una sola línea.";
+    }
+    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
+      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    }
+    return "Algo salió mal. Intenta de nuevo en un momento.";
+  }
+
+  btnGuardarDiseno.addEventListener("click", function () {
+    if (!kioscoActual) return;
+
+    // Una sola línea, sin espacios sobrantes. Vacío = sin horario.
+    var texto = campoHorarioDiseno.value.replace(/\s+/g, " ").trim();
+    if (texto.length > LARGO_MAXIMO_HORARIO) {
+      mostrarMensajeEnCaja(mensajeDiseno, "El horario puede tener hasta 60 letras, en una sola línea.", "error");
+      return;
+    }
+
+    var payload = {
+      kiosco_id: kioscoActual.id,
+      horario_texto: texto || null,
+      horario_posicion: posicionDisenoElegida
+    };
+
+    btnGuardarDiseno.disabled = true;
+    btnGuardarDiseno.textContent = "Guardando...";
+    mensajeDiseno.hidden = true;
+
+    sb.from("kiosco_ajustes_plantilla")
+      .upsert(payload, { onConflict: "kiosco_id" })
+      .select("horario_texto,horario_posicion")
+      .single()
+      .then(function (resultado) {
+        btnGuardarDiseno.disabled = false;
+        btnGuardarDiseno.textContent = "Guardar diseño";
+        if (resultado.error) {
+          mostrarMensajeEnCaja(mensajeDiseno, traducirErrorDiseno(resultado.error), "error");
+          return;
+        }
+        campoHorarioDiseno.value = (resultado.data && resultado.data.horario_texto) || "";
+        posicionDisenoElegida = resultado.data && resultado.data.horario_posicion === "portada" ? "portada" : "nombre";
+        renderDisenoGourmet();
+        mostrarMensajeEnCaja(mensajeDiseno, "Listo. Ya se ve en tu tienda.", "exito");
+      })
+      .catch(function () {
+        btnGuardarDiseno.disabled = false;
+        btnGuardarDiseno.textContent = "Guardar diseño";
+        mostrarMensajeEnCaja(mensajeDiseno, "No se pudo conectar. Revisa tu internet e intenta de nuevo.", "error");
+      });
   });
 
   btnPublicar.addEventListener("click", function () {

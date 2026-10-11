@@ -1219,6 +1219,50 @@ select:focus {
   color: var(--texto);
 }
 
+/* ---- Diseño Gourmet (solo negocios con esa plantilla) ---- */
+
+.ayuda-diseno {
+  margin: 6px 2px 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+}
+
+.ayuda-diseno[hidden] {
+  display: none;
+}
+
+.campo-diseno {
+  margin-top: 16px;
+}
+
+.contador-diseno {
+  margin: 6px 2px 0;
+  font-size: 0.8rem;
+  color: var(--texto-suave);
+  text-align: right;
+}
+
+.etiqueta-diseno {
+  margin: 18px 0 8px;
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--texto);
+}
+
+.tarjeta-posicion {
+  justify-content: center;
+  min-height: 52px;
+}
+
+.boton-guardar-diseno {
+  margin-top: 18px;
+}
+
+.mensaje-diseno {
+  margin-top: 12px;
+}
+
 /* ---- Selector de color ---- */
 
 .opciones-color {

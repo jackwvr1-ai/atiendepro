@@ -114,14 +114,17 @@ body[data-plantilla="gourmet"] .portada-negocio[hidden] + .logo-negocio {
   box-shadow: 0 0 0 1px var(--borde), 0 4px 14px rgba(17, 17, 17, 0.12);
 }
 
+/* En el teléfono la tarjeta del nombre empieza justo debajo de la portada,
+   sin montarse sobre ella: así la foto se ve completa. En escritorio sube
+   36 px sobre la foto (ver el bloque de 720 px). */
 body[data-plantilla="gourmet"] .texto-cabecera {
   position: relative;
   z-index: 1;
   max-width: none;
-  margin-top: -36px;
+  margin-top: 0;
   padding: 24px 20px 8px;
   background: var(--fondo);
-  border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  border-radius: 0;
 }
 
 /* Mismas combinaciones que publico.css (con su misma especificidad) para
@@ -179,12 +182,13 @@ body[data-plantilla="gourmet"] .g-horario {
   color: var(--texto);
 }
 
-/* Sobre la portada: pastilla clara abajo a la izquierda, por encima de los
-   36 px que la tarjeta del nombre se monta sobre la foto. */
+/* Sobre la portada: pastilla clara abajo a la izquierda. En escritorio sube
+   más, por encima de los 36 px que ahí la tarjeta del nombre se monta sobre
+   la foto. */
 body[data-plantilla="gourmet"] .g-horario.g-horario-portada {
   position: absolute;
   left: 14px;
-  bottom: 50px;
+  bottom: 14px;
   z-index: 1;
   max-width: calc(100% - 28px);
   margin: 0;
@@ -393,6 +397,18 @@ body[data-plantilla="gourmet"] .menu-vacio {
 }
 
 @media (min-width: 720px) {
+  /* Escritorio: la tarjeta del nombre sigue montada sobre la portada. Las
+     reglas de "sin portada" de arriba son más específicas y siguen ganando
+     cuando no hay foto. */
+  body[data-plantilla="gourmet"] .texto-cabecera {
+    margin-top: -36px;
+    border-radius: var(--radio-grande) var(--radio-grande) 0 0;
+  }
+
+  body[data-plantilla="gourmet"] .g-horario.g-horario-portada {
+    bottom: 50px;
+  }
+
   body[data-plantilla="gourmet"] .rejilla-productos,
   body[data-plantilla="gourmet"] .rejilla-busqueda {
     display: grid;
