@@ -5,8 +5,9 @@
 // para que la app sea instalable y para dejar lista la puerta a los avisos
 // con la app cerrada (fase siguiente).
 //
-// Se registra con alcance /pedidos/, asi que no controla la tienda publica
-// ni el panel.
+// Se registra con alcance /pedidos.html (exactamente la app). Los nombres de
+// tienda no pueden llevar punto, asi que no controla la tienda publica, ni el
+// panel, ni ninguna otra pagina.
 
 self.addEventListener("install", function () {
   self.skipWaiting();

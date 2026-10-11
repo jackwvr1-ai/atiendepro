@@ -4,7 +4,7 @@
 /nueva-clave    /nueva-clave.html    200
 /app            /app.html            200
 /app/*          /app.html            200
-/pedidos        /pedidos.html        200
-/pedidos/       /pedidos.html        200
+/pedidos        /pedidos.html        301!
+/pedidos/       /pedidos.html        301!
 /               /index.html          200
 /*              /ver.html            200

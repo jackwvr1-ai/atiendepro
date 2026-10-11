@@ -12,8 +12,8 @@
 <link rel="manifest" href="/pedidos.webmanifest">
 <link rel="apple-touch-icon" href="/img/pedidos-180.png">
 <link rel="icon" type="image/png" href="/img/pedidos-192.png">
-<!-- Las rutas son absolutas a proposito: en produccion esta pagina se abre
-     en /pedidos/ y una ruta relativa como "img/..." apuntaria a /pedidos/img/. -->
+<!-- La app vive en /pedidos.html (la direccion /pedidos lleva aqui). Las rutas
+     son absolutas a proposito, para que funcionen igual desde cualquier direccion. -->
 <style>
 :root {
   --fondo: #ffffff;
@@ -221,23 +221,35 @@ button { cursor: pointer; }
 
 .indicador.en-vivo .punto { background: #22a355; }
 
-.barra-sonido {
+/* Control de sonido: siempre visible. Amarillo cuando esta apagado,
+   discreto cuando esta activo. */
+.control-sonido {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 10px;
   width: 100%;
-  min-height: 56px;
   margin-bottom: 12px;
-  border: 2px solid #e0b400;
   border-radius: 14px;
+}
+
+.control-sonido.apagado {
+  min-height: 56px;
+  border: 2px solid #e0b400;
   background: #ffe58a;
   color: var(--negro);
   font-size: 1.1rem;
   font-weight: 800;
 }
 
-.barra-sonido svg { width: 24px; height: 24px; flex-shrink: 0; }
+.control-sonido.activo {
+  min-height: 48px;
+  border: 1.5px solid var(--borde);
+  background: #fff;
+  color: var(--texto-suave);
+  font-size: 0.98rem;
+  font-weight: 700;
+}
 
 .filtro {
   display: flex;
@@ -702,9 +714,9 @@ button { cursor: pointer; }
       <h1 id="nombreNegocio" class="nombre-negocio"></h1>
       <span id="indicadorConexion" class="indicador"><span class="punto"></span><span id="textoConexion">Conectando…</span></span>
     </div>
-    <button type="button" id="btnSonido" class="barra-sonido">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
-      Activar sonido
+    <button type="button" id="btnSonido" class="control-sonido apagado" aria-pressed="false">
+      <span id="iconoSonido" aria-hidden="true">🔇</span>
+      <span id="textoSonido">Activar sonido</span>
     </button>
     <div class="filtro">
       <button type="button" id="filtroActivos" class="opcion-filtro activo">Activos</button>
@@ -801,6 +813,8 @@ button { cursor: pointer; }
   var indicadorConexion = document.getElementById("indicadorConexion");
   var textoConexion = document.getElementById("textoConexion");
   var btnSonido = document.getElementById("btnSonido");
+  var iconoSonido = document.getElementById("iconoSonido");
+  var textoSonido = document.getElementById("textoSonido");
   var filtroActivos = document.getElementById("filtroActivos");
   var filtroTerminados = document.getElementById("filtroTerminados");
   var ayudaPantalla = document.getElementById("ayudaPantalla");
@@ -839,6 +853,7 @@ button { cursor: pointer; }
   var temporizadorAviso = null;
   var accionAviso = null;
   var contextoAudio = null;
+  var sonidoConfirmado = false; // solo lo pone en true un toque en el control de sonido
   var bloqueoPantalla = null;
   var pidiendoPantalla = false;
 
@@ -1070,7 +1085,7 @@ button { cursor: pointer; }
       kioscoActual = resultado.data;
       nombreNegocio.textContent = kioscoActual.nombre || "Pedidos";
       mostrarPantalla(pantallaPedidos);
-      actualizarBotonSonido();
+      revisarSonido();
       actualizarIndicador();
       pedirPantallaEncendida();
       recargar();
@@ -1312,14 +1327,17 @@ button { cursor: pointer; }
     recargar();
     asegurarConexion();
     pedirPantallaEncendida();
-    setTimeout(actualizarBotonSonido, 400);
   }
 
   document.addEventListener("visibilitychange", function () {
-    if (!document.hidden) alVolver();
+    if (!document.hidden) {
+      revisarSonido();
+      alVolver();
+    }
   });
 
   window.addEventListener("pageshow", function (evento) {
+    revisarSonido();
     if (evento.persisted) alVolver();
   });
 
@@ -1342,14 +1360,30 @@ button { cursor: pointer; }
 
   // ---- Sonido ----
   // El iPhone solo deja sonar una pagina despues de que la persona la toca.
-  // El boton "Activar sonido" se ve mientras el sonido no este listo.
+  // El control de sonido esta siempre visible. Solo cuenta como activo
+  // despues de un toque en ESE control y mientras el audio siga realmente
+  // en estado "running". Ningun otro toque (Entrar, filtros, estados) lo activa.
 
   function sonidoActivo() {
-    return !!contextoAudio && contextoAudio.state === "running";
+    return sonidoConfirmado && !!contextoAudio && contextoAudio.state === "running";
   }
 
-  function actualizarBotonSonido() {
-    btnSonido.hidden = sonidoActivo();
+  function pintarControlSonido() {
+    var activo = sonidoActivo();
+    btnSonido.classList.toggle("activo", activo);
+    btnSonido.classList.toggle("apagado", !activo);
+    btnSonido.setAttribute("aria-pressed", activo ? "true" : "false");
+    iconoSonido.textContent = activo ? "🔔" : "🔇";
+    textoSonido.textContent = activo ? "Sonido activo" : "Activar sonido";
+  }
+
+  // Si el audio dejo de estar "running" (segundo plano, llamada, etc.),
+  // el sonido deja de contar como activo hasta un nuevo toque en el control.
+  function revisarSonido() {
+    if (!contextoAudio || contextoAudio.state !== "running") {
+      sonidoConfirmado = false;
+    }
+    pintarControlSonido();
   }
 
   function activarSonido() {
@@ -1365,7 +1399,7 @@ button { cursor: pointer; }
 
     if (!contextoAudio) {
       contextoAudio = new Contexto();
-      contextoAudio.onstatechange = actualizarBotonSonido;
+      contextoAudio.onstatechange = revisarSonido;
     }
 
     // Un sonido vacio dentro del toque desbloquea el audio en iPhone viejos.
@@ -1379,19 +1413,28 @@ button { cursor: pointer; }
 
     var reanudar = contextoAudio.resume ? contextoAudio.resume() : null;
     Promise.resolve(reanudar).then(function () {
-      actualizarBotonSonido();
+      sonidoConfirmado = !!contextoAudio && contextoAudio.state === "running";
+      pintarControlSonido();
       if (sonidoActivo()) {
+        // Ding-dong de prueba para que el dueño confirme que lo oye.
         tocarCampana();
       } else {
         mostrarAviso("No se pudo activar el sonido. Toca el botón otra vez.");
       }
     }).catch(function () {
-      actualizarBotonSonido();
+      sonidoConfirmado = false;
+      pintarControlSonido();
+      mostrarAviso("No se pudo activar el sonido. Toca el botón otra vez.");
     });
   }
 
   btnSonido.addEventListener("click", function () {
-    activarSonido();
+    if (sonidoActivo()) {
+      // Ya esta activo: el toque solo repite el sonido de prueba.
+      tocarCampana();
+    } else {
+      activarSonido();
+    }
     pedirPantallaEncendida();
   });
 
@@ -1417,12 +1460,9 @@ button { cursor: pointer; }
     });
   }
 
-  // Cualquier toque en la pagina sirve para reanudar el sonido (si ya se activo
-  // antes) y para volver a pedir la pantalla encendida.
+  // Cualquier toque en la pagina sirve para volver a pedir la pantalla
+  // encendida. El sonido NO: ese solo se activa con su propio control.
   document.addEventListener("click", function () {
-    if (contextoAudio && contextoAudio.state !== "running" && contextoAudio.resume) {
-      contextoAudio.resume().then(actualizarBotonSonido).catch(function () {});
-    }
     if (kioscoActual && !bloqueoPantalla) pedirPantallaEncendida();
   }, true);
 
@@ -1895,11 +1935,12 @@ button { cursor: pointer; }
   }
 
   // ---- Instalable ----
-  // Service worker minimo, sin cache, limitado a /pedidos/ para no tocar la
-  // tienda publica ni el panel.
+  // Service worker minimo, sin cache. Su alcance es exactamente /pedidos.html:
+  // como los nombres de tienda no pueden llevar punto, ninguna tienda publica,
+  // ni el panel, ni otra pagina puede quedar dentro de ese alcance.
 
   if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
-    navigator.serviceWorker.register("/sw-pedidos.js", { scope: "/pedidos/" }).catch(function () {});
+    navigator.serviceWorker.register("/sw-pedidos.js", { scope: "/pedidos.html" }).catch(function () {});
   }
 
   // ---- Inicio ----
