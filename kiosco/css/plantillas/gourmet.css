@@ -72,8 +72,19 @@ body[data-plantilla="gourmet"] .cabecera {
   padding-bottom: 6px;
 }
 
+/* En el teléfono la portada toma la proporción de la foto, sin recortarla.
+   Mientras descarga reserva un hueco 2:1 (la proporción con la que el panel
+   guarda las portadas) para que la página no salte. Tope: 60 % del alto de
+   la pantalla, para que una foto muy vertical no la ocupe toda; solo ahí
+   recorta, centrada. En escritorio sigue la altura fija de siempre. */
 body[data-plantilla="gourmet"] .portada-negocio {
-  height: 300px;
+  height: auto;
+}
+
+body[data-plantilla="gourmet"] .portada-negocio img {
+  height: auto;
+  aspect-ratio: auto 2 / 1;
+  max-height: 60vh;
 }
 
 body[data-plantilla="gourmet"] .portada-negocio::after {
@@ -157,6 +168,37 @@ body[data-plantilla="gourmet"] .barra-confianza {
   margin-top: 14px;
 }
 
+/* ---- Línea de horario (la escribe el dueño) ----
+   Solo informativa: sin punto ni colores de "abierto/cerrado". */
+
+body[data-plantilla="gourmet"] .g-horario {
+  margin: 8px 0 0;
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.35;
+  color: var(--texto);
+}
+
+/* Sobre la portada: pastilla clara abajo a la izquierda, por encima de los
+   36 px que la tarjeta del nombre se monta sobre la foto. */
+body[data-plantilla="gourmet"] .g-horario.g-horario-portada {
+  position: absolute;
+  left: 14px;
+  bottom: 50px;
+  z-index: 1;
+  max-width: calc(100% - 28px);
+  margin: 0;
+  padding: 7px 12px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+  color: #111111;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow: 0 2px 10px rgba(17, 17, 17, 0.15);
+}
+
 /* ---- Formas de pago: una línea discreta de pastillas ---- */
 
 body[data-plantilla="gourmet"] .bloque-pago-kiosco {
@@ -208,6 +250,27 @@ body[data-plantilla="gourmet"] .fila-categorias {
 
 body[data-plantilla="gourmet"] .menu {
   padding: 0 20px;
+}
+
+/* Título de cada sección (solo aparece con 2 o más secciones). Entre
+   secciones, aire en vez de la línea gris. */
+body[data-plantilla="gourmet"] .g-titulo-categoria {
+  margin: 0;
+  font-family: var(--fuente-titulos);
+  font-weight: 400;
+  font-size: 2rem;
+  line-height: 1.15; /* aire para las tildes en mayúscula */
+  padding-top: 0.06em;
+  letter-spacing: 0.01em;
+  text-transform: uppercase;
+  color: var(--texto);
+  overflow-wrap: anywhere;
+}
+
+body[data-plantilla="gourmet"] .categoria + .categoria {
+  margin-top: 56px;
+  padding-top: 0;
+  border-top: none;
 }
 
 body[data-plantilla="gourmet"] .rejilla-productos,
@@ -339,6 +402,16 @@ body[data-plantilla="gourmet"] .menu-vacio {
 
   body[data-plantilla="gourmet"] .portada-negocio {
     height: 360px;
+  }
+
+  body[data-plantilla="gourmet"] .portada-negocio img {
+    height: 100%;
+    aspect-ratio: auto;
+    max-height: none;
+  }
+
+  body[data-plantilla="gourmet"] .g-titulo-categoria {
+    font-size: 2.4rem;
   }
 }
 

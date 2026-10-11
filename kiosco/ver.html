@@ -407,10 +407,14 @@
     }
   };
   var ESPERA_MAXIMA_PLANTILLA = 3000;
+  var ESPERA_MAXIMA_AJUSTES = 1500;
   var plantillaActiva = null;
   var ganchosPlantilla = {};
   var elementosPlantilla = [];
   var plantillaLista = Promise.resolve(false);
+  // Ajustes que el dueño edita para su plantilla (hoy: línea de horario).
+  // Solo se piden si hay plantilla; sin ella se queda en null.
+  var ajustesPlantilla = Promise.resolve(null);
 
   function esEntornoLocal() {
     var host = window.location.hostname;
@@ -437,6 +441,30 @@
     }).catch(function () {
       return null;
     });
+  }
+
+  // Misma idea para los ajustes del dueño, con su propio límite de 1,5 s:
+  // si la tabla no existe, falla la red, no hay fila o tarda, devuelve null
+  // y la plantilla se ve sin esos ajustes. Nunca rechaza y nunca decide si
+  // la plantilla quedó lista.
+  function consultarAjustesPlantilla(kioscoId) {
+    var consulta = Promise.resolve(
+      sb.from("kiosco_ajustes_plantilla")
+        .select("horario_texto,horario_posicion")
+        .eq("kiosco_id", kioscoId)
+        .maybeSingle()
+    ).then(function (resultado) {
+      if (!resultado || resultado.error || !resultado.data) return null;
+      return resultado.data;
+    }).catch(function () {
+      return null;
+    });
+
+    var limite = new Promise(function (resolve) {
+      setTimeout(function () { resolve(null); }, ESPERA_MAXIMA_AJUSTES);
+    });
+
+    return Promise.race([consulta, limite]);
   }
 
   // Devuelve una promesa con el nombre de la plantilla validado, o null.
@@ -498,7 +526,7 @@
 
     var proceso = elegirPlantilla(kiosco).then(function (nombre) {
       if (descartada) return false; // la decisión llegó tarde: se ignora
-      return aplicarPlantilla(nombre);
+      return aplicarPlantilla(nombre, kiosco);
     }).catch(function () {
       return false;
     });
@@ -516,11 +544,15 @@
     });
   }
 
-  function aplicarPlantilla(nombre) {
+  function aplicarPlantilla(nombre, kiosco) {
     if (!nombre) return Promise.resolve(false);
     var plantilla = PLANTILLAS[nombre];
     plantillaActiva = nombre;
     document.body.setAttribute("data-plantilla", nombre);
+
+    // Los ajustes se piden en paralelo con los archivos, pero aparte: su
+    // resultado no cuenta para decidir si la plantilla quedó lista.
+    if (kiosco && kiosco.id) ajustesPlantilla = consultarAjustesPlantilla(kiosco.id);
 
     // La fuente no se espera: si no llega, el CSS trae un respaldo.
     if (plantilla.fuente) cargarRecurso("css", plantilla.fuente);
@@ -978,6 +1010,7 @@
       var seccion = document.createElement("div");
       seccion.className = "categoria";
       seccion.id = "categoria-" + indiceGrupo;
+      llamarGancho("categoria", seccion, grupo, indiceGrupo, gruposActuales.length);
 
       var envolturaRejilla = document.createElement("div");
       envolturaRejilla.className = "envoltura-desvanecida";
@@ -2158,7 +2191,12 @@
       var categorias = resCategorias.data || [];
       var productos = resProductos.data || [];
 
-      return Promise.all([cargarGruposDeProductos(productos), plantillaLista]).then(function () {
+      return Promise.all([cargarGruposDeProductos(productos), plantillaLista]).then(function (resultadosCarga) {
+        // Los ajustes se leen hasta que la plantilla está lista: antes de eso
+        // la variable puede no estar asignada todavía.
+        return resultadosCarga[1] ? ajustesPlantilla : null;
+      }).then(function (ajustes) {
+        if (ajustes) llamarGancho("cabecera", ajustes);
         renderMenu(categorias, productos);
         mostrarSolo(contenido);
         configurarDescripcionExpandible();

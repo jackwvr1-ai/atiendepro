@@ -47,8 +47,49 @@
     });
   }
 
+  // Título grande al inicio de cada sección del menú. Solo con 2 o más
+  // secciones (misma regla que los botones de categoría): con una sola, la
+  // tienda queda igual. Va dentro de la sección para que el botón de
+  // categoría aterrice justo en el título.
+  function titularCategoria(seccion, grupo, indice, totalSecciones) {
+    if (!seccion || !grupo || totalSecciones < 2) return;
+    var titulo = document.createElement("h2");
+    titulo.className = "g-titulo-categoria";
+    titulo.textContent = grupo.nombre;
+    seccion.insertBefore(titulo, seccion.firstChild);
+  }
+
+  var LARGO_MAXIMO_HORARIO = 60;
+
+  // Línea de horario que escribe el dueño. Es solo informativa: no dice
+  // abierto ni cerrado. Sin texto, no se muestra nada.
+  function mostrarHorario(ajustes) {
+    if (!ajustes) return;
+    var texto = String(ajustes.horario_texto || "").replace(/\s+/g, " ").trim();
+    if (!texto) return;
+    if (texto.length > LARGO_MAXIMO_HORARIO) texto = texto.slice(0, LARGO_MAXIMO_HORARIO);
+
+    var linea = document.createElement("p");
+    linea.className = "g-horario";
+    linea.textContent = texto;
+
+    // "Sobre la portada" solo si hay portada; si no, debajo del nombre.
+    var portada = document.getElementById("portadaNegocio");
+    if (ajustes.horario_posicion === "portada" && portada && !portada.hidden) {
+      linea.classList.add("g-horario-portada");
+      portada.appendChild(linea);
+      return;
+    }
+
+    var nombre = document.getElementById("nombreNegocio");
+    if (!nombre || !nombre.parentNode) return;
+    nombre.parentNode.insertBefore(linea, nombre.nextSibling);
+  }
+
   window.registrarPlantilla("gourmet", {
     producto: decorarProducto,
-    gruposDetalle: marcarTiposGrupo
+    gruposDetalle: marcarTiposGrupo,
+    categoria: titularCategoria,
+    cabecera: mostrarHorario
   });
 })();
