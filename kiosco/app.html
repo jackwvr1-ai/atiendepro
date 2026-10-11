@@ -513,7 +513,7 @@
     "cuenta", "panel", "ayuda", "soporte", "precios", "terminos", "privacidad",
     "contacto", "blog", "css", "js", "img", "assets", "static", "favicon.ico",
     "robots.txt", "sitemap.xml", "index", "home", "k", "kiosco", "kiosko",
-    "atiendepro", "null", "undefined", "www", "mail", "ftp"
+    "atiendepro", "null", "undefined", "www", "mail", "ftp", "pedidos"
   ];
 
   var PATRON_SLUG = /^[a-z0-9]([a-z0-9-]{1,38}[a-z0-9])$/;
@@ -3305,7 +3305,15 @@
 
   // ---- Pedidos ----
 
-  var NOMBRES_ESTADO = { nuevo: "Nuevo", visto: "Visto", completado: "Completado", cancelado: "Cancelado" };
+  var NOMBRES_ESTADO = {
+    nuevo: "Nuevo", visto: "Visto", completado: "Completado", cancelado: "Cancelado",
+    preparando: "Preparando", listo: "Listo", entregado: "Entregado"
+  };
+
+  // El panel ofrece siempre estos cuatro. Los estados de la app de pedidos
+  // (preparando, listo, entregado) solo se agregan al selector cuando el
+  // pedido ya está en uno de ellos, para que nunca aparezca en blanco.
+  var ESTADOS_PANEL = ["nuevo", "visto", "completado", "cancelado"];
 
   function mostrarErrorPedidos(texto) {
     ocultarTodo();
@@ -3593,7 +3601,11 @@
 
     var selectEstado = document.createElement("select");
     selectEstado.className = "select-estado";
-    ["nuevo", "visto", "completado", "cancelado"].forEach(function (valor) {
+    var estadosSelector = ESTADOS_PANEL.slice();
+    if (estadosSelector.indexOf(pedido.estado) === -1 && NOMBRES_ESTADO[pedido.estado]) {
+      estadosSelector.push(pedido.estado);
+    }
+    estadosSelector.forEach(function (valor) {
       var opcion = document.createElement("option");
       opcion.value = valor;
       opcion.textContent = NOMBRES_ESTADO[valor];
