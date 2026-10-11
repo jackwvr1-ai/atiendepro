@@ -37,3 +37,17 @@
   for = "/img/*"
   [headers.values]
     Cache-Control = "public, max-age=604800"
+
+# ── App de pedidos: service worker y manifest ──────────────
+# Siempre se piden frescos, para que una actualizacion de la
+# app llegue al telefono la proxima vez que se abra.
+[[headers]]
+  for = "/sw-pedidos.js"
+  [headers.values]
+    Cache-Control = "no-cache"
+
+[[headers]]
+  for = "/pedidos.webmanifest"
+  [headers.values]
+    Cache-Control = "no-cache"
+    Content-Type = "application/manifest+json"

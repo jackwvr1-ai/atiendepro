@@ -1,0 +1,1921 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Pedidos · CarritoGo</title>
+<meta name="theme-color" content="#ffffff">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Pedidos">
+<link rel="manifest" href="/pedidos.webmanifest">
+<link rel="apple-touch-icon" href="/img/pedidos-180.png">
+<link rel="icon" type="image/png" href="/img/pedidos-192.png">
+<!-- Las rutas son absolutas a proposito: en produccion esta pagina se abre
+     en /pedidos/ y una ruta relativa como "img/..." apuntaria a /pedidos/img/. -->
+<style>
+:root {
+  --fondo: #ffffff;
+  --gris-fondo: #f5f5f5;
+  --texto: #111111;
+  --texto-suave: #666666;
+  --negro: #111111;
+  --borde: #e5e5e5;
+  --error-fondo: #fdeceb;
+  --error-texto: #b8402c;
+  --exito-fondo: #e3f4e8;
+  --exito-texto: #1d6b3a;
+  --ambar-fondo: #fff1d6;
+  --ambar-texto: #8a5a00;
+  --whatsapp: #1f8f4e;
+  --radio: 16px;
+}
+
+* { box-sizing: border-box; }
+
+html, body { margin: 0; padding: 0; }
+
+body {
+  background: var(--fondo);
+  color: var(--texto);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 18px;
+  line-height: 1.4;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
+}
+
+[hidden] { display: none !important; }
+
+button, input, a { font: inherit; }
+
+button { cursor: pointer; }
+
+/* ---- Pantallas centradas: cargando, entrar, error ---- */
+
+.pantalla-centro {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: calc(24px + env(safe-area-inset-top)) 20px calc(24px + env(safe-area-inset-bottom));
+  text-align: center;
+}
+
+.caja-entrar {
+  width: 100%;
+  max-width: 400px;
+  text-align: left;
+}
+
+.marca {
+  font-weight: 800;
+  font-size: 1.5rem;
+  letter-spacing: -0.02em;
+  margin: 0 0 6px;
+}
+
+.marca span {
+  font-weight: 600;
+  color: var(--texto-suave);
+}
+
+.titulo-entrar {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: var(--texto-suave);
+  margin: 0 0 28px;
+}
+
+.campo { margin-bottom: 18px; }
+
+.campo label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.95rem;
+  margin-bottom: 6px;
+}
+
+.campo input {
+  width: 100%;
+  min-height: 56px;
+  padding: 12px 14px;
+  font-size: 1.05rem;
+  border: 1.5px solid var(--borde);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--texto);
+}
+
+.campo input:focus {
+  outline: none;
+  border-color: var(--negro);
+}
+
+.mensaje {
+  padding: 12px 14px;
+  border-radius: 12px;
+  font-size: 0.95rem;
+  margin: 0 0 16px;
+}
+
+.mensaje.error {
+  background: var(--error-fondo);
+  color: var(--error-texto);
+}
+
+.boton-principal {
+  display: block;
+  width: 100%;
+  min-height: 60px;
+  padding: 14px 18px;
+  border: none;
+  border-radius: 14px;
+  background: var(--negro);
+  color: #fff;
+  font-size: 1.15rem;
+  font-weight: 800;
+}
+
+.boton-principal:disabled { opacity: 0.55; }
+
+.boton-texto {
+  background: none;
+  border: none;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+  font-weight: 600;
+  text-decoration: underline;
+  padding: 14px 8px;
+  min-height: 48px;
+}
+
+.enlace-entrar {
+  display: block;
+  text-align: center;
+  margin-top: 18px;
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+  padding: 10px;
+}
+
+.texto-centro {
+  max-width: 340px;
+  margin: 0 0 20px;
+  color: var(--texto-suave);
+}
+
+#pantallaError .boton-principal { max-width: 340px; }
+
+/* ---- Cabecera fija ---- */
+
+.cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background: rgba(255, 255, 255, 0.97);
+  border-bottom: 1px solid var(--borde);
+  padding: calc(12px + env(safe-area-inset-top)) 16px 12px;
+}
+
+.fila-cabecera {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.nombre-negocio {
+  flex: 1;
+  min-width: 0;
+  margin: 0;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.indicador {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--texto-suave);
+}
+
+.indicador .punto {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #bdbdbd;
+}
+
+.indicador.en-vivo { color: var(--exito-texto); }
+
+.indicador.en-vivo .punto { background: #22a355; }
+
+.barra-sonido {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 56px;
+  margin-bottom: 12px;
+  border: 2px solid #e0b400;
+  border-radius: 14px;
+  background: #ffe58a;
+  color: var(--negro);
+  font-size: 1.1rem;
+  font-weight: 800;
+}
+
+.barra-sonido svg { width: 24px; height: 24px; flex-shrink: 0; }
+
+.filtro {
+  display: flex;
+  background: var(--gris-fondo);
+  border-radius: 14px;
+  padding: 4px;
+}
+
+.opcion-filtro {
+  flex: 1;
+  min-height: 48px;
+  border: none;
+  border-radius: 11px;
+  background: transparent;
+  color: var(--texto-suave);
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.opcion-filtro.activo {
+  background: #fff;
+  color: var(--negro);
+  box-shadow: 0 1px 4px rgba(17, 17, 17, 0.12);
+}
+
+.ayuda {
+  margin: 12px 16px 0;
+  padding: 10px 12px;
+  background: var(--gris-fondo);
+  border-radius: 12px;
+  font-size: 0.88rem;
+  color: var(--texto-suave);
+}
+
+/* ---- Lista de pedidos ---- */
+
+.contenido {
+  padding: 16px 16px calc(16px + env(safe-area-inset-bottom));
+  max-width: 640px;
+  margin: 0 auto;
+}
+
+.lista-vacia {
+  text-align: center;
+  color: var(--texto-suave);
+  padding: 40px 12px;
+  margin: 0;
+}
+
+.tarjeta-pedido {
+  border: 1.5px solid var(--borde);
+  border-radius: var(--radio);
+  padding: 16px;
+  margin-bottom: 16px;
+  background: #fff;
+}
+
+.tarjeta-pedido.estado-nuevo {
+  border: 2.5px solid var(--negro);
+  box-shadow: 0 6px 20px rgba(17, 17, 17, 0.10);
+}
+
+.tarjeta-pedido.estado-cancelado {
+  background: #fafafa;
+  border-style: dashed;
+}
+
+.cabeza-pedido {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.numero-pedido {
+  font-size: 1.6rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.insignia {
+  font-size: 0.75rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: var(--gris-fondo);
+  color: var(--texto-suave);
+}
+
+.insignia-nuevo { background: var(--negro); color: #fff; }
+.insignia-preparando { background: var(--ambar-fondo); color: var(--ambar-texto); }
+.insignia-listo { background: var(--exito-fondo); color: var(--exito-texto); }
+.insignia-cancelado { background: var(--error-fondo); color: var(--error-texto); }
+
+.hora-pedido {
+  margin-left: auto;
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--texto-suave);
+  white-space: nowrap;
+}
+
+.cliente {
+  margin-bottom: 12px;
+}
+
+.nombre-cliente {
+  margin: 0;
+  font-size: 1.15rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.telefono-cliente {
+  display: inline-block;
+  color: var(--texto-suave);
+  font-size: 1rem;
+  padding: 2px 0;
+}
+
+.productos {
+  border-top: 1px solid var(--borde);
+  border-bottom: 1px solid var(--borde);
+  padding: 10px 0;
+  margin-bottom: 12px;
+}
+
+.producto {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  font-size: 1.1rem;
+  padding: 3px 0;
+}
+
+.cantidad {
+  font-weight: 800;
+  min-width: 2.2em;
+}
+
+.nombre-producto {
+  flex: 1;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.precio-producto {
+  color: var(--texto-suave);
+  font-size: 0.95rem;
+  white-space: nowrap;
+}
+
+.opciones-producto {
+  margin: 0 0 4px;
+  padding-left: 2.7em;
+  font-size: 0.98rem;
+  color: var(--texto-suave);
+  overflow-wrap: anywhere;
+}
+
+.nota-suave {
+  margin: 0;
+  color: var(--texto-suave);
+  font-size: 0.98rem;
+}
+
+.nota-cliente {
+  margin: 0 0 12px;
+  padding: 10px 12px;
+  background: var(--ambar-fondo);
+  border-radius: 12px;
+  font-size: 1.02rem;
+  overflow-wrap: anywhere;
+}
+
+.nota-cliente strong { font-weight: 800; }
+
+.dato {
+  margin: 0 0 8px;
+  font-size: 1rem;
+  overflow-wrap: anywhere;
+}
+
+.dato strong { font-weight: 800; }
+
+.direccion {
+  display: block;
+  color: var(--texto-suave);
+}
+
+.fila-pago {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.estado-pago {
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 4px 9px;
+  border-radius: 20px;
+  background: var(--ambar-fondo);
+  color: var(--ambar-texto);
+}
+
+.estado-pago.pagado {
+  background: var(--exito-fondo);
+  color: var(--exito-texto);
+}
+
+.boton-comprobante {
+  min-height: 44px;
+  padding: 8px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--negro);
+  font-size: 0.95rem;
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.imagen-comprobante img {
+  display: block;
+  width: 100%;
+  border-radius: 12px;
+  border: 1px solid var(--borde);
+  margin-bottom: 8px;
+}
+
+.fila-total {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin: 12px 0 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--borde);
+  font-size: 1.15rem;
+  font-weight: 700;
+}
+
+.fila-total .monto {
+  font-size: 1.45rem;
+  font-weight: 800;
+}
+
+.estado-cancelado .fila-total .monto {
+  text-decoration: line-through;
+  color: var(--texto-suave);
+}
+
+.acciones-secundarias {
+  display: flex;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.boton-whatsapp,
+.boton-mas {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  padding: 10px 12px;
+  border-radius: 14px;
+  font-size: 1.05rem;
+  font-weight: 800;
+  text-decoration: none;
+  text-align: center;
+}
+
+.boton-whatsapp {
+  background: var(--whatsapp);
+  color: #fff;
+  border: none;
+}
+
+.boton-whatsapp:disabled {
+  background: var(--gris-fondo);
+  color: var(--texto-suave);
+  font-weight: 700;
+}
+
+.boton-mas {
+  flex: 0 0 34%;
+  background: #fff;
+  color: var(--negro);
+  border: 1.5px solid var(--borde);
+}
+
+.linea-viejos {
+  display: block;
+  width: 100%;
+  min-height: 56px;
+  margin: 4px 0 16px;
+  padding: 12px 14px;
+  border: 1.5px dashed #c7c7c7;
+  border-radius: 14px;
+  background: var(--gris-fondo);
+  color: var(--texto);
+  font-size: 0.98rem;
+  font-weight: 600;
+  text-align: center;
+}
+
+.titulo-seccion {
+  font-size: 0.95rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--texto-suave);
+  margin: 8px 0 12px;
+}
+
+.pie {
+  text-align: center;
+  padding: 8px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+/* ---- Aviso flotante ---- */
+
+.aviso {
+  position: fixed;
+  left: 16px;
+  right: 16px;
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  z-index: 30;
+  max-width: 560px;
+  margin: 0 auto;
+  padding: 16px 18px;
+  border: none;
+  border-radius: 14px;
+  background: var(--negro);
+  color: #fff;
+  font-size: 1.05rem;
+  font-weight: 700;
+  text-align: center;
+  box-shadow: 0 8px 28px rgba(17, 17, 17, 0.25);
+}
+
+/* ---- Hoja inferior (Más, Cambiar estado, confirmaciones) ---- */
+
+.fondo-hoja {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(17, 17, 17, 0.45);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.hoja {
+  width: 100%;
+  max-width: 560px;
+  background: #fff;
+  border-radius: 20px 20px 0 0;
+  padding: 20px 16px calc(16px + env(safe-area-inset-bottom));
+  max-height: 90vh;
+  overflow-y: auto;
+}
+
+.titulo-hoja {
+  margin: 0 0 6px;
+  font-size: 1.25rem;
+  font-weight: 800;
+  text-align: center;
+}
+
+.texto-hoja {
+  margin: 0 0 8px;
+  text-align: center;
+  color: var(--texto-suave);
+  font-size: 0.98rem;
+}
+
+.botones-hoja {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 14px;
+}
+
+.boton-hoja {
+  width: 100%;
+  min-height: 58px;
+  padding: 12px 16px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: #fff;
+  color: var(--negro);
+  font-size: 1.1rem;
+  font-weight: 700;
+}
+
+.boton-hoja.principal {
+  background: var(--negro);
+  border-color: var(--negro);
+  color: #fff;
+  font-weight: 800;
+}
+
+.boton-hoja.peligro {
+  background: var(--error-fondo);
+  border-color: #f2c4bc;
+  color: var(--error-texto);
+  font-weight: 800;
+}
+
+.boton-hoja.secundario {
+  border: none;
+  color: var(--texto-suave);
+  min-height: 52px;
+}
+</style>
+</head>
+<body>
+
+<!-- Los bloques HTML van antes del script: el script los busca al arrancar. -->
+
+<div id="pantallaCargando" class="pantalla-centro">
+  <p class="texto-centro">Cargando…</p>
+</div>
+
+<div id="pantallaEntrar" class="pantalla-centro" hidden>
+  <div class="caja-entrar">
+    <p class="marca">CarritoGo <span>· Pedidos</span></p>
+    <p class="titulo-entrar">Entra para recibir tus pedidos.</p>
+    <form id="formEntrar" novalidate>
+      <div class="campo">
+        <label for="correo">Correo</label>
+        <input type="email" id="correo" name="correo" autocomplete="username" inputmode="email" autocapitalize="off" required>
+      </div>
+      <div class="campo">
+        <label for="clave">Contraseña</label>
+        <input type="password" id="clave" name="clave" autocomplete="current-password" required>
+      </div>
+      <p id="mensajeEntrar" class="mensaje error" hidden></p>
+      <button type="submit" id="btnEntrar" class="boton-principal">Entrar</button>
+    </form>
+    <a href="/recuperar" class="enlace-entrar">¿Olvidaste tu contraseña?</a>
+  </div>
+</div>
+
+<div id="pantallaError" class="pantalla-centro" hidden>
+  <p id="textoError" class="texto-centro"></p>
+  <button type="button" id="btnReintentar" class="boton-principal">Intentar de nuevo</button>
+  <button type="button" id="btnSalirError" class="boton-texto">Cerrar sesión</button>
+</div>
+
+<div id="pantallaPedidos" hidden>
+  <header class="cabecera">
+    <div class="fila-cabecera">
+      <h1 id="nombreNegocio" class="nombre-negocio"></h1>
+      <span id="indicadorConexion" class="indicador"><span class="punto"></span><span id="textoConexion">Conectando…</span></span>
+    </div>
+    <button type="button" id="btnSonido" class="barra-sonido">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      Activar sonido
+    </button>
+    <div class="filtro">
+      <button type="button" id="filtroActivos" class="opcion-filtro activo">Activos</button>
+      <button type="button" id="filtroTerminados" class="opcion-filtro">Terminados</button>
+    </div>
+  </header>
+
+  <p id="ayudaPantalla" class="ayuda" hidden>Para que la pantalla no se apague: Ajustes › Pantalla y brillo › Bloqueo automático › Nunca.</p>
+
+  <main class="contenido">
+    <div id="listaPedidos"></div>
+    <button type="button" id="btnViejos" class="linea-viejos" hidden></button>
+    <div id="listaViejos" hidden></div>
+  </main>
+
+  <div class="pie">
+    <button type="button" id="btnSalir" class="boton-texto">Cerrar sesión</button>
+  </div>
+</div>
+
+<button type="button" id="aviso" class="aviso" hidden aria-live="polite"></button>
+
+<div id="fondoHoja" class="fondo-hoja" hidden>
+  <div class="hoja" role="dialog" aria-modal="true" aria-labelledby="tituloHoja">
+    <p id="tituloHoja" class="titulo-hoja"></p>
+    <p id="textoHoja" class="texto-hoja" hidden></p>
+    <div id="botonesHoja" class="botones-hoja"></div>
+  </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+(function () {
+  "use strict";
+
+  var SUPABASE_URL = "https://wetpjfpefypgzmcfoxui.supabase.co";
+  var SUPABASE_ANON = "sb_publishable_e9LsWcWIJ3O_nmt2oGAJ5Q_JntD51xn";
+
+  // Misma sesion que el panel (kiosco-auth). En el iPhone, la app instalada
+  // guarda su sesion aparte de Safari, por eso esta pagina tiene su propio
+  // formulario de entrada.
+  var sb = supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+    auth: { storageKey: "kiosco-auth", detectSessionInUrl: false, persistSession: true }
+  });
+
+  var NOMBRES_ESTADO = {
+    nuevo: "Nuevo", visto: "Visto", completado: "Completado", cancelado: "Cancelado",
+    preparando: "Preparando", listo: "Listo", entregado: "Entregado"
+  };
+
+  var ESTADOS_ACTIVOS = ["nuevo", "visto", "preparando", "listo"];
+
+  // Orden dentro de Activos: nuevos, vistos (estado viejo del panel),
+  // preparando y listos. Dentro de cada grupo, el mas antiguo arriba.
+  var GRUPO_ACTIVO = { nuevo: 0, visto: 1, preparando: 2, listo: 3 };
+
+  // Boton principal de cada estado activo.
+  var SIGUIENTE_PASO = {
+    nuevo: { estado: "preparando", texto: "Empezar a preparar" },
+    visto: { estado: "preparando", texto: "Empezar a preparar" },
+    preparando: { estado: "listo", texto: "Marcar listo" },
+    listo: { estado: "entregado", texto: "Entregado" }
+  };
+
+  // Estados que se ofrecen en "Cambiar estado".
+  var ESTADOS_CAMBIO = ["nuevo", "preparando", "listo", "entregado", "cancelado"];
+
+  var MS_RECIENTES = 24 * 60 * 60 * 1000;
+  var MS_RECARGA = 60 * 1000;
+
+  // crear-pedido-kiosco guarda primero el pedido y despues sus productos, asi que
+  // el aviso en tiempo real puede llegar antes que los productos. Se vuelve a
+  // leer de inmediato y luego a los 2 y 5 segundos de la llegada.
+  var REINTENTOS_PRODUCTOS = [2000, 5000];
+
+  // ---- Elementos ----
+
+  var pantallaCargando = document.getElementById("pantallaCargando");
+  var pantallaEntrar = document.getElementById("pantallaEntrar");
+  var pantallaError = document.getElementById("pantallaError");
+  var pantallaPedidos = document.getElementById("pantallaPedidos");
+
+  var formEntrar = document.getElementById("formEntrar");
+  var campoCorreo = document.getElementById("correo");
+  var campoClave = document.getElementById("clave");
+  var mensajeEntrar = document.getElementById("mensajeEntrar");
+  var btnEntrar = document.getElementById("btnEntrar");
+
+  var textoError = document.getElementById("textoError");
+  var btnReintentar = document.getElementById("btnReintentar");
+  var btnSalirError = document.getElementById("btnSalirError");
+
+  var nombreNegocio = document.getElementById("nombreNegocio");
+  var indicadorConexion = document.getElementById("indicadorConexion");
+  var textoConexion = document.getElementById("textoConexion");
+  var btnSonido = document.getElementById("btnSonido");
+  var filtroActivos = document.getElementById("filtroActivos");
+  var filtroTerminados = document.getElementById("filtroTerminados");
+  var ayudaPantalla = document.getElementById("ayudaPantalla");
+  var listaPedidos = document.getElementById("listaPedidos");
+  var btnViejos = document.getElementById("btnViejos");
+  var listaViejos = document.getElementById("listaViejos");
+  var btnSalir = document.getElementById("btnSalir");
+
+  var aviso = document.getElementById("aviso");
+  var fondoHoja = document.getElementById("fondoHoja");
+  var tituloHoja = document.getElementById("tituloHoja");
+  var textoHoja = document.getElementById("textoHoja");
+  var botonesHoja = document.getElementById("botonesHoja");
+
+  // ---- Estado de la pagina ----
+
+  var usuarioActual = null;
+  var kioscoActual = null;
+  var pedidos = {};            // id -> pedido (con kiosco_pedido_items)
+  var conteoViejos = 0;        // pedidos activos de hace mas de 24 h, contados en el servidor
+  var viejosVisibles = false;
+  var filtro = "activos";
+  var primeraCarga = true;
+  var cargando = false;
+  var recargaPendiente = false;
+  var ultimaCargaFallo = false;
+  var canal = null;
+  var estadoCanal = "";
+  var yaConecto = false;
+  var reconexion = null;
+  var intervaloRecarga = null;
+  var firmaRender = "";
+  var guardando = {};          // id -> true mientras se guarda un cambio
+  var reintentando = {};       // id -> true mientras se esperan sus productos
+  var comprobantes = {};       // id -> { abierto, url, hasta }
+  var temporizadorAviso = null;
+  var accionAviso = null;
+  var contextoAudio = null;
+  var bloqueoPantalla = null;
+  var pidiendoPantalla = false;
+
+  // ---- Utilidades ----
+
+  function mostrarPantalla(pantalla) {
+    pantallaCargando.hidden = pantalla !== pantallaCargando;
+    pantallaEntrar.hidden = pantalla !== pantallaEntrar;
+    pantallaError.hidden = pantalla !== pantallaError;
+    pantallaPedidos.hidden = pantalla !== pantallaPedidos;
+  }
+
+  function mostrarError(texto) {
+    textoError.textContent = texto || "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    mostrarPantalla(pantallaError);
+  }
+
+  function crear(etiqueta, clase, texto) {
+    var el = document.createElement(etiqueta);
+    if (clase) el.className = clase;
+    if (texto !== undefined && texto !== null) el.textContent = texto;
+    return el;
+  }
+
+  function dinero(valor) {
+    return "$" + Number(valor || 0).toFixed(2);
+  }
+
+  function formatearHoraPedido(fechaIso) {
+    var fecha = new Date(fechaIso);
+    var ahora = new Date();
+    var hora = fecha.toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" });
+    if (fecha.toDateString() === ahora.toDateString()) {
+      return hora;
+    }
+    return fecha.toLocaleDateString("es-MX", { day: "2-digit", month: "2-digit" }) + " " + hora;
+  }
+
+  function esActivo(pedido) {
+    return ESTADOS_ACTIVOS.indexOf(pedido.estado) !== -1;
+  }
+
+  function esReciente(pedido, ahora) {
+    return new Date(pedido.creado_en).getTime() >= ahora - MS_RECIENTES;
+  }
+
+  function mostrarAviso(texto, alTocar) {
+    aviso.textContent = texto;
+    accionAviso = alTocar || null;
+    aviso.hidden = false;
+    clearTimeout(temporizadorAviso);
+    temporizadorAviso = setTimeout(function () {
+      aviso.hidden = true;
+      accionAviso = null;
+    }, 6000);
+  }
+
+  aviso.addEventListener("click", function () {
+    aviso.hidden = true;
+    clearTimeout(temporizadorAviso);
+    if (accionAviso) accionAviso();
+    accionAviso = null;
+  });
+
+  // ---- Hoja inferior ----
+
+  function abrirHoja(titulo, texto, botones) {
+    tituloHoja.textContent = titulo;
+    textoHoja.textContent = texto || "";
+    textoHoja.hidden = !texto;
+    botonesHoja.innerHTML = "";
+    botones.forEach(function (b) {
+      var boton = crear("button", "boton-hoja" + (b.clase ? " " + b.clase : ""), b.texto);
+      boton.type = "button";
+      boton.addEventListener("click", b.accion);
+      botonesHoja.appendChild(boton);
+    });
+    fondoHoja.hidden = false;
+  }
+
+  function cerrarHoja() {
+    fondoHoja.hidden = true;
+    botonesHoja.innerHTML = "";
+  }
+
+  fondoHoja.addEventListener("click", function (evento) {
+    if (evento.target === fondoHoja) cerrarHoja();
+  });
+
+  // ---- Entrar y salir ----
+
+  function traducirError(error) {
+    var msg = (error && error.message) || "";
+    if (msg.indexOf("Invalid login credentials") !== -1) {
+      return "Correo o contraseña incorrectos.";
+    }
+    if (msg.indexOf("Email not confirmed") !== -1) {
+      return "Debes confirmar tu correo antes de entrar. Revisa tu bandeja de entrada.";
+    }
+    if (msg.indexOf("Failed to fetch") !== -1 || msg.indexOf("NetworkError") !== -1) {
+      return "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+    }
+    return "Algo salió mal. Intenta de nuevo en un momento.";
+  }
+
+  formEntrar.addEventListener("submit", function (evento) {
+    evento.preventDefault();
+    mensajeEntrar.hidden = true;
+
+    var correo = campoCorreo.value.trim();
+    var clave = campoClave.value;
+    if (!correo || !clave) {
+      mensajeEntrar.textContent = "Escribe tu correo y tu contraseña.";
+      mensajeEntrar.hidden = false;
+      return;
+    }
+
+    btnEntrar.disabled = true;
+    btnEntrar.textContent = "Entrando…";
+
+    sb.auth.signInWithPassword({ email: correo, password: clave }).then(function (resultado) {
+      btnEntrar.disabled = false;
+      btnEntrar.textContent = "Entrar";
+      if (resultado.error || !resultado.data || !resultado.data.session) {
+        mensajeEntrar.textContent = traducirError(resultado.error);
+        mensajeEntrar.hidden = false;
+        return;
+      }
+      campoClave.value = "";
+      iniciar(resultado.data.session);
+    }).catch(function () {
+      btnEntrar.disabled = false;
+      btnEntrar.textContent = "Entrar";
+      mensajeEntrar.textContent = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+      mensajeEntrar.hidden = false;
+    });
+  });
+
+  function detener() {
+    if (canal) {
+      var viejo = canal;
+      canal = null;
+      sb.removeChannel(viejo);
+    }
+    clearTimeout(reconexion);
+    reconexion = null;
+    clearInterval(intervaloRecarga);
+    intervaloRecarga = null;
+    if (bloqueoPantalla) {
+      bloqueoPantalla.release().catch(function () {});
+      bloqueoPantalla = null;
+    }
+    kioscoActual = null;
+    usuarioActual = null;
+    pedidos = {};
+    conteoViejos = 0;
+    viejosVisibles = false;
+    primeraCarga = true;
+    estadoCanal = "";
+    yaConecto = false;
+    firmaRender = "";
+    comprobantes = {};
+    document.title = "Pedidos · CarritoGo";
+  }
+
+  function pedirSalir() {
+    abrirHoja("¿Cerrar sesión?", "Dejarás de recibir pedidos en este teléfono hasta que vuelvas a entrar.", [
+      { texto: "Sí, cerrar sesión", clase: "principal", accion: function () {
+        cerrarHoja();
+        detener();
+        mostrarPantalla(pantallaEntrar);
+        sb.auth.signOut().catch(function () {});
+      } },
+      { texto: "No, seguir aquí", clase: "secundario", accion: cerrarHoja }
+    ]);
+  }
+
+  btnSalir.addEventListener("click", pedirSalir);
+
+  btnSalirError.addEventListener("click", function () {
+    detener();
+    mostrarPantalla(pantallaEntrar);
+    sb.auth.signOut().catch(function () {});
+  });
+
+  btnReintentar.addEventListener("click", function () {
+    mostrarPantalla(pantallaCargando);
+    sb.auth.getSession().then(function (resultado) {
+      var session = resultado.data && resultado.data.session;
+      if (!session) {
+        mostrarPantalla(pantallaEntrar);
+        return;
+      }
+      iniciar(session);
+    }).catch(function () {
+      mostrarError();
+    });
+  });
+
+  sb.auth.onAuthStateChange(function (evento, session) {
+    if (evento === "SIGNED_OUT") {
+      if (kioscoActual) {
+        detener();
+        mostrarPantalla(pantallaEntrar);
+      }
+      return;
+    }
+    if (session && session.access_token) {
+      try { sb.realtime.setAuth(session.access_token); } catch (e) {}
+    }
+  });
+
+  // ---- Arranque ----
+
+  function iniciar(session) {
+    usuarioActual = session.user;
+    try { sb.realtime.setAuth(session.access_token); } catch (e) {}
+    mostrarPantalla(pantallaCargando);
+
+    sb.from("kioscos").select("id,nombre,whatsapp").eq("dueno_id", usuarioActual.id).maybeSingle().then(function (resultado) {
+      if (resultado.error) {
+        mostrarError("No se pudo cargar tu información. Intenta de nuevo.");
+        return;
+      }
+      if (!resultado.data) {
+        mostrarError("Todavía no tienes un negocio creado. Créalo desde tu panel y vuelve aquí.");
+        return;
+      }
+      kioscoActual = resultado.data;
+      nombreNegocio.textContent = kioscoActual.nombre || "Pedidos";
+      mostrarPantalla(pantallaPedidos);
+      actualizarBotonSonido();
+      actualizarIndicador();
+      pedirPantallaEncendida();
+      recargar();
+      suscribir();
+      clearInterval(intervaloRecarga);
+      intervaloRecarga = setInterval(function () {
+        if (!document.hidden && kioscoActual) recargar();
+      }, MS_RECARGA);
+    }).catch(function () {
+      mostrarError();
+    });
+  }
+
+  // ---- Lectura de pedidos ----
+
+  function consultaBase() {
+    return sb.from("kiosco_pedidos").select("*, kiosco_pedido_items(*)").eq("kiosco_id", kioscoActual.id);
+  }
+
+  function recargar() {
+    if (!kioscoActual) return;
+    if (cargando) {
+      recargaPendiente = true;
+      return;
+    }
+    cargando = true;
+
+    var kioscoId = kioscoActual.id;
+    var corte = new Date(Date.now() - MS_RECIENTES).toISOString();
+    var consultas = [
+      consultaBase().gte("creado_en", corte).order("creado_en", { ascending: false }),
+      sb.from("kiosco_pedidos").select("id", { count: "exact", head: true })
+        .eq("kiosco_id", kioscoId).in("estado", ESTADOS_ACTIVOS).lt("creado_en", corte)
+    ];
+    if (viejosVisibles) {
+      consultas.push(consultaBase().in("estado", ESTADOS_ACTIVOS).lt("creado_en", corte)
+        .order("creado_en", { ascending: false }).limit(100));
+    }
+
+    Promise.all(consultas).then(function (r) {
+      cargando = false;
+      if (!kioscoActual || kioscoActual.id !== kioscoId) return;
+
+      var error = r[0].error || r[1].error || (r[2] && r[2].error);
+      if (error) {
+        falloCarga();
+        return;
+      }
+
+      var ahora = Date.now();
+      var lista = (r[0].data || []).concat(r[2] ? (r[2].data || []) : []);
+      var nuevoMapa = {};
+      var llegaron = [];
+      lista.forEach(function (pedido) {
+        nuevoMapa[pedido.id] = pedido;
+        if (!primeraCarga && !pedidos[pedido.id] && pedido.estado === "nuevo" && esReciente(pedido, ahora)) {
+          llegaron.push(pedido);
+        }
+      });
+
+      pedidos = nuevoMapa;
+      conteoViejos = r[1].count || 0;
+      primeraCarga = false;
+      ultimaCargaFallo = false;
+      actualizarIndicador();
+
+      // Un pedido recien creado puede venir todavia sin productos.
+      lista.forEach(function (pedido) {
+        var sinProductos = !pedido.kiosco_pedido_items || pedido.kiosco_pedido_items.length === 0;
+        if (sinProductos && ahora - new Date(pedido.creado_en).getTime() < 2 * 60 * 1000) {
+          asegurarProductos(pedido.id);
+        }
+      });
+
+      if (llegaron.length) anunciarNuevos(llegaron);
+      render();
+      terminarCarga();
+    }).catch(function () {
+      cargando = false;
+      falloCarga();
+    });
+  }
+
+  function falloCarga() {
+    if (primeraCarga) {
+      mostrarError();
+      return;
+    }
+    ultimaCargaFallo = true;
+    actualizarIndicador();
+    terminarCarga();
+  }
+
+  function terminarCarga() {
+    if (recargaPendiente) {
+      recargaPendiente = false;
+      recargar();
+    }
+  }
+
+  function asegurarProductos(id) {
+    if (reintentando[id]) return;
+    reintentando[id] = true;
+    var intento = 0;
+    var inicio = Date.now();
+
+    function pedir() {
+      if (!kioscoActual) {
+        delete reintentando[id];
+        return;
+      }
+      sb.from("kiosco_pedidos").select("*, kiosco_pedido_items(*)").eq("id", id).maybeSingle().then(function (resultado) {
+        if (!resultado.error && resultado.data && resultado.data.kiosco_pedido_items && resultado.data.kiosco_pedido_items.length) {
+          delete reintentando[id];
+          if (pedidos[id]) {
+            pedidos[id] = resultado.data;
+          }
+          render();
+          return;
+        }
+        siguiente();
+      }).catch(siguiente);
+    }
+
+    function siguiente() {
+      if (intento >= REINTENTOS_PRODUCTOS.length) {
+        delete reintentando[id];
+        render();
+        return;
+      }
+      var espera = Math.max(0, inicio + REINTENTOS_PRODUCTOS[intento] - Date.now());
+      intento++;
+      setTimeout(pedir, espera);
+    }
+
+    pedir();
+  }
+
+  function fusionar(datos) {
+    var actual = pedidos[datos.id];
+    if (!actual) return false;
+    Object.keys(datos).forEach(function (clave) {
+      if (clave === "kiosco_pedido_items") return;
+      if (datos[clave] === undefined) return;
+      actual[clave] = datos[clave];
+    });
+    return true;
+  }
+
+  // ---- Tiempo real ----
+
+  function suscribir() {
+    if (!kioscoActual) return;
+    if (canal) {
+      var viejo = canal;
+      canal = null;
+      sb.removeChannel(viejo);
+    }
+    clearTimeout(reconexion);
+    reconexion = null;
+    estadoCanal = "CONECTANDO";
+    actualizarIndicador();
+
+    var filtroKiosco = "kiosco_id=eq." + kioscoActual.id;
+    var este = sb.channel("pedidos-" + kioscoActual.id + "-" + Date.now());
+    canal = este;
+
+    este
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "kiosco_pedidos", filter: filtroKiosco }, function (payload) {
+        if (canal === este) alInsertar(payload.new);
+      })
+      .on("postgres_changes", { event: "UPDATE", schema: "public", table: "kiosco_pedidos", filter: filtroKiosco }, function (payload) {
+        if (canal === este) alActualizar(payload.new);
+      })
+      .subscribe(function (estado) {
+        if (canal !== este) return;
+        estadoCanal = estado;
+        actualizarIndicador();
+        if (estado === "SUBSCRIBED") {
+          yaConecto = true;
+          // Lo que haya llegado mientras se conectaba se recoge aqui.
+          recargar();
+        } else if (estado === "CHANNEL_ERROR" || estado === "TIMED_OUT" || estado === "CLOSED") {
+          programarReconexion();
+        }
+      });
+  }
+
+  function programarReconexion() {
+    if (reconexion) return;
+    reconexion = setTimeout(function () {
+      reconexion = null;
+      if (kioscoActual && !document.hidden && navigator.onLine) suscribir();
+    }, 3000);
+  }
+
+  function asegurarConexion() {
+    if (!kioscoActual) return;
+    if (estadoCanal !== "SUBSCRIBED") suscribir();
+  }
+
+  function alInsertar(nuevo) {
+    if (!nuevo || !nuevo.id || !kioscoActual || nuevo.kiosco_id !== kioscoActual.id) return;
+    if (pedidos[nuevo.id]) return;
+    nuevo.kiosco_pedido_items = [];
+    pedidos[nuevo.id] = nuevo;
+    if (nuevo.estado === "nuevo") anunciarNuevos([nuevo]);
+    render();
+    asegurarProductos(nuevo.id);
+  }
+
+  function alActualizar(nuevo) {
+    if (!nuevo || !nuevo.id) return;
+    if (fusionar(nuevo)) {
+      render();
+    } else {
+      recargar();
+    }
+  }
+
+  function actualizarIndicador() {
+    var enLinea = navigator.onLine !== false;
+    var enVivo = enLinea && estadoCanal === "SUBSCRIBED" && !ultimaCargaFallo;
+    indicadorConexion.classList.toggle("en-vivo", enVivo);
+    if (!enLinea) {
+      textoConexion.textContent = "Sin internet";
+    } else if (enVivo) {
+      textoConexion.textContent = "En vivo";
+    } else if (!yaConecto) {
+      textoConexion.textContent = "Conectando…";
+    } else {
+      textoConexion.textContent = "Reconectando…";
+    }
+  }
+
+  function alVolver() {
+    if (!kioscoActual) return;
+    actualizarIndicador();
+    recargar();
+    asegurarConexion();
+    pedirPantallaEncendida();
+    setTimeout(actualizarBotonSonido, 400);
+  }
+
+  document.addEventListener("visibilitychange", function () {
+    if (!document.hidden) alVolver();
+  });
+
+  window.addEventListener("pageshow", function (evento) {
+    if (evento.persisted) alVolver();
+  });
+
+  window.addEventListener("online", alVolver);
+
+  window.addEventListener("offline", actualizarIndicador);
+
+  // ---- Llegada de pedidos nuevos ----
+
+  function anunciarNuevos(lista) {
+    tocarCampana();
+    var texto = lista.length === 1
+      ? "Pedido nuevo #" + lista[0].numero
+      : lista.length + " pedidos nuevos";
+    mostrarAviso(texto, function () {
+      ponerFiltro("activos");
+      window.scrollTo(0, 0);
+    });
+  }
+
+  // ---- Sonido ----
+  // El iPhone solo deja sonar una pagina despues de que la persona la toca.
+  // El boton "Activar sonido" se ve mientras el sonido no este listo.
+
+  function sonidoActivo() {
+    return !!contextoAudio && contextoAudio.state === "running";
+  }
+
+  function actualizarBotonSonido() {
+    btnSonido.hidden = sonidoActivo();
+  }
+
+  function activarSonido() {
+    var Contexto = window.AudioContext || window.webkitAudioContext;
+    if (!Contexto) {
+      mostrarAviso("Este teléfono no permite sonido aquí. Los pedidos nuevos se verán en pantalla.");
+      return;
+    }
+    // Safari reciente: suena aunque el interruptor de silencio este puesto.
+    try {
+      if (navigator.audioSession) navigator.audioSession.type = "playback";
+    } catch (e) {}
+
+    if (!contextoAudio) {
+      contextoAudio = new Contexto();
+      contextoAudio.onstatechange = actualizarBotonSonido;
+    }
+
+    // Un sonido vacio dentro del toque desbloquea el audio en iPhone viejos.
+    try {
+      var vacio = contextoAudio.createBuffer(1, 1, 22050);
+      var fuente = contextoAudio.createBufferSource();
+      fuente.buffer = vacio;
+      fuente.connect(contextoAudio.destination);
+      fuente.start(0);
+    } catch (e) {}
+
+    var reanudar = contextoAudio.resume ? contextoAudio.resume() : null;
+    Promise.resolve(reanudar).then(function () {
+      actualizarBotonSonido();
+      if (sonidoActivo()) {
+        tocarCampana();
+      } else {
+        mostrarAviso("No se pudo activar el sonido. Toca el botón otra vez.");
+      }
+    }).catch(function () {
+      actualizarBotonSonido();
+    });
+  }
+
+  btnSonido.addEventListener("click", function () {
+    activarSonido();
+    pedirPantallaEncendida();
+  });
+
+  function tocarCampana() {
+    if (!sonidoActivo()) return;
+    var ctx = contextoAudio;
+    var inicio = ctx.currentTime + 0.02;
+    // Dos "ding-dong" seguidos, generados aqui mismo.
+    var notas = [[880, 0], [1320, 0.2], [880, 0.65], [1320, 0.85]];
+    notas.forEach(function (nota) {
+      var osc = ctx.createOscillator();
+      var volumen = ctx.createGain();
+      var t = inicio + nota[1];
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(nota[0], t);
+      volumen.gain.setValueAtTime(0.0001, t);
+      volumen.gain.exponentialRampToValueAtTime(0.6, t + 0.02);
+      volumen.gain.exponentialRampToValueAtTime(0.0001, t + 0.35);
+      osc.connect(volumen);
+      volumen.connect(ctx.destination);
+      osc.start(t);
+      osc.stop(t + 0.4);
+    });
+  }
+
+  // Cualquier toque en la pagina sirve para reanudar el sonido (si ya se activo
+  // antes) y para volver a pedir la pantalla encendida.
+  document.addEventListener("click", function () {
+    if (contextoAudio && contextoAudio.state !== "running" && contextoAudio.resume) {
+      contextoAudio.resume().then(actualizarBotonSonido).catch(function () {});
+    }
+    if (kioscoActual && !bloqueoPantalla) pedirPantallaEncendida();
+  }, true);
+
+  // ---- Pantalla encendida ----
+
+  function pedirPantallaEncendida() {
+    if (!kioscoActual) return;
+    if (!("wakeLock" in navigator)) {
+      ayudaPantalla.hidden = false;
+      return;
+    }
+    if (bloqueoPantalla || pidiendoPantalla || document.hidden) return;
+    pidiendoPantalla = true;
+    navigator.wakeLock.request("screen").then(function (bloqueo) {
+      pidiendoPantalla = false;
+      if (!kioscoActual) {
+        bloqueo.release().catch(function () {});
+        return;
+      }
+      bloqueoPantalla = bloqueo;
+      ayudaPantalla.hidden = true;
+      bloqueo.addEventListener("release", function () {
+        if (bloqueoPantalla === bloqueo) bloqueoPantalla = null;
+      });
+    }).catch(function () {
+      pidiendoPantalla = false;
+      ayudaPantalla.hidden = false;
+    });
+  }
+
+  // ---- WhatsApp ----
+
+  function soloDigitos(texto) {
+    return String(texto || "").replace(/\D/g, "");
+  }
+
+  // Codigo de pais del negocio: lo que sobra antes de los ultimos 10 digitos
+  // de su WhatsApp registrado (ej. +1 305 555 1234 -> "1"). Sin pais de respaldo.
+  function codigoPaisNegocio() {
+    var digitos = soloDigitos(kioscoActual && kioscoActual.whatsapp);
+    if (digitos.indexOf("00") === 0) digitos = digitos.slice(2);
+    if (digitos.length < 11 || digitos.length > 13) return null;
+    var codigo = digitos.slice(0, digitos.length - 10);
+    if (codigo.charAt(0) === "0") return null;
+    return codigo;
+  }
+
+  function internacionalValido(digitos) {
+    if (digitos.length < 8 || digitos.length > 15) return null;
+    if (digitos.charAt(0) === "0") return null;
+    return digitos;
+  }
+
+  // Devuelve el numero listo para wa.me, o null si no se puede saber con seguridad.
+  function numeroWhatsappCliente(telefono) {
+    var bruto = String(telefono || "").trim();
+    var digitos = soloDigitos(bruto);
+    if (!digitos) return null;
+
+    // Ya trae pais: +58 414... o 0058 414...
+    if (bruto.charAt(0) === "+") return internacionalValido(digitos);
+    if (digitos.indexOf("00") === 0) return internacionalValido(digitos.slice(2));
+
+    var codigo = codigoPaisNegocio();
+    if (!codigo) return null;
+
+    // Numero local con 0 inicial (ej. Venezuela 0414...): se quita el 0.
+    if (digitos.charAt(0) === "0") digitos = digitos.slice(1);
+
+    if (digitos.length === 10) return codigo + digitos;
+    if (digitos.length === codigo.length + 10 && digitos.indexOf(codigo) === 0) return digitos;
+    return null;
+  }
+
+  function primerNombre(nombre) {
+    var partes = String(nombre || "").trim().split(/\s+/);
+    return partes[0] || "";
+  }
+
+  function mensajeWhatsapp(pedido) {
+    var nombre = primerNombre(pedido.cliente_nombre);
+    var saludo = nombre ? "Hola " + nombre + ", " : "Hola, ";
+    var numero = "#" + pedido.numero;
+    var negocio = (kioscoActual && kioscoActual.nombre) || "";
+
+    switch (pedido.estado) {
+      case "preparando":
+        return saludo + "ya estamos preparando tu pedido " + numero + " de " + negocio + ".";
+      case "listo":
+        if (pedido.modalidad === "entrega") {
+          return saludo + "tu pedido " + numero + " de " + negocio + " está listo y en breve sale a tu domicilio.";
+        }
+        return saludo + "tu pedido " + numero + " de " + negocio + " está listo para recoger.";
+      case "entregado":
+      case "completado":
+        return "¡Gracias por tu pedido " + numero + (nombre ? ", " + nombre : "") + "! Esperamos verte pronto en " + negocio + ".";
+      case "cancelado":
+        return saludo + "lamentamos avisarte que tu pedido " + numero + " de " + negocio + " fue cancelado. Si tienes dudas, responde a este mensaje.";
+      default:
+        return saludo + "recibimos tu pedido " + numero + " en " + negocio + ". Te avisamos cuando esté listo.";
+    }
+  }
+
+  function crearBotonWhatsapp(pedido) {
+    var numero = numeroWhatsappCliente(pedido.cliente_telefono);
+    if (!numero) {
+      var desactivado = crear("button", "boton-whatsapp", "Número no válido");
+      desactivado.type = "button";
+      desactivado.disabled = true;
+      return desactivado;
+    }
+    var enlace = crear("a", "boton-whatsapp", "WhatsApp");
+    enlace.href = "https://wa.me/" + numero + "?text=" + encodeURIComponent(mensajeWhatsapp(pedido));
+    enlace.target = "_blank";
+    enlace.rel = "noopener";
+    return enlace;
+  }
+
+  // ---- Cambios de estado y pago ----
+
+  function cambiarEstado(id, nuevoEstado) {
+    var pedido = pedidos[id];
+    if (!pedido || guardando[id]) return;
+    var eraViejo = !esReciente(pedido, Date.now());
+    guardando[id] = true;
+    render();
+
+    sb.from("kiosco_pedidos").update({ estado: nuevoEstado }).eq("id", id).select().single().then(function (resultado) {
+      delete guardando[id];
+      if (resultado.error || !resultado.data) {
+        mostrarAviso("No se pudo actualizar. Intenta de nuevo.");
+        render();
+        return;
+      }
+      fusionar(resultado.data);
+      render();
+      // El conteo de "dias anteriores" lo da el servidor.
+      if (eraViejo) recargar();
+    }).catch(function () {
+      delete guardando[id];
+      mostrarAviso("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+      render();
+    });
+  }
+
+  function marcarPagado(id) {
+    var pedido = pedidos[id];
+    if (!pedido || guardando[id]) return;
+    guardando[id] = true;
+    render();
+
+    sb.from("kiosco_pedidos").update({ estado_pago: "pagado" }).eq("id", id).select().single().then(function (resultado) {
+      delete guardando[id];
+      if (resultado.error || !resultado.data) {
+        mostrarAviso("No se pudo actualizar. Intenta de nuevo.");
+        render();
+        return;
+      }
+      fusionar(resultado.data);
+      render();
+    }).catch(function () {
+      delete guardando[id];
+      mostrarAviso("No se pudo conectar. Revisa tu internet e intenta de nuevo.");
+      render();
+    });
+  }
+
+  function confirmarCancelar(pedido) {
+    abrirHoja("¿Cancelar el pedido #" + pedido.numero + "?", "Puedes cambiar el estado después si te equivocas.", [
+      { texto: "Sí, cancelar pedido", clase: "peligro", accion: function () {
+        cerrarHoja();
+        cambiarEstado(pedido.id, "cancelado");
+      } },
+      { texto: "No, volver", clase: "secundario", accion: cerrarHoja }
+    ]);
+  }
+
+  function abrirCambiarEstado(pedido) {
+    var botones = [];
+    ESTADOS_CAMBIO.forEach(function (estado) {
+      if (estado === pedido.estado) return;
+      botones.push({
+        texto: NOMBRES_ESTADO[estado],
+        clase: estado === "cancelado" ? "peligro" : "",
+        accion: function () {
+          if (estado === "cancelado") {
+            confirmarCancelar(pedido);
+            return;
+          }
+          cerrarHoja();
+          cambiarEstado(pedido.id, estado);
+        }
+      });
+    });
+    botones.push({ texto: "Volver", clase: "secundario", accion: function () { abrirMas(pedido); } });
+    abrirHoja("Cambiar estado", "Ahora: " + (NOMBRES_ESTADO[pedido.estado] || pedido.estado), botones);
+  }
+
+  function abrirMas(pedido) {
+    var botones = [];
+    if (pedido.metodo_pago && pedido.estado_pago !== "pagado") {
+      botones.push({ texto: "Marcar como pagado", clase: "principal", accion: function () {
+        cerrarHoja();
+        marcarPagado(pedido.id);
+      } });
+    }
+    botones.push({ texto: "Cambiar estado", accion: function () { abrirCambiarEstado(pedido); } });
+    if (pedido.estado !== "cancelado") {
+      botones.push({ texto: "Cancelar pedido", clase: "peligro", accion: function () { confirmarCancelar(pedido); } });
+    }
+    botones.push({ texto: "Cerrar", clase: "secundario", accion: cerrarHoja });
+    abrirHoja("Pedido #" + pedido.numero, null, botones);
+  }
+
+  // ---- Comprobante ----
+
+  function pintarComprobante(pedido, contenedor) {
+    contenedor.innerHTML = "";
+    var guardado = comprobantes[pedido.id];
+    if (guardado && guardado.url && guardado.hasta > Date.now()) {
+      var img = crear("img");
+      img.src = guardado.url;
+      img.alt = "Comprobante de pago";
+      contenedor.appendChild(img);
+      return;
+    }
+    contenedor.appendChild(crear("p", "nota-suave", "Cargando…"));
+    sb.storage.from("comprobantes").createSignedUrl(pedido.comprobante_ruta, 60).then(function (resultado) {
+      if (!comprobantes[pedido.id] || !comprobantes[pedido.id].abierto) return;
+      contenedor.innerHTML = "";
+      if (resultado.error || !resultado.data) {
+        contenedor.appendChild(crear("p", "nota-suave", "No se pudo cargar la imagen. Intenta de nuevo."));
+        return;
+      }
+      comprobantes[pedido.id].url = resultado.data.signedUrl;
+      comprobantes[pedido.id].hasta = Date.now() + 50 * 1000;
+      var imagen = crear("img");
+      imagen.src = resultado.data.signedUrl;
+      imagen.alt = "Comprobante de pago";
+      contenedor.appendChild(imagen);
+    }).catch(function () {
+      contenedor.innerHTML = "";
+      contenedor.appendChild(crear("p", "nota-suave", "No se pudo conectar. Revisa tu internet e intenta de nuevo."));
+    });
+  }
+
+  // ---- Tarjeta de pedido ----
+
+  function crearTarjeta(pedido) {
+    var tarjeta = crear("article", "tarjeta-pedido estado-" + pedido.estado);
+    tarjeta.id = "pedido-" + pedido.id;
+
+    var cabeza = crear("div", "cabeza-pedido");
+    cabeza.appendChild(crear("span", "numero-pedido", "#" + pedido.numero));
+    cabeza.appendChild(crear("span", "insignia insignia-" + pedido.estado, NOMBRES_ESTADO[pedido.estado] || pedido.estado));
+    cabeza.appendChild(crear("span", "hora-pedido", formatearHoraPedido(pedido.creado_en)));
+    tarjeta.appendChild(cabeza);
+
+    var cliente = crear("div", "cliente");
+    cliente.appendChild(crear("p", "nombre-cliente", pedido.cliente_nombre || "Sin nombre"));
+    if (pedido.cliente_telefono) {
+      var telefono = crear("a", "telefono-cliente", pedido.cliente_telefono);
+      telefono.href = "tel:" + String(pedido.cliente_telefono).replace(/[^\d+]/g, "");
+      cliente.appendChild(telefono);
+    }
+    tarjeta.appendChild(cliente);
+
+    var productos = crear("div", "productos");
+    var items = pedido.kiosco_pedido_items || [];
+    if (items.length === 0) {
+      productos.appendChild(crear("p", "nota-suave", reintentando[pedido.id]
+        ? "Cargando productos…"
+        : "No se pudieron cargar los productos. Se reintentará en un momento."));
+    }
+    items.forEach(function (item) {
+      var fila = crear("div", "producto");
+      fila.appendChild(crear("span", "cantidad", item.cantidad + "×"));
+      fila.appendChild(crear("span", "nombre-producto", item.nombre_snapshot));
+      fila.appendChild(crear("span", "precio-producto", dinero(item.total)));
+      productos.appendChild(fila);
+
+      // opciones viene de crear-pedido-kiosco como [{nombre, precio_extra}].
+      var textos = [];
+      if (Array.isArray(item.opciones)) {
+        item.opciones.forEach(function (opcion) {
+          if (!opcion || !opcion.nombre) return;
+          var extra = Number(opcion.precio_extra);
+          textos.push(opcion.nombre + (extra > 0 ? " +" + dinero(extra) : ""));
+        });
+      }
+      if (textos.length) {
+        productos.appendChild(crear("p", "opciones-producto", textos.join(", ")));
+      }
+    });
+    tarjeta.appendChild(productos);
+
+    if (pedido.nota) {
+      var nota = crear("p", "nota-cliente");
+      nota.appendChild(crear("strong", null, "Nota: "));
+      nota.appendChild(document.createTextNode(pedido.nota));
+      tarjeta.appendChild(nota);
+    }
+
+    var entrega = crear("p", "dato");
+    entrega.appendChild(crear("strong", null, pedido.modalidad === "entrega" ? "A domicilio" : "Para recoger"));
+    if (pedido.modalidad === "entrega" && pedido.direccion) {
+      entrega.appendChild(crear("span", "direccion", pedido.direccion));
+    }
+    tarjeta.appendChild(entrega);
+
+    if (pedido.metodo_pago) {
+      var pagado = pedido.estado_pago === "pagado";
+      var pago = crear("div", "fila-pago");
+      pago.appendChild(crear("span", null, "Pago: " + (pedido.metodo_pago.nombre || "")));
+      pago.appendChild(crear("span", "estado-pago" + (pagado ? " pagado" : ""), pagado ? "Pagado" : "Pago pendiente"));
+      tarjeta.appendChild(pago);
+
+      if (pedido.comprobante_ruta) {
+        var contenedor = crear("div", "imagen-comprobante");
+        var abierto = !!(comprobantes[pedido.id] && comprobantes[pedido.id].abierto);
+        var btnComprobante = crear("button", "boton-comprobante", abierto ? "Ocultar comprobante" : "Ver comprobante");
+        btnComprobante.type = "button";
+        btnComprobante.addEventListener("click", function () {
+          var estado = comprobantes[pedido.id] || (comprobantes[pedido.id] = {});
+          estado.abierto = !estado.abierto;
+          btnComprobante.textContent = estado.abierto ? "Ocultar comprobante" : "Ver comprobante";
+          contenedor.hidden = !estado.abierto;
+          if (estado.abierto) pintarComprobante(pedido, contenedor);
+          firmaRender = "";
+        });
+        contenedor.hidden = !abierto;
+        if (abierto) pintarComprobante(pedido, contenedor);
+        tarjeta.appendChild(btnComprobante);
+        tarjeta.appendChild(contenedor);
+      }
+    }
+
+    var total = crear("div", "fila-total");
+    total.appendChild(crear("span", null, "Total"));
+    total.appendChild(crear("span", "monto", dinero(pedido.total)));
+    tarjeta.appendChild(total);
+
+    var paso = SIGUIENTE_PASO[pedido.estado];
+    if (paso) {
+      var principal = crear("button", "boton-principal", guardando[pedido.id] ? "Guardando…" : paso.texto);
+      principal.type = "button";
+      principal.disabled = !!guardando[pedido.id];
+      principal.addEventListener("click", function () {
+        cambiarEstado(pedido.id, paso.estado);
+      });
+      tarjeta.appendChild(principal);
+    }
+
+    var secundarias = crear("div", "acciones-secundarias");
+    secundarias.appendChild(crearBotonWhatsapp(pedido));
+    var mas = crear("button", "boton-mas", "Más");
+    mas.type = "button";
+    mas.disabled = !!guardando[pedido.id];
+    mas.addEventListener("click", function () {
+      abrirMas(pedidos[pedido.id] || pedido);
+    });
+    secundarias.appendChild(mas);
+    tarjeta.appendChild(secundarias);
+
+    return tarjeta;
+  }
+
+  // ---- Dibujar la lista ----
+
+  function ordenarActivos(a, b) {
+    var ga = GRUPO_ACTIVO[a.estado];
+    var gb = GRUPO_ACTIVO[b.estado];
+    if (ga !== gb) return ga - gb;
+    return new Date(a.creado_en) - new Date(b.creado_en);
+  }
+
+  function ordenarRecientesPrimero(a, b) {
+    return new Date(b.creado_en) - new Date(a.creado_en);
+  }
+
+  function ponerFiltro(valor) {
+    filtro = valor;
+    filtroActivos.classList.toggle("activo", valor === "activos");
+    filtroTerminados.classList.toggle("activo", valor === "terminados");
+    firmaRender = "";
+    render();
+  }
+
+  filtroActivos.addEventListener("click", function () { ponerFiltro("activos"); });
+  filtroTerminados.addEventListener("click", function () { ponerFiltro("terminados"); });
+
+  btnViejos.addEventListener("click", function () {
+    viejosVisibles = !viejosVisibles;
+    firmaRender = "";
+    if (viejosVisibles) {
+      recargar();
+    }
+    render();
+  });
+
+  function render() {
+    if (!kioscoActual) return;
+
+    var ahora = Date.now();
+    var activos = [];
+    var terminados = [];
+    var viejos = [];
+
+    Object.keys(pedidos).forEach(function (id) {
+      var pedido = pedidos[id];
+      var reciente = esReciente(pedido, ahora);
+      if (esActivo(pedido)) {
+        (reciente ? activos : viejos).push(pedido);
+      } else if (reciente) {
+        terminados.push(pedido);
+      }
+    });
+
+    activos.sort(ordenarActivos);
+    terminados.sort(ordenarRecientesPrimero);
+    viejos.sort(ordenarActivos);
+
+    var nuevos = activos.filter(function (p) { return p.estado === "nuevo"; }).length;
+    document.title = (nuevos ? "(" + nuevos + ") " : "") + "Pedidos · CarritoGo";
+    filtroActivos.textContent = "Activos (" + activos.length + ")";
+    filtroTerminados.textContent = "Terminados (" + terminados.length + ")";
+
+    // Si nada cambio, no se vuelve a dibujar (la recarga de cada minuto no
+    // debe mover la pantalla ni recargar imagenes).
+    var firma = JSON.stringify([
+      filtro, viejosVisibles, conteoViejos, activos, terminados, viejos,
+      Object.keys(guardando), Object.keys(reintentando),
+      kioscoActual.nombre, kioscoActual.whatsapp,
+      new Date(ahora).toDateString()
+    ]);
+    if (firma === firmaRender) return;
+    firmaRender = firma;
+
+    listaPedidos.innerHTML = "";
+    listaViejos.innerHTML = "";
+
+    var visibles = filtro === "activos" ? activos : terminados;
+    if (visibles.length === 0) {
+      listaPedidos.appendChild(crear("p", "lista-vacia", filtro === "activos"
+        ? "No hay pedidos activos. Los nuevos aparecerán aquí solos."
+        : "No hay pedidos terminados en las últimas 24 horas."));
+    }
+    visibles.forEach(function (pedido) {
+      listaPedidos.appendChild(crearTarjeta(pedido));
+    });
+
+    var hayViejos = filtro === "activos" && conteoViejos > 0;
+    btnViejos.hidden = !hayViejos;
+    listaViejos.hidden = !(hayViejos && viejosVisibles);
+    if (hayViejos) {
+      var frase = conteoViejos === 1
+        ? "Hay 1 pedido de días anteriores sin cerrar"
+        : "Hay " + conteoViejos + " pedidos de días anteriores sin cerrar";
+      btnViejos.textContent = frase + (viejosVisibles ? " · Ocultar" : " · Ver");
+      if (viejosVisibles) {
+        listaViejos.appendChild(crear("p", "titulo-seccion", "De días anteriores"));
+        if (viejos.length === 0) {
+          listaViejos.appendChild(crear("p", "nota-suave", "Cargando…"));
+        }
+        viejos.forEach(function (pedido) {
+          listaViejos.appendChild(crearTarjeta(pedido));
+        });
+      }
+    }
+  }
+
+  // ---- Instalable ----
+  // Service worker minimo, sin cache, limitado a /pedidos/ para no tocar la
+  // tienda publica ni el panel.
+
+  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
+    navigator.serviceWorker.register("/sw-pedidos.js", { scope: "/pedidos/" }).catch(function () {});
+  }
+
+  // ---- Inicio ----
+
+  sb.auth.getSession().then(function (resultado) {
+    var session = resultado.data && resultado.data.session;
+    if (!session) {
+      mostrarPantalla(pantallaEntrar);
+      return;
+    }
+    iniciar(session);
+  }).catch(function () {
+    mostrarError();
+  });
+})();
+</script>
+
+</body>
+</html>

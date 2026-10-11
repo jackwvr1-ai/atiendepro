@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <!-- Icono de la app de pedidos: fondo negro, carrito blanco.
+       El dibujo queda dentro de la zona segura central para que no se
+       recorte cuando el telefono redondea o enmascara el icono. -->
+  <rect width="512" height="512" fill="#111111"/>
+  <g transform="translate(-4 -7)">
+    <path d="M128 168 H168 L206 300 H366 L392 206 H180" fill="none" stroke="#ffffff" stroke-width="30" stroke-linecap="round" stroke-linejoin="round"/>
+    <circle cx="224" cy="356" r="22" fill="#ffffff"/>
+    <circle cx="348" cy="356" r="22" fill="#ffffff"/>
+  </g>
+</svg>
