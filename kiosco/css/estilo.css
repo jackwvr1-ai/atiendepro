@@ -1605,3 +1605,29 @@ body.bloqueo-scroll {
     transition: none;
   }
 }
+
+/* ---- Acceso a la app de pedidos (pestaña Pedidos del panel) ---- */
+
+.acceso-app-pedidos {
+  margin: 0 0 24px;
+}
+
+.enlace-app-pedidos {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  box-sizing: border-box;
+}
+
+.enlace-app-pedidos:active {
+  transform: scale(0.98);
+}
+
+.ayuda-app-pedidos {
+  margin: 8px 2px 0;
+  font-size: 0.85rem;
+  color: var(--texto-suave);
+  line-height: 1.4;
+  text-align: center;
+}
