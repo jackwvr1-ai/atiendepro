@@ -284,6 +284,63 @@ button { cursor: pointer; }
   color: var(--texto-suave);
 }
 
+/* ---- Avisos con el telefono bloqueado ---- */
+
+.avisos {
+  margin: 12px 16px 0;
+  padding: 12px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 14px;
+  background: #fff;
+}
+
+.avisos-titulo {
+  margin: 0 0 4px;
+  font-size: 0.95rem;
+  font-weight: 800;
+}
+
+.avisos-texto {
+  margin: 0;
+  font-size: 0.92rem;
+  color: var(--texto-suave);
+}
+
+.avisos-texto.activados {
+  color: var(--exito-texto);
+  font-weight: 700;
+}
+
+.avisos-botones {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.avisos-boton {
+  flex: 1;
+  min-height: 48px;
+  padding: 10px 14px;
+  border: 1.5px solid var(--borde);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--negro);
+  font-size: 1rem;
+  font-weight: 800;
+}
+
+.avisos-boton.principal {
+  background: var(--negro);
+  border-color: var(--negro);
+  color: #fff;
+}
+
+.avisos-boton:disabled { opacity: 0.55; }
+
+.avisos-botones .boton-texto { padding: 10px 8px; }
+
 /* ---- Lista de pedidos ---- */
 
 .contenido {
@@ -724,6 +781,16 @@ button { cursor: pointer; }
     </div>
   </header>
 
+  <section id="avisos" class="avisos" hidden aria-labelledby="avisosTitulo">
+    <p id="avisosTitulo" class="avisos-titulo">Avisos con el teléfono bloqueado</p>
+    <p id="avisosTexto" class="avisos-texto"></p>
+    <div id="avisosBotones" class="avisos-botones" hidden>
+      <button type="button" id="btnActivarAvisos" class="avisos-boton principal" hidden>Activar avisos</button>
+      <button type="button" id="btnProbarAviso" class="avisos-boton" hidden>Probar aviso</button>
+      <button type="button" id="btnDesactivarAvisos" class="boton-texto" hidden>Desactivar</button>
+    </div>
+  </section>
+
   <p id="ayudaPantalla" class="ayuda" hidden>Para que la pantalla no se apague: Ajustes › Pantalla y brillo › Bloqueo automático › Nunca.</p>
 
   <main class="contenido">
@@ -792,6 +859,11 @@ button { cursor: pointer; }
   // leer de inmediato y luego a los 2 y 5 segundos de la llegada.
   var REINTENTOS_PRODUCTOS = [2000, 5000];
 
+  // Llave PUBLICA de los avisos (Web Push). Es publica a proposito, como la
+  // clave anonima. La privada vive solo en Supabase Secrets.
+  var CLAVE_PUBLICA_AVISOS = "BIkbObQsZBagb7ZO1fjrNiMvYFijwGFpBSjyG7B_AWqR6Qhpd8cQ_zysRjNKRWWyDOAZi-fH9NjnpY06RZTyRsA";
+  var FUNCION_AVISOS = "avisos-pedidos-kiosco";
+
   // ---- Elementos ----
 
   var pantallaCargando = document.getElementById("pantallaCargando");
@@ -822,6 +894,13 @@ button { cursor: pointer; }
   var btnViejos = document.getElementById("btnViejos");
   var listaViejos = document.getElementById("listaViejos");
   var btnSalir = document.getElementById("btnSalir");
+
+  var seccionAvisos = document.getElementById("avisos");
+  var avisosTexto = document.getElementById("avisosTexto");
+  var avisosBotones = document.getElementById("avisosBotones");
+  var btnActivarAvisos = document.getElementById("btnActivarAvisos");
+  var btnProbarAviso = document.getElementById("btnProbarAviso");
+  var btnDesactivarAvisos = document.getElementById("btnDesactivarAvisos");
 
   var aviso = document.getElementById("aviso");
   var fondoHoja = document.getElementById("fondoHoja");
@@ -856,6 +935,10 @@ button { cursor: pointer; }
   var sonidoConfirmado = false; // solo lo pone en true un toque en el control de sonido
   var bloqueoPantalla = null;
   var pidiendoPantalla = false;
+  var promesaRegistroSW = null;
+  var estadoAvisos = "";       // no_disponible | disponible | activados | bloqueados
+  var ocupadoAvisos = false;   // mientras se activa, prueba o desactiva
+  var revisionAvisos = 0;      // descarta revisiones viejas si llega una nueva
 
   // ---- Utilidades ----
 
@@ -1016,16 +1099,29 @@ button { cursor: pointer; }
     yaConecto = false;
     firmaRender = "";
     comprobantes = {};
+    revisionAvisos++;
+    estadoAvisos = "";
+    ocupadoAvisos = false;
+    seccionAvisos.hidden = true;
     document.title = "Pedidos · CarritoGo";
+  }
+
+  // Al salir: primero se quita el aviso de este telefono (necesita la sesion)
+  // y despues se cierra la sesion. Si algo falla o tarda, se sale igual.
+  function salir() {
+    var quitar = quitarAvisosDeEsteTelefono();
+    detener();
+    mostrarPantalla(pantallaEntrar);
+    quitar.then(function () {
+      return sb.auth.signOut();
+    }).catch(function () {});
   }
 
   function pedirSalir() {
     abrirHoja("¿Cerrar sesión?", "Dejarás de recibir pedidos en este teléfono hasta que vuelvas a entrar.", [
       { texto: "Sí, cerrar sesión", clase: "principal", accion: function () {
         cerrarHoja();
-        detener();
-        mostrarPantalla(pantallaEntrar);
-        sb.auth.signOut().catch(function () {});
+        salir();
       } },
       { texto: "No, seguir aquí", clase: "secundario", accion: cerrarHoja }
     ]);
@@ -1033,11 +1129,7 @@ button { cursor: pointer; }
 
   btnSalir.addEventListener("click", pedirSalir);
 
-  btnSalirError.addEventListener("click", function () {
-    detener();
-    mostrarPantalla(pantallaEntrar);
-    sb.auth.signOut().catch(function () {});
-  });
+  btnSalirError.addEventListener("click", salir);
 
   btnReintentar.addEventListener("click", function () {
     mostrarPantalla(pantallaCargando);
@@ -1088,6 +1180,7 @@ button { cursor: pointer; }
       revisarSonido();
       actualizarIndicador();
       pedirPantallaEncendida();
+      revisarAvisos(true);
       recargar();
       suscribir();
       clearInterval(intervaloRecarga);
@@ -1327,6 +1420,8 @@ button { cursor: pointer; }
     recargar();
     asegurarConexion();
     pedirPantallaEncendida();
+    // Por si el dueño cambio el permiso en Ajustes mientras la app estaba atras.
+    if (!ocupadoAvisos) revisarAvisos(false);
   }
 
   document.addEventListener("visibilitychange", function () {
@@ -1934,13 +2029,300 @@ button { cursor: pointer; }
     }
   }
 
+  // ---- Avisos con el telefono bloqueado (Web Push) ----
+  // El telefono entrega una "suscripcion" (su buzon de avisos). Se guarda en
+  // kiosco_avisos_dispositivos y la funcion avisos-pedidos-kiosco la usa
+  // cuando entra un pedido. El permiso solo se pide con el toque en
+  // "Activar avisos", como exige el iPhone.
+
+  function urlBase64ToUint8Array(base64String) {
+    var relleno = "=".repeat((4 - (base64String.length % 4)) % 4);
+    var base64 = (base64String + relleno).replace(/-/g, "+").replace(/_/g, "/");
+    var crudo = window.atob(base64);
+    var salida = new Uint8Array(crudo.length);
+    for (var i = 0; i < crudo.length; i++) salida[i] = crudo.charCodeAt(i);
+    return salida;
+  }
+
+  function conLimite(promesa, ms) {
+    return Promise.race([promesa, new Promise(function (resolver, rechazar) {
+      setTimeout(function () { rechazar(new Error("tiempo")); }, ms);
+    })]);
+  }
+
+  function esIphone() {
+    return /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function abiertaDesdeIcono() {
+    return navigator.standalone === true ||
+      (!!window.matchMedia && window.matchMedia("(display-mode: standalone)").matches);
+  }
+
+  function avisosPosibles() {
+    return !!promesaRegistroSW && "PushManager" in window && "Notification" in window;
+  }
+
+  function obtenerRegistro() {
+    if (!promesaRegistroSW) return Promise.reject(new Error("sin_registro"));
+    return conLimite(promesaRegistroSW, 10000);
+  }
+
+  function suscripcionActual() {
+    return obtenerRegistro().then(function (registro) {
+      return registro.pushManager.getSubscription();
+    });
+  }
+
+  // La suscripcion debe ser de nuestra llave publica; si cambio, no sirve.
+  function mismaClave(suscripcion) {
+    var clave = suscripcion && suscripcion.options && suscripcion.options.applicationServerKey;
+    if (!clave) return true; // el navegador no la informa: se da por buena
+    var a = new Uint8Array(clave);
+    var b = urlBase64ToUint8Array(CLAVE_PUBLICA_AVISOS);
+    if (a.length !== b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (a[i] !== b[i]) return false;
+    }
+    return true;
+  }
+
+  function guardarSuscripcion(suscripcion) {
+    var datos = suscripcion.toJSON();
+    var claves = datos.keys || {};
+    if (!kioscoActual || !datos.endpoint || !claves.p256dh || !claves.auth) {
+      return Promise.reject(new Error("datos_incompletos"));
+    }
+    return sb.from("kiosco_avisos_dispositivos").upsert({
+      kiosco_id: kioscoActual.id,
+      endpoint: datos.endpoint,
+      p256dh: claves.p256dh,
+      auth: claves.auth,
+      agente: String(navigator.userAgent || "").slice(0, 300),
+      fallos: 0,
+      actualizado_en: new Date().toISOString()
+    }, { onConflict: "endpoint" }).then(function (resultado) {
+      if (resultado.error) throw resultado.error;
+    });
+  }
+
+  // Quita la suscripcion de este telefono: borra su fila y la cancela.
+  // Siempre termina (maximo 5 s) y responde si el telefono quedo sin avisos.
+  function quitarAvisosDeEsteTelefono() {
+    if (!avisosPosibles()) return Promise.resolve(true);
+    var tarea = suscripcionActual().then(function (suscripcion) {
+      if (!suscripcion) return true;
+      return sb.from("kiosco_avisos_dispositivos").delete().eq("endpoint", suscripcion.endpoint)
+        .then(function () {}, function () {})
+        .then(function () {
+          return suscripcion.unsubscribe().then(function () { return true; }, function () { return false; });
+        });
+    });
+    return conLimite(tarea, 5000).catch(function () { return false; });
+  }
+
+  var TEXTOS_AVISOS = {
+    no_disponible: "Para recibir avisos con el teléfono bloqueado, instala la app: toca Compartir → Agregar a pantalla de inicio, y ábrela desde el ícono.",
+    disponible: "Recibe un aviso de cada pedido nuevo aunque la app esté cerrada.",
+    activados: "✓ Activados en este teléfono",
+    bloqueados: "Las notificaciones están bloqueadas. Actívalas en Ajustes → Notificaciones → Pedidos."
+  };
+
+  function pintarAvisos(estado) {
+    estadoAvisos = estado;
+    seccionAvisos.hidden = !kioscoActual || !estado;
+    avisosTexto.textContent = TEXTOS_AVISOS[estado] || "";
+    avisosTexto.classList.toggle("activados", estado === "activados");
+    avisosBotones.hidden = estado !== "disponible" && estado !== "activados";
+    btnActivarAvisos.hidden = estado !== "disponible";
+    btnProbarAviso.hidden = estado !== "activados";
+    btnDesactivarAvisos.hidden = estado !== "activados";
+    btnActivarAvisos.disabled = ocupadoAvisos;
+    btnProbarAviso.disabled = ocupadoAvisos;
+    btnDesactivarAvisos.disabled = ocupadoAvisos;
+  }
+
+  // Revisa el estado al abrir la app (guardar = true: vuelve a guardar la
+  // suscripcion en silencio) o al volver a primer plano (guardar = false:
+  // solo reacciona si el permiso cambio).
+  function revisarAvisos(guardar) {
+    if (!kioscoActual) return;
+    var esta = ++revisionAvisos;
+
+    if (!avisosPosibles() || (esIphone() && !abiertaDesdeIcono())) {
+      pintarAvisos("no_disponible");
+      return;
+    }
+    if (Notification.permission === "denied") {
+      pintarAvisos("bloqueados");
+      return;
+    }
+    if (Notification.permission !== "granted") {
+      pintarAvisos("disponible");
+      return;
+    }
+    if (!guardar && (estadoAvisos === "activados" || estadoAvisos === "disponible")) return;
+
+    suscripcionActual().then(function (suscripcion) {
+      if (esta !== revisionAvisos || !kioscoActual) return;
+      if (!suscripcion || !mismaClave(suscripcion)) {
+        pintarAvisos("disponible");
+        return;
+      }
+      return guardarSuscripcion(suscripcion).then(function () {
+        if (esta === revisionAvisos && kioscoActual) pintarAvisos("activados");
+      }, function () {
+        if (esta === revisionAvisos && kioscoActual) pintarAvisos("disponible");
+      });
+    }).catch(function () {
+      if (esta === revisionAvisos && kioscoActual) pintarAvisos("no_disponible");
+    });
+  }
+
+  btnActivarAvisos.addEventListener("click", function () {
+    if (ocupadoAvisos || !kioscoActual) return;
+    if (!avisosPosibles()) {
+      pintarAvisos("no_disponible");
+      return;
+    }
+    ocupadoAvisos = true;
+    revisionAvisos++;
+    btnActivarAvisos.textContent = "Activando…";
+    pintarAvisos("disponible");
+
+    function terminar() {
+      ocupadoAvisos = false;
+      btnActivarAvisos.textContent = "Activar avisos";
+    }
+
+    // El permiso se pide aqui mismo, dentro del toque.
+    var pedido;
+    try {
+      pedido = Notification.requestPermission();
+    } catch (e) {
+      pedido = null;
+    }
+
+    Promise.resolve(pedido).then(function (permiso) {
+      permiso = permiso || Notification.permission;
+      if (permiso !== "granted") {
+        throw { motivo: permiso === "denied" ? "bloqueado" : "sin_permiso" };
+      }
+      return obtenerRegistro();
+    }).then(function (registro) {
+      return registro.pushManager.getSubscription().then(function (existente) {
+        if (existente && mismaClave(existente)) return existente;
+        var quitar = existente ? existente.unsubscribe().catch(function () {}) : Promise.resolve();
+        return quitar.then(function () {
+          return registro.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(CLAVE_PUBLICA_AVISOS)
+          });
+        });
+      });
+    }).then(function (suscripcion) {
+      return guardarSuscripcion(suscripcion);
+    }).then(function () {
+      terminar();
+      if (!kioscoActual) return;
+      pintarAvisos("activados");
+      mostrarAviso("Avisos activados. Toca «Probar aviso» para confirmar.");
+    }).catch(function (error) {
+      terminar();
+      if (!kioscoActual) return;
+      if (error && error.motivo === "bloqueado") {
+        pintarAvisos("bloqueados");
+        return;
+      }
+      if (error && error.motivo === "sin_permiso") {
+        pintarAvisos("disponible");
+        mostrarAviso("Para recibir avisos, toca «Permitir» cuando el teléfono lo pregunte.");
+        return;
+      }
+      pintarAvisos(Notification.permission === "denied" ? "bloqueados" : "disponible");
+      if (error && error.code === "42501") {
+        mostrarAviso("Este teléfono ya recibe avisos de otra cuenta. Entra con esa cuenta y cierra sesión primero.");
+      } else {
+        mostrarAviso("No se pudieron activar los avisos. Revisa tu internet y toca otra vez.");
+      }
+    });
+  });
+
+  var MENSAJES_PRUEBA = {
+    espera: "Espera unos segundos antes de probar otra vez.",
+    sin_dispositivos: "Este teléfono no quedó registrado. Toca «Activar avisos» otra vez.",
+    sin_configurar: "Los avisos todavía no están listos. Intenta más tarde.",
+    sin_sesion: "Tu sesión venció. Cierra sesión y vuelve a entrar."
+  };
+
+  btnProbarAviso.addEventListener("click", function () {
+    if (ocupadoAvisos || !kioscoActual) return;
+    ocupadoAvisos = true;
+    btnProbarAviso.textContent = "Enviando…";
+    pintarAvisos("activados");
+
+    function terminar() {
+      ocupadoAvisos = false;
+      btnProbarAviso.textContent = "Probar aviso";
+      if (kioscoActual && estadoAvisos === "activados") pintarAvisos("activados");
+    }
+
+    var red = "No se pudo conectar. Revisa tu internet e intenta de nuevo.";
+
+    conLimite(sb.functions.invoke(FUNCION_AVISOS, {
+      body: { modo: "prueba", kiosco_id: kioscoActual.id }
+    }), 20000).then(function (resultado) {
+      terminar();
+      var datos = resultado && resultado.data;
+      if (!resultado || resultado.error || !datos || typeof datos !== "object") {
+        mostrarAviso(red);
+        return;
+      }
+      if (datos.ok) {
+        mostrarAviso(datos.exitos > 0
+          ? "Aviso enviado. Debe llegar en unos segundos."
+          : "No se pudo entregar el aviso. Toca «Desactivar» y vuelve a activarlos.");
+        return;
+      }
+      if (datos.motivo === "sin_dispositivos" && kioscoActual) pintarAvisos("disponible");
+      mostrarAviso(MENSAJES_PRUEBA[datos.motivo] || "No se pudo enviar el aviso. Intenta de nuevo en un momento.");
+    }).catch(function () {
+      terminar();
+      mostrarAviso(red);
+    });
+  });
+
+  btnDesactivarAvisos.addEventListener("click", function () {
+    if (ocupadoAvisos || !kioscoActual) return;
+    ocupadoAvisos = true;
+    revisionAvisos++;
+    pintarAvisos("activados");
+
+    quitarAvisosDeEsteTelefono().then(function (listo) {
+      ocupadoAvisos = false;
+      if (!kioscoActual) return;
+      if (listo) {
+        pintarAvisos("disponible");
+        mostrarAviso("Avisos desactivados en este teléfono.");
+      } else {
+        mostrarAviso("No se pudieron desactivar. Intenta de nuevo.");
+        revisarAvisos(true);
+      }
+    });
+  });
+
   // ---- Instalable ----
   // Service worker minimo, sin cache. Su alcance es exactamente /pedidos.html:
   // como los nombres de tienda no pueden llevar punto, ninguna tienda publica,
   // ni el panel, ni otra pagina puede quedar dentro de ese alcance.
+  // Tambien es el que muestra los avisos con la app cerrada.
 
-  if ("serviceWorker" in navigator && (location.protocol === "https:" || location.hostname === "localhost")) {
-    navigator.serviceWorker.register("/sw-pedidos.js", { scope: "/pedidos.html" }).catch(function () {});
+  if ("serviceWorker" in navigator && window.isSecureContext) {
+    promesaRegistroSW = navigator.serviceWorker.register("/sw-pedidos.js", { scope: "/pedidos.html" }).then(function () {
+      return navigator.serviceWorker.ready;
+    });
+    promesaRegistroSW.catch(function () {});
   }
 
   // ---- Inicio ----
