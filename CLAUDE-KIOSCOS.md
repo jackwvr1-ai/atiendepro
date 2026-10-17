@@ -397,6 +397,10 @@ Reglas de ejecución:
 - **Nunca** hagas push por tu cuenta. El dueño revisa y sube manualmente.
 - Valida todo JavaScript con `node --check` antes de darlo por terminado.
 - Entrega archivos completos, nunca fragmentos ni diffs.
+- **Excepción a "fuera de `/kiosco/` no se toca nada" (sección 3):** la carpeta
+  `supabase/` en la raíz del repositorio solo puede contener
+  `supabase/functions/avisos-pedidos-kiosco/` y `supabase/sql/avisos-pedidos.sql`.
+  Cualquier archivo nuevo ahí necesita aprobación del dueño.
 
 ---
 
@@ -431,6 +435,10 @@ Hay **una sola base de datos y es de producción**. No se usa para experimentar.
 - `localhost` también usa la base de producción: cada pedido de prueba es un
   pedido real. Las pruebas se hacen solo en el negocio piloto, nunca con
   datos de otros negocios.
+
+**Nota técnica:** en las migraciones aplicadas desde la herramienta de Supabase,
+no uses `drop ... if exists` cuando no hace falta. Pide una confirmación extra
+que se cancela sola y la migración no se aplica.
 
 ---
 
@@ -477,7 +485,77 @@ su tienda pieza por pieza, ni elige o se activa una plantilla por su cuenta.
 
 ---
 
-## 18. Cuándo está listo
+## 18. Avisos con la app cerrada (Web Push)
+
+**En producción y funcionando.** El teléfono del dueño recibe un aviso por cada
+pedido nuevo aunque la app esté cerrada.
+
+### Tablas
+
+- `kiosco_avisos_dispositivos` — un teléfono por fila. El dueño solo ve y maneja
+  las filas de su negocio (con `kiosco_es_mio`). El rol `anon` no tiene acceso.
+- `kiosco_avisos_enviados` — antiduplicado. Sin acceso desde la web; solo la
+  función la usa, con service role.
+
+### Disparador
+
+`kiosco_pedidos_aviso` (`AFTER INSERT` en `kiosco_pedidos`) → función
+`public.kiosco_aviso_pedido_nuevo()` (`security definer`, solo la ejecuta el
+sistema).
+
+Usa `pg_net`: deja la llamada en cola, no espera la respuesta y atrapa cualquier
+error. **Nunca frena ni rompe un pedido.**
+
+### Interruptor
+
+El secreto `aviso_pedidos_secreto` en Vault. Si existe, los avisos están
+encendidos. Para apagarlos:
+
+```sql
+delete from vault.secrets where name = 'aviso_pedidos_secreto';
+```
+
+### Función `avisos-pedidos-kiosco`
+
+`verify_jwt: false`. Siempre responde 200 con JSON.
+
+- Modo **"pedido"**: solo con el header `x-aviso-secreto`.
+- Modo **"prueba"**: solo con la sesión del dueño de ese negocio, máximo uno
+  cada 30 segundos.
+
+Secrets de la función: `VAPID_PUBLICA`, `VAPID_PRIVADA`, `VAPID_CONTACTO`,
+`AVISO_SECRETO`.
+
+- `AVISO_SECRETO` debe ser **idéntico** al secreto de Vault.
+- La llave privada y el secreto **nunca** van al repositorio.
+- Si se pierden: se generan llaves nuevas y cada teléfono vuelve a tocar
+  "Activar avisos".
+
+### Qué muestra el aviso
+
+Solo número de pedido, nombre del cliente, total y modalidad. **Nunca** teléfono
+ni dirección.
+
+### Service worker
+
+Siempre muestra una notificación por cada aviso: iOS quita el permiso si no lo
+hace. Sigue sin caché y sin `fetch`.
+
+### iPhone
+
+- Solo funciona con la app abierta desde el ícono de la pantalla de inicio
+  (iOS 16.4 o posterior).
+- Suena el sonido de notificación del iPhone, no el ding-dong de la app.
+- Los modos de concentración pueden retener el aviso.
+
+### Si cambia una dirección
+
+Si cambia la URL de la función o del sitio, hay que actualizar el disparador y
+la lista CORS de la función.
+
+---
+
+## 19. Cuándo está listo
 
 Cuando esto funcione de principio a fin:
 
@@ -490,7 +568,7 @@ usuarios reales lo piden.
 
 ---
 
-## 19. Filosofía
+## 20. Filosofía
 
 > **La idea es que funcione bien, siempre.**
 
